@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px}
+    ::-webkit-scrollbar{width:7px;height:7px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:8px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--navy)}
+
+    @keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+    @keyframes pulseDot{0%,100%{opacity:.45}50%{opacity:1}}
+    @keyframes checkPop{0%{transform:scale(0) rotate(-20deg)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+    @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+
+    /* ── Hero ── */
+    .hero{
+      background:var(--grad-hero);border-radius:var(--r);color:#fff;
+      padding:16px 18px;margin-bottom:14px;position:relative;overflow:hidden;
+      box-shadow:0 6px 22px rgba(11,21,38,.30);animation:fadeUp .35s var(--ease) both
+    }
+    .hero::after{
+      content:'';position:absolute;right:-70px;top:-70px;width:210px;height:210px;
+      background:radial-gradient(circle,rgba(59,118,246,.35),transparent 70%);pointer-events:none
+    }
+    .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+    .hero h1{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .hero .sub{font-size:11px;color:#8FA6C8;margin-top:3px}
+    .hero-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .rascunho-pill{
+      display:none;align-items:center;gap:6px;font-size:10.5px;color:#9CC1FF;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+      border-radius:99px;padding:4px 11px;transition:opacity .4s
+    }
+    .rascunho-pill.on{display:inline-flex}
+    .rascunho-pill .dot{width:6px;height:6px;border-radius:99px;background:#4ADE80;animation:pulseDot 1.6s infinite;flex-shrink:0}
+    .btn-ghost{
+      background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+      color:rgba(255,255,255,.92);border-radius:8px;padding:5px 12px;
+      font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+      transition:background .18s,transform .15s
+    }
+    .btn-ghost:hover{background:rgba(255,255,255,.22);transform:translateY(-1px)}
+
+    /* ── Segmented (Individual × Lote) ── */
+    .seg{
+      display:flex;background:var(--surface);border:1.5px solid var(--border-def);
+      border-radius:99px;padding:5px;margin-bottom:14px;position:relative;
+      box-shadow:var(--sh);animation:fadeUp .35s .05s var(--ease) both
+    }
+    .seg-ind{
+      position:absolute;top:5px;bottom:5px;width:calc(50% - 5px);left:5px;
+      background:var(--grad-accent);border-radius:99px;
+      box-shadow:var(--shadow-accent);
+      transition:transform .3s var(--ease-spring)
+    }
+    .seg.lote .seg-ind{transform:translateX(100%)}
+    .seg button{
+      flex:1;position:relative;z-index:1;background:none;border:none;
+      padding:9px;font-family:var(--font);font-size:12.5px;font-weight:700;
+      color:var(--text-muted);cursor:pointer;border-radius:99px;
+      transition:color .25s
+    }
+    .seg button.on{color:#fff}
+
+    .tab-pane{display:none}
+    .tab-pane.ativo{display:block;animation:fadeUp .3s var(--ease) both}
+
+    /* ── Campos ── */
+    .campo{margin-bottom:10px}
+    .campo:last-child{margin-bottom:0}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opc{font-weight:500;color:var(--text-muted)}
+    .obrig{color:var(--danger)}
+    /* input/select/textarea (borda, foco, tamanho) vêm de Styles.html §6.2 */
+    input.mono{font-family:var(--mono);font-size:12.5px}
+    .linha2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    @media(max-width:480px){.linha2{grid-template-columns:1fr}}
+    #u-nf,#u-qtd,#u-valor,#u-nfd{min-height:46px}
+
+    /* ── Chips de Tipo ── */
+    .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .chip{
+      min-height:40px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+      background:var(--input-bg);padding:0 14px;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      font-family:var(--font);font-size:13px;font-weight:700;color:var(--text-muted);
+      transition:border-color .18s,background .18s,color .18s,transform .12s
+    }
+    .chip:hover{transform:translateY(-1px)}
+    .chip:active{transform:scale(.97)}
+    .chip.on-falta   {border-color:var(--pend-border);background:var(--pend-bg);color:var(--pend-fg)}
+    .chip.on-avaria  {border-color:var(--warning-border);background:var(--warning-bg);color:var(--warning-fg)}
+    .chip.on-rejeicao{border-color:var(--danger-border);background:var(--danger-bg);color:var(--danger-fg)}
+
+    /* ── Botão XML ── */
+    .btn-xml{
+      display:inline-flex;align-items:center;gap:6px;
+      background:var(--success-bg);border:1.5px solid var(--success-border);color:var(--success-fg);
+      border-radius:var(--r-sm);padding:6px 12px;font-size:11.5px;font-weight:700;
+      cursor:pointer;font-family:var(--font);
+      transition:transform .15s,box-shadow .15s
+    }
+    .btn-xml:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(5,150,105,.18)}
+    .xml-status{font-size:11px;color:var(--text-muted)}
+
+    /* ── Total ao vivo ── */
+    .total-live{
+      display:flex;align-items:center;justify-content:space-between;
+      background:var(--accent-bg);border:1.5px solid var(--accent-border);
+      border-radius:var(--r-sm);padding:10px 14px;margin-top:10px
+    }
+    .total-live .lbl{font-size:10.5px;font-weight:700;color:var(--accent-strong);letter-spacing:.07em;text-transform:uppercase}
+    .total-live .val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent-strong);transition:transform .15s}
+    .total-live .val.tick{transform:scale(1.08)}
+
+    /* ── Drop zones ── */
+    .drop{
+      border:2px dashed var(--border-def);border-radius:var(--r-sm);padding:14px 12px;
+      text-align:center;background:var(--input-bg);cursor:pointer;
+      font-size:12px;color:var(--text-muted);line-height:1.55;
+      transition:border-color .2s var(--ease),background .2s var(--ease),transform .15s
+    }
+    .drop:hover{border-color:var(--navy);background:var(--navy-50);color:var(--navy)}
+    .drop.over{border-color:var(--navy);background:var(--navy-50);transform:scale(1.01)}
+    .drop small{color:var(--text-faint);font-size:10.5px}
+    input[type=file]{display:none}
+    .file-ok{
+      display:none;align-items:center;gap:9px;margin-top:9px;
+      background:var(--green-bg);border:1px solid #BBF7D0;border-radius:var(--r-sm);
+      padding:8px 12px;font-size:11.5px;color:#166534;animation:popIn .25s cubic-bezier(.34,1.56,.64,1) both
+    }
+    .file-ok.on{display:flex}
+    .file-ok img{width:36px;height:36px;object-fit:cover;border-radius:6px;display:none}
+    .file-ok .fnome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .file-ok .rm{
+      background:none;border:none;color:#166534;cursor:pointer;flex-shrink:0;
+      font-size:13px;font-weight:800;padding:2px 6px;border-radius:5px;transition:background .15s
+    }
+    .file-ok .rm:hover{background:rgba(5,150,105,.15)}
+    body.dark .file-ok{border-color:#14532D;color:#4ADE80}
+    body.dark .file-ok .rm{color:#4ADE80}
+
+    /* ── Fotos ── */
+    .foto-lista{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+    .foto-thumb{
+      position:relative;width:74px;height:74px;border-radius:var(--r-sm);
+      border:1.5px solid var(--border-def);overflow:hidden;background:var(--slate-100);
+      animation:popIn .3s cubic-bezier(.34,1.56,.64,1) both;transition:transform .15s,box-shadow .15s
+    }
+    .foto-thumb:hover{transform:scale(1.05);box-shadow:0 5px 14px rgba(37,99,235,.20)}
+    .foto-thumb img{width:100%;height:100%;object-fit:cover}
+    .foto-thumb .rm-foto{
+      position:absolute;top:3px;right:3px;background:rgba(0,0,0,.62);
+      border:none;color:#fff;font-size:10px;border-radius:5px;cursor:pointer;
+      padding:2px 6px;font-weight:800;transition:background .15s
+    }
+    .foto-thumb .rm-foto:hover{background:rgba(220,38,38,.9)}
+    .foto-thumb.pdf-item{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted);gap:3px}
+    .foto-thumb.pdf-item span.icon{font-size:24px}
+
+    /* ── Itens do lote ── */
+    .item-card{
+      background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);
+      margin-bottom:10px;box-shadow:var(--sh);overflow:hidden;
+      animation:fadeUp .3s var(--ease) both;transition:border-color .2s,box-shadow .2s
+    }
+    .item-card:focus-within{border-color:rgba(37,99,235,.45)}
+    .item-head{
+      display:flex;align-items:center;gap:9px;padding:9px 13px;
+      background:var(--input-bg);border-bottom:1px solid var(--border)
+    }
+    .item-head .n{
+      width:22px;height:22px;border-radius:7px;
+      background:var(--grad-accent);color:#fff;
+      font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0
+    }
+    .item-head .t{font-size:11.5px;font-weight:800;color:var(--text);flex:1}
+    .item-head .resumo{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+    .btn-rem{
+      background:var(--red-bg);border:1px solid #FECACA;border-radius:6px;color:var(--red);
+      font-size:10.5px;padding:3px 9px;cursor:pointer;font-weight:700;font-family:var(--font);
+      transition:background .15s,transform .12s
+    }
+    .btn-rem:hover{background:#FECACA;transform:translateY(-1px)}
+    body.dark .btn-rem{border-color:#7F1D1D}
+    body.dark .btn-rem:hover{background:#450A0A}
+    .item-body{padding:11px 13px}
+    .item-card.saindo{transition:opacity .25s,transform .25s;opacity:0;transform:translateX(24px)}
+
+    .btn-add{
+      width:100%;padding:10px;background:var(--navy-50);border:2px dashed var(--navy);
+      border-radius:var(--r-sm);color:var(--navy);font-size:12.5px;font-weight:700;
+      cursor:pointer;margin:2px 0 12px;font-family:var(--font);
+      transition:background .18s,box-shadow .18s,transform .15s
+    }
+    .btn-add:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+
+    /* ── Ações ── */
+    .botoes{display:flex;gap:9px;margin-top:4px}
+    button.btn-principal{
+      flex:1;padding:11px;border:none;border-radius:var(--r-sm);
+      font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);
+      background:var(--grad-accent);color:#fff;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      box-shadow:0 3px 12px rgba(37,99,235,.32);
+      transition:opacity .18s,box-shadow .18s,transform .15s
+    }
+    button.btn-principal:hover{box-shadow:0 6px 18px rgba(37,99,235,.45);transform:translateY(-1px)}
+    button.btn-principal:active{transform:scale(.985)}
+    button.btn-principal:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
+    .btn-principal .spin{
+      width:14px;height:14px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;
+      border-radius:99px;animation:spin360 .7s linear infinite;display:none;flex-shrink:0
+    }
+    .btn-principal.loading .spin{display:block}
+
+    .btn-confirmar{
+      display:none;width:100%;margin-top:9px;padding:11px;border:none;border-radius:var(--r-sm);
+      background:linear-gradient(135deg,#B45309,var(--amber));color:#fff;
+      font-weight:800;font-size:12.5px;cursor:pointer;font-family:var(--font);
+      box-shadow:0 3px 10px rgba(217,119,6,.32);animation:fadeUp .25s var(--ease) both;
+      transition:opacity .15s,transform .15s
+    }
+    .btn-confirmar:hover{opacity:.92;transform:translateY(-1px)}
+    .btn-confirmar.on{display:block}
+
+    /* ── Toasts ── */
+    #toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9990;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px)}
+    .toast{
+      display:flex;align-items:flex-start;gap:9px;padding:11px 14px;border-radius:12px;
+      font-size:12.5px;font-weight:600;line-height:1.5;box-shadow:0 10px 30px rgba(11,21,38,.22);
+      animation:toastIn .3s cubic-bezier(.34,1.56,.64,1) both;border:1px solid;white-space:pre-wrap
+    }
+    .toast.ok   {background:var(--green-bg);color:#166534;border-color:#BBF7D0}
+    .toast.erro {background:var(--red-bg);color:#991B1B;border-color:#FECACA}
+    .toast.aviso{background:var(--amber-bg);color:#92400E;border-color:#FCD34D}
+    body.dark .toast.ok{color:#4ADE80;border-color:#14532D}
+    body.dark .toast.erro{color:#FCA5A5;border-color:#7F1D1D}
+    body.dark .toast.aviso{color:#FCD34D;border-color:#78350F}
+
+    /* ── Sucesso overlay ── */
+    .sucesso{
+      display:none;position:fixed;inset:0;background:rgba(11,21,38,.55);
+      z-index:9995;align-items:center;justify-content:center;padding:20px;
+      animation:fadeIn .25s both
+    }
+    .sucesso.on{display:flex}
+    .sucesso .box{
+      background:var(--surface);border-radius:18px;padding:30px 26px;text-align:center;
+      max-width:330px;width:100%;box-shadow:0 24px 60px rgba(11,21,38,.35);
+      animation:popIn .35s cubic-bezier(.34,1.56,.64,1) both
+    }
+    .sucesso .ico{
+      width:60px;height:60px;border-radius:99px;margin:0 auto 14px;
+      background:var(--green-bg);display:grid;place-items:center;
+      font-size:28px;color:var(--green)
+    }
+    .sucesso .ico span{animation:checkPop .45s .15s cubic-bezier(.34,1.56,.64,1) both;display:inline-block}
+    .sucesso h3{font-size:15px;font-weight:800;margin-bottom:6px;color:var(--text)}
+    .sucesso p{font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:16px}
+    .sucesso button.btn-principal{width:100%}
+  </style>
+  <style id="cdv-v10">
+/* tokens + reset vêm de Styles.html (injetado); aqui só o que é específico do Lançamento */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
+button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .12s,opacity .12s}
+  </style>
+</head>
+<body data-area="registro">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+<!-- ════════ HERO ════════ -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-plus-circle"/></svg> Lançar Devolução</h1>
+      <div class="sub">Registre devoluções individuais ou em lote para aprovação</div>
+    </div>
+    <div class="hero-actions">
+      <span class="rascunho-pill" id="rascunho-pill"><span class="dot"></span><span id="rascunho-ind"></span></span>
+      <button class="btn-ghost" onclick="if(confirm('Descartar o rascunho não salvo?')){_rascunhoLimpar();limparUnico();}" style="display:none" id="btn-descartar-rascunho">Descartar rascunho</button>
+      <button class="btn-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SEGMENTED ════════ -->
+<div class="seg" id="seg">
+  <div class="seg-ind"></div>
+  <button class="on" id="seg-unico" onclick="mudarAba('unico')">Individual</button>
+  <button id="seg-lote" onclick="mudarAba('lote')">Em Lote</button>
+</div>
+
+<!-- ════════ PANE — LANÇAMENTO INDIVIDUAL ════════ -->
+<div id="tab-unico" class="tab-pane ativo">
+  <div class="rd-form-shell">
+
+    <div class="rd-card">
+      <div class="rd-grp">
+        <div class="rd-grp-head"><span class="rd-num">1</span><h2>Fornecedor</h2></div>
+        <div class="campo">
+          <label>Fornecedor / Aba <span class="obrig">*</span></label>
+          <select id="u-aba" onchange="onAbaChange('u')">
+            <option value="">— Selecione —</option>
+            <option value="Britania">Britania</option>
+            <option value="Unilever">Unilever</option>
+            <option value="Fornecedores Variados">Fornecedores Variados</option>
+          </select>
+        </div>
+        <datalist id="forn-datalist"></datalist>
+        <div id="u-campo-forn" class="campo" style="display:none">
+          <label>Nome do Fornecedor <span class="obrig">*</span></label>
+          <input type="text" id="u-fornecedor" list="forn-datalist" placeholder="Ex: AMBEV, P&G..." autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+        </div>
+      </div>
+
+      <div class="rd-grp">
+        <div class="rd-grp-head">
+          <span class="rd-num">2</span><h2>Dados da Nota</h2>
+          <button type="button" class="btn-xml" onclick="document.getElementById('u-xml-file').click()"><svg class="ic ic-sm"><use href="#i-file-check"/></svg> Importar XML</button>
+        </div>
+        <input type="file" id="u-xml-file" accept=".xml,text/xml,application/xml" onchange="importarXmlNfe(this)">
+        <span class="xml-status" id="u-xml-status"></span>
+        <div class="linha2">
+          <div class="campo">
+            <label>NFD <span class="opc">(opcional)</span></label>
+            <input type="text" class="mono" id="u-nfd" placeholder="Nº NFD">
+          </div>
+          <div class="campo">
+            <label>Nº NF <span class="obrig">*</span></label>
+            <input type="text" class="mono" id="u-nf" placeholder="Nº da NF original">
+          </div>
+        </div>
+        <div class="campo">
+          <label>Tipo</label>
+          <select id="u-tipo" style="display:none">
+            <option value="">— Selecione —</option>
+            <option value="Falta">Falta</option>
+            <option value="Avaria">Avaria</option>
+            <option value="Rejeição">Rejeição</option>
+          </select>
+          <div class="chips" id="u-chips">
+            <button type="button" class="chip" data-tipo="Falta" onclick="setTipo(this)">Falta</button>
+            <button type="button" class="chip" data-tipo="Avaria" onclick="setTipo(this)"><svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg> Avaria</button>
+            <button type="button" class="chip" data-tipo="Rejeição" onclick="setTipo(this)"><svg class="ic ic-sm"><use href="#i-x"/></svg> Rejeição</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Motivo</label>
+          <datalist id="motivo-datalist"></datalist>
+          <input type="text" id="u-motivo" list="motivo-datalist" placeholder="Ex: MEDIDAS FORA DA TOLERÂNCIA..." autocomplete="off">
+        </div>
+        <div class="campo">
+          <label>Descrição do Produto <span class="obrig">*</span></label>
+          <textarea id="u-desc" rows="2" placeholder="Ex: Shampoo 400ml caixa c/12"></textarea>
+        </div>
+        <div class="linha2">
+          <div class="campo">
+            <label>Quantidade <span class="obrig">*</span></label>
+            <input type="number" class="mono" id="u-qtd" min="1" placeholder="0">
+          </div>
+          <div class="campo">
+            <label>Valor Unitário (R$) <span class="obrig">*</span></label>
+            <input type="text" class="mono" id="u-valor" placeholder="0,00">
+          </div>
+        </div>
+        <div class="total-live">
+          <span class="lbl">Total estimado</span>
+          <span class="val" id="u-total">R$ 0,00</span>
+        </div>
+      </div>
+
+    </div>
+
+    <aside class="rd-summary-rail">
+      <div class="rd-resumo" id="u-resumo">
+        <div class="rt">Resumo do lançamento</div>
+        <div class="ri"><span>Fornecedor</span><b id="u-r-forn" class="pend">—</b></div>
+        <div class="ri"><span>Tipo</span><b id="u-r-tipo" class="pend">—</b></div>
+        <div class="ri"><span>Nº NF</span><b id="u-r-nf" class="pend">—</b></div>
+        <div class="ri"><span>Qtd × Vl. Unit.</span><b id="u-r-qv" class="pend">—</b></div>
+        <div class="ri"><span>Anexos</span><b id="u-r-anexos" class="pend">—</b></div>
+      </div>
+      <div class="botoes">
+        <button class="btn-principal" id="u-btn" onclick="salvarUnico()"><span class="spin"></span><svg class="ic ic-sm"><use href="#i-check"/></svg> Salvar Devolução</button>
+      </div>
+      <button class="btn-confirmar" id="u-confirmar" onclick="confirmarUnico()"><svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg> NF duplicada — Confirmar mesmo assim</button>
+
+      <div class="rd-card">
+        <div class="rd-grp">
+          <div class="rd-grp-head"><span class="rd-num">3</span><h2>Anexos</h2><span class="rd-tag">Opcional</span></div>
+          <div class="campo">
+            <label>NF digitalizada</label>
+            <div class="drop" id="u-drop" onclick="document.getElementById('u-file').click()">
+              <svg class="ic ic-sm"><use href="#i-download"/></svg> Clique ou arraste a foto / PDF da NF aqui<br>
+              <small>JPG, PNG ou PDF — máx. 5 MB</small>
+            </div>
+            <div class="file-ok" id="u-file-ok">
+              <img id="u-prevImg" alt="">
+              <span class="fnome" id="u-prevNome"></span>
+              <button type="button" class="rm" onclick="limparAnexoNf(event)">✕</button>
+            </div>
+            <input type="file" id="u-file" accept="image/jpeg,image/png,application/pdf" onchange="onFileSelect(this.files[0],'u')">
+          </div>
+          <div class="campo">
+            <label>Fotos do produto <span class="opc">(vão no e-mail de devolução)</span></label>
+            <div class="drop" id="u-foto-drop" onclick="document.getElementById('u-foto-file').click()"
+                 ondragover="event.preventDefault();this.classList.add('over')"
+                 ondragleave="this.classList.remove('over')"
+                 ondrop="onFotoDrop(event)">
+              <svg class="ic ic-sm"><use href="#i-camera"/></svg> Clique ou arraste fotos aqui (JPG ou PNG)<br>
+              <small>Máx. 5 MB por foto</small>
+            </div>
+            <input type="file" id="u-foto-file" accept="image/jpeg,image/png" multiple onchange="onFotoSelect(this)">
+            <div class="foto-lista" id="u-foto-lista"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ════════ PANE — LANÇAMENTO EM LOTE ════════ -->
+<div id="tab-lote" class="tab-pane">
+  <div class="rd-form-shell">
+
+    <div>
+      <div class="rd-card">
+        <div class="rd-grp">
+          <div class="rd-grp-head"><span class="rd-num">1</span><h2>Fornecedor do Lote</h2></div>
+          <div class="campo">
+            <label>Fornecedor / Aba <span class="obrig">*</span></label>
+            <select id="l-aba" onchange="onAbaChange('l')">
+              <option value="">— Selecione —</option>
+              <option value="Britania">Britania</option>
+              <option value="Unilever">Unilever</option>
+              <option value="Fornecedores Variados">Fornecedores Variados</option>
+            </select>
+          </div>
+          <div id="l-campo-forn" class="campo" style="display:none">
+            <label>Nome do Fornecedor <span class="obrig">*</span></label>
+            <input type="text" id="l-fornecedor" list="forn-datalist" placeholder="Ex: AMBEV, P&G..." autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+          </div>
+        </div>
+      </div>
+
+      <div id="l-itens"></div>
+      <button class="btn-add" onclick="adicionarItem()">+ Adicionar outro item</button>
+    </div>
+
+    <aside class="rd-summary-rail">
+      <div class="rd-resumo">
+        <div class="rt">Resumo do lote</div>
+        <div class="ri"><span>Itens</span><b id="l-count">0</b></div>
+        <div class="ri"><span>Unidades</span><b id="l-qtdtot">0</b></div>
+        <div class="ri"><span>Valor total</span><b id="l-total">R$ 0,00</b></div>
+      </div>
+      <div class="botoes">
+        <button class="btn-principal" id="l-btn" onclick="salvarLote()"><span class="spin"></span><svg class="ic ic-sm"><use href="#i-check"/></svg> Salvar Lote</button>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- Sucesso -->
+<div class="sucesso" id="sucesso">
+  <div class="box">
+    <div class="ico"><span>✓</span></div>
+    <h3 id="suc-titulo">Devolução enviada!</h3>
+    <p id="suc-msg"></p>
+    <button class="btn-principal" onclick="fecharSucesso()">Fazer novo lançamento</button>
+  </div>
+</div>
+
+<script>
+// ── Estado ───────────────────────────────────────────────────
+var _u_b64 = null, _u_mime = null, _u_nome = null, _u_dadosConfirmar = null;
+var _u_fotos = []; // [{base64, mime, nome, src}]
+var _contadorItens = 0;
+
+// ── Tabs (segmented) ─────────────────────────────────────────
+function mudarAba(aba) {
+  var lote = aba === 'lote';
+  document.getElementById('seg').classList.toggle('lote', lote);
+  document.getElementById('seg-unico').classList.toggle('on', !lote);
+  document.getElementById('seg-lote').classList.toggle('on', lote);
+  document.getElementById('tab-unico').classList.toggle('ativo', !lote);
+  document.getElementById('tab-lote').classList.toggle('ativo', lote);
+  if (lote && document.getElementById('l-itens').children.length === 0) {
+    adicionarItem();
+  }
+}
+
+// ── Chips de tipo (escrevem no select #u-tipo escondido) ─────
+function setTipo(btn) {
+  var t = btn.dataset.tipo;
+  var sel = document.getElementById('u-tipo');
+  var jaAtivo = sel.value === t;
+  document.querySelectorAll('#u-chips .chip').forEach(function(c){ c.className = 'chip'; });
+  sel.value = jaAtivo ? '' : t;
+  if (!jaAtivo) btn.classList.add('on-' + _chipClasse(t));
+  // dispara autosave do rascunho (listener de change no select)
+  try { sel.dispatchEvent(new Event('change')); } catch(_) {}
+  _atualizarResumoUnico();
+}
+function _chipClasse(t) {
+  return t === 'Falta' ? 'falta' : t === 'Avaria' ? 'avaria' : 'rejeicao';
+}
+function _syncTipoChips() {
+  var v = document.getElementById('u-tipo').value;
+  document.querySelectorAll('#u-chips .chip').forEach(function(c){
+    c.className = 'chip' + (c.dataset.tipo === v ? ' on-' + _chipClasse(v) : '');
+  });
+}
+
+// ── Total ao vivo ────────────────────────────────────────────
+function calcTotal() {
+  var q = parseFloat(document.getElementById('u-qtd').value) || 0;
+  var v = parseFloat((document.getElementById('u-valor').value || '').replace(',','.')) || 0;
+  var el = document.getElementById('u-total');
+  el.textContent = 'R$ ' + (q*v).toLocaleString('pt-BR', {minimumFractionDigits:2});
+  el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+}
+
+// ── Resumo ao vivo (sidebar) ──────────────────────────────────
+function _atualizarResumoUnico() {
+  var forn = document.getElementById('u-aba').value === 'Fornecedores Variados'
+    ? document.getElementById('u-fornecedor').value.trim()
+    : document.getElementById('u-aba').value;
+  var tipo = document.getElementById('u-tipo').value;
+  var nf   = document.getElementById('u-nf').value.trim();
+  var qtd  = document.getElementById('u-qtd').value.trim();
+  var val  = document.getElementById('u-valor').value.trim();
+  var setR = function(id, v) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = v || '—';
+    el.className = v ? 'ok' : 'pend';
+  };
+  setR('u-r-forn', forn);
+  setR('u-r-tipo', tipo);
+  setR('u-r-nf', nf);
+  setR('u-r-qv', (qtd && val) ? (qtd + ' × R$ ' + val) : '');
+  var nAnexos = (_u_b64 ? 1 : 0) + _u_fotos.length;
+  setR('u-r-anexos', nAnexos ? (nAnexos + ' arquivo' + (nAnexos===1?'':'s')) : '');
+}
+
+document.getElementById('u-qtd').addEventListener('input', function(){ calcTotal(); _atualizarResumoUnico(); });
+document.getElementById('u-valor').addEventListener('input', function(){ calcTotal(); _atualizarResumoUnico(); });
+['u-aba','u-nf','u-fornecedor'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', _atualizarResumoUnico);
+});
+document.getElementById('u-aba').addEventListener('change', _atualizarResumoUnico);
+
+// ── Importar XML NF-e ────────────────────────────────────────
+function importarXmlNfe(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var status = document.getElementById('u-xml-status');
+  status.textContent = '⏳ Lendo XML...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(e.target.result, 'text/xml');
+      var g = function(tag) {
+        var el = doc.getElementsByTagNameNS('*', tag)[0] || doc.getElementsByTagName(tag)[0];
+        return el ? el.textContent.trim() : '';
+      };
+
+      var nNF   = g('nNF');
+      var xNome = g('xNome');   // emitente
+      var dhEmi = g('dhEmi') || g('dEmi'); // data emissão
+
+      // Produto: pode ter múltiplos <det>. Usa o primeiro ou concatena descrições
+      var dets = doc.getElementsByTagNameNS ? Array.prototype.slice.call(doc.getElementsByTagName('det')) : [];
+      var xProds = [], qtdTotal = 0, vlTotal = 0;
+      dets.forEach(function(det) {
+        var xp = (det.getElementsByTagName('xProd')[0] || {}).textContent || '';
+        var qc = parseFloat((det.getElementsByTagName('qCom')[0] || {}).textContent || 0);
+        var vu = parseFloat((det.getElementsByTagName('vUnCom')[0] || {}).textContent || 0);
+        var vp = parseFloat((det.getElementsByTagName('vProd')[0] || {}).textContent || 0);
+        if (xp) xProds.push(xp);
+        qtdTotal += qc;
+        vlTotal  += vp || (qc * vu);
+      });
+
+      // Totaliza pela tag vNF se disponível
+      var vNF = parseFloat(g('vNF')) || vlTotal;
+
+      var camposPreenchidos = [];
+
+      if (nNF) {
+        document.getElementById('u-nf').value = nNF;
+        camposPreenchidos.push('NF');
+      }
+      if (xProds.length) {
+        document.getElementById('u-desc').value = xProds.slice(0,3).join(' / ');
+        camposPreenchidos.push('Descrição');
+      }
+      if (qtdTotal > 0) {
+        document.getElementById('u-qtd').value = Math.round(qtdTotal);
+        camposPreenchidos.push('Qtd');
+      }
+      if (vNF > 0) {
+        var vlUnit = qtdTotal > 0 ? (vNF / qtdTotal) : vNF;
+        document.getElementById('u-valor').value = vlUnit.toFixed(2).replace('.',',');
+        camposPreenchidos.push('Valor');
+      }
+      if (xNome) {
+        var abaEl = document.getElementById('u-aba');
+        var abaVal = abaEl.value;
+        if (abaVal === 'Fornecedores Variados') {
+          document.getElementById('u-fornecedor').value = xNome.toUpperCase();
+          camposPreenchidos.push('Fornecedor');
+        }
+      }
+
+      calcTotal();
+      _atualizarResumoUnico();
+      status.style.color = 'var(--green)';
+      status.textContent = camposPreenchidos.length
+        ? '✅ Preenchido: ' + camposPreenchidos.join(', ')
+        : '⚠️ XML lido, mas nenhum campo reconhecido.';
+    } catch(err) {
+      status.style.color = 'var(--red)';
+      status.textContent = '❌ Erro ao ler XML: ' + err.message;
+    }
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── ABA change ───────────────────────────────────────────────
+var _fornVariadosList = null; // cache dos fornecedores variados
+
+function onAbaChange(prefix) {
+  var v = document.getElementById(prefix + '-aba').value;
+  var isVar = v === 'Fornecedores Variados';
+  document.getElementById(prefix + '-campo-forn').style.display = isVar ? 'block' : 'none';
+  if (isVar) _carregarFornVariadosDatalist();
+}
+
+function _carregarFornVariadosDatalist() {
+  if (_fornVariadosList !== null) { _aplicarFornDatalist(_fornVariadosList); return; }
+  google.script.run
+    .withSuccessHandler(function(r) {
+      try {
+        var p = JSON.parse(r);
+        _fornVariadosList = (p.variados || []).map(function(s){ return s.toUpperCase(); });
+        _aplicarFornDatalist(_fornVariadosList);
+      } catch(_) {}
+    })
+    .listarFornecedoresVariados();
+}
+
+function _aplicarFornDatalist(lista) {
+  var dl = document.getElementById('forn-datalist');
+  if (!dl) return;
+  dl.innerHTML = '';
+  lista.forEach(function(nome) {
+    var opt = document.createElement('option'); opt.value = nome; dl.appendChild(opt);
+  });
+}
+
+// ── Upload (apenas individual) ───────────────────────────────
+var drop = document.getElementById('u-drop');
+drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
+drop.addEventListener('drop', function(e){
+  e.preventDefault(); drop.classList.remove('over');
+  if (e.dataTransfer.files[0]) onFileSelect(e.dataTransfer.files[0], 'u');
+});
+
+function onFileSelect(file, prefix) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { mostrar(prefix, 'erro', '❌ Arquivo muito grande (máx. 5 MB).'); return; }
+  if (['image/jpeg','image/png','application/pdf'].indexOf(file.type) === -1) {
+    mostrar(prefix, 'erro', '❌ Use JPG, PNG ou PDF.'); return;
+  }
+  _u_mime = file.type; _u_nome = file.name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _u_b64 = e.target.result.split(',')[1];
+    var img = document.getElementById('u-prevImg');
+    if (file.type.startsWith('image/')) {
+      img.src = e.target.result; img.style.display = 'block';
+    } else { img.style.display = 'none'; }
+    document.getElementById('u-prevNome').textContent = file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+    document.getElementById('u-file-ok').classList.add('on');
+    if (prefix === 'u') _atualizarResumoUnico();
+  };
+  reader.readAsDataURL(file);
+}
+
+function limparAnexoNf(e) {
+  if (e) e.stopPropagation();
+  _u_b64 = null; _u_mime = null; _u_nome = null;
+  document.getElementById('u-file-ok').classList.remove('on');
+  document.getElementById('u-prevImg').style.display = 'none';
+  document.getElementById('u-file').value = '';
+  _atualizarResumoUnico();
+}
+
+// ── Fotos extras ─────────────────────────────────────────────
+function onFotoDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('u-foto-drop').classList.remove('over');
+  var files = evt.dataTransfer.files;
+  for (var i = 0; i < files.length; i++) _adicionarFoto(files[i]);
+}
+
+function onFotoSelect(input) {
+  if (!input.files) return;
+  for (var i = 0; i < input.files.length; i++) _adicionarFoto(input.files[i]);
+  input.value = '';
+}
+
+function _adicionarFoto(file) {
+  if (file.size > 5 * 1024 * 1024) { mostrar('u', 'aviso', '⚠️ Foto muito grande: ' + file.name + ' (máx. 5 MB)'); return; }
+  if (['image/jpeg','image/png'].indexOf(file.type) === -1) { mostrar('u', 'aviso', '⚠️ Use JPG ou PNG para fotos.'); return; }
+  for (var k = 0; k < _u_fotos.length; k++) { if (_u_fotos[k].nome === file.name) return; }
+  var reader = new FileReader();
+  reader.onload = (function(f) {
+    return function(e) {
+      _u_fotos.push({ base64: e.target.result.split(',')[1], mime: f.type, nome: f.name, src: e.target.result });
+      _renderFotos();
+    };
+  })(file);
+  reader.readAsDataURL(file);
+}
+
+function _renderFotos() {
+  var lista = document.getElementById('u-foto-lista');
+  lista.innerHTML = '';
+  _u_fotos.forEach(function(f, i) {
+    var thumb = document.createElement('div');
+    thumb.className = 'foto-thumb';
+    thumb.innerHTML = '<img src="' + f.src + '" alt="foto">'
+      + '<button class="rm-foto" onclick="_removerFoto(' + i + ')">✕</button>';
+    lista.appendChild(thumb);
+  });
+  _atualizarResumoUnico();
+}
+
+function _removerFoto(idx) {
+  _u_fotos.splice(idx, 1);
+  _renderFotos();
+}
+
+// ── Lançamento Individual ────────────────────────────────────
+function salvarUnico() {
+  document.getElementById('u-confirmar').classList.remove('on');
+  var d = coletarDadosUnico();
+  var err = validarItem(d);
+  if (err) { mostrar('u', 'erro', '❌ ' + err); return; }
+  setLoading('u', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('u', false);
+      var r = JSON.parse(resp);
+      if (r.ok) { _rascunhoLimpar(); abrirSucesso('Devolução enviada!', r.ok); }
+      else if (r.aviso) {
+        mostrar('u', 'aviso', '⚠️ ' + r.aviso);
+        _u_dadosConfirmar = d;
+        document.getElementById('u-confirmar').classList.add('on');
+      } else { mostrar('u', 'erro', '❌ ' + r.erro); }
+    })
+    .withFailureHandler(function(e) { setLoading('u', false); mostrar('u', 'erro', '❌ ' + e.message); })
+    .submeterParaAprovacao(d);
+}
+
+function confirmarUnico() {
+  if (!_u_dadosConfirmar) return;
+  document.getElementById('u-confirmar').classList.remove('on');
+  setLoading('u', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('u', false);
+      var r = JSON.parse(resp);
+      if (r.ok) { _rascunhoLimpar(); abrirSucesso('Devolução enviada!', r.ok); }
+      else { mostrar('u', 'erro', '❌ ' + (r.erro || 'Erro.')); }
+    })
+    .withFailureHandler(function(e) { setLoading('u', false); mostrar('u', 'erro', '❌ ' + e.message); })
+    .salvarLancamentoFormConfirmado(_u_dadosConfirmar);
+}
+
+function coletarDadosUnico() {
+  return {
+    abaSelecao: document.getElementById('u-aba').value.trim(),
+    nfd:        document.getElementById('u-nfd').value.trim(),
+    tipo:       document.getElementById('u-tipo').value.trim(),
+    motivo:     document.getElementById('u-motivo').value.trim(),
+    nf:         document.getElementById('u-nf').value.trim(),
+    descricao:  document.getElementById('u-desc').value.trim(),
+    qtd:        document.getElementById('u-qtd').value.trim(),
+    valorUnit:  document.getElementById('u-valor').value.trim().replace(',','.'),
+    fornecedor: document.getElementById('u-fornecedor').value.trim().toUpperCase(),
+    base64:     _u_b64 || '',
+    mimeType:   _u_mime || '',
+    nomeArquivo:_u_nome || '',
+    fotos:      _u_fotos.map(function(f){ return {base64:f.base64,mime:f.mime,nome:f.nome}; })
+  };
+}
+
+function limparUnico() {
+  ['u-aba','u-nfd','u-nf','u-motivo','u-qtd','u-valor','u-fornecedor'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el.tagName==='SELECT') el.selectedIndex=0; else el.value='';
+  });
+  document.getElementById('u-tipo').selectedIndex = 0;
+  _syncTipoChips();
+  document.getElementById('u-desc').value = '';
+  document.getElementById('u-campo-forn').style.display = 'none';
+  document.getElementById('u-confirmar').classList.remove('on');
+  _u_b64=null; _u_mime=null; _u_nome=null; _u_dadosConfirmar=null;
+  document.getElementById('u-file-ok').classList.remove('on');
+  document.getElementById('u-prevImg').style.display = 'none';
+  document.getElementById('u-file').value = '';
+  _u_fotos=[]; document.getElementById('u-foto-lista').innerHTML='';
+  calcTotal();
+  _atualizarResumoUnico();
+}
+
+// ── Lançamento em Lote — store de arquivos por item ──────────
+var _loteArquivos = {}; // { n: { b64, mime, nome } }
+
+function adicionarItem() {
+  _contadorItens++;
+  var n = _contadorItens;
+  _loteArquivos[n] = { b64: '', mime: '', nome: '' };
+
+  var div = document.createElement('div');
+  div.className = 'item-card';
+  div.id = 'item-' + n;
+  div.innerHTML =
+    '<div class="item-head">' +
+      '<span class="n">' + n + '</span><span class="t">Item ' + n + '</span>' +
+      '<span class="resumo" id="li-resumo-' + n + '"></span>' +
+      '<button class="btn-rem" onclick="removerItem(' + n + ')">✕ Remover</button>' +
+    '</div>' +
+    '<div class="item-body">' +
+    '<div class="linha2">' +
+      '<div class="campo"><label>NFD <span class="opc">(opcional)</span></label><input type="text" class="mono" id="li-nfd-'+n+'" placeholder="NFD"></div>' +
+      '<div class="campo"><label>Tipo</label><select id="li-tipo-'+n+'"><option value="">—</option><option>Falta</option><option>Avaria</option><option>Rejeição</option></select></div>' +
+      '<div class="campo"><label>Nº NF <span class="obrig">*</span></label><input type="text" class="mono" id="li-nf-'+n+'" placeholder="Nº NF"></div>' +
+    '</div>' +
+    '<div class="campo"><label>Motivo</label><input type="text" id="li-motivo-'+n+'" list="motivo-datalist" placeholder="Motivo"></div>' +
+    '<div class="campo"><label>Descrição <span class="obrig">*</span></label><input type="text" id="li-desc-'+n+'" placeholder="Descrição do produto"></div>' +
+    '<div class="linha2">' +
+      '<div class="campo"><label>Qtd <span class="obrig">*</span></label><input type="number" class="mono" id="li-qtd-'+n+'" min="1" placeholder="0" oninput="calcLote()"></div>' +
+      '<div class="campo"><label>Vl Unit (R$) <span class="obrig">*</span></label><input type="text" class="mono" id="li-valor-'+n+'" placeholder="0,00" oninput="calcLote()"></div>' +
+    '</div>' +
+    // ── Área de upload do anexo por item ──
+    '<div style="margin-top:6px">' +
+      '<div class="drop" id="li-drop-'+n+'" onclick="document.getElementById(\'li-file-'+n+'\').click()" ' +
+           'style="padding:9px;font-size:11px">' +
+        '<svg class="ic ic-sm"><use href="#i-download"/></svg> Clique para anexar a NF (JPG, PNG ou PDF — máx. 5 MB)' +
+        '<div id="li-prev-'+n+'" style="font-size:11px;color:var(--navy);margin-top:3px;display:none;font-weight:700"></div>' +
+      '</div>' +
+      '<input type="file" id="li-file-'+n+'" accept="image/jpeg,image/png,application/pdf" ' +
+             'onchange="onFileSelectLote(this.files[0],' + n + ')">' +
+    '</div>' +
+    '</div>';
+
+  document.getElementById('l-itens').appendChild(div);
+  calcLote();
+
+  // Drag & drop no card recém-criado
+  var dropEl = document.getElementById('li-drop-' + n);
+  (function(nn, el) {
+    el.addEventListener('dragover',  function(e){ e.preventDefault(); el.classList.add('over'); });
+    el.addEventListener('dragleave', function(){ el.classList.remove('over'); });
+    el.addEventListener('drop', function(e){
+      e.preventDefault(); el.classList.remove('over');
+      if (e.dataTransfer.files[0]) onFileSelectLote(e.dataTransfer.files[0], nn);
+    });
+  })(n, dropEl);
+}
+
+function onFileSelectLote(file, n) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { mostrar('l','erro','❌ Item ' + n + ': arquivo muito grande (máx. 5 MB).'); return; }
+  if (['image/jpeg','image/png','application/pdf'].indexOf(file.type) === -1) {
+    mostrar('l','erro','❌ Item ' + n + ': use JPG, PNG ou PDF.'); return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (!_loteArquivos[n]) _loteArquivos[n] = {};
+    _loteArquivos[n].b64  = e.target.result.split(',')[1];
+    _loteArquivos[n].mime = file.type;
+    _loteArquivos[n].nome = file.name;
+    var prev = document.getElementById('li-prev-' + n);
+    if (prev) {
+      prev.textContent = '✅ ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+      prev.style.display = 'block';
+    }
+    var dropEl = document.getElementById('li-drop-' + n);
+    if (dropEl) dropEl.style.borderColor = 'var(--navy)';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerItem(n) {
+  var el = document.getElementById('item-' + n);
+  if (!el) return;
+  el.classList.add('saindo');
+  setTimeout(function(){ el.remove(); delete _loteArquivos[n]; calcLote(); }, 240);
+}
+
+// ── Resumo do lote ao vivo ───────────────────────────────────
+function calcLote() {
+  var cards = document.querySelectorAll('#l-itens .item-card:not(.saindo)');
+  var qtd = 0, total = 0;
+  cards.forEach(function(c) {
+    var n = c.id.replace('item-','');
+    var qEl = document.getElementById('li-qtd-'+n), vEl = document.getElementById('li-valor-'+n);
+    var q = qEl ? (parseFloat(qEl.value) || 0) : 0;
+    var v = vEl ? (parseFloat((vEl.value||'').replace(',','.')) || 0) : 0;
+    qtd += q; total += q*v;
+    var r = document.getElementById('li-resumo-'+n);
+    if (r) r.textContent = (q && v) ? ('R$ ' + (q*v).toLocaleString('pt-BR',{minimumFractionDigits:2})) : '';
+  });
+  document.getElementById('l-count').textContent = cards.length;
+  document.getElementById('l-qtdtot').textContent = qtd;
+  document.getElementById('l-total').textContent = 'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+
+function salvarLote() {
+  var aba = document.getElementById('l-aba').value.trim();
+  if (!aba) { mostrar('l','erro','❌ Selecione o fornecedor/aba.'); return; }
+  var forn = '';
+  if (aba === 'Fornecedores Variados') {
+    forn = document.getElementById('l-fornecedor').value.trim().toUpperCase();
+    if (!forn) { mostrar('l','erro','❌ Informe o nome do fornecedor.'); return; }
+  }
+  var itens = [];
+  var cards = document.getElementById('l-itens').querySelectorAll('.item-card');
+  for (var i = 0; i < cards.length; i++) {
+    var id    = cards[i].id.replace('item-','');
+    var nf    = document.getElementById('li-nf-'+id).value.trim();
+    var desc  = document.getElementById('li-desc-'+id).value.trim();
+    var qtd   = document.getElementById('li-qtd-'+id).value.trim();
+    var valor = document.getElementById('li-valor-'+id).value.trim().replace(',','.');
+    if (!nf || !desc || !qtd || isNaN(+qtd) || +qtd<=0 || !valor || isNaN(+valor) || +valor<0) {
+      mostrar('l','erro','❌ Item ' + (i+1) + ': preencha NF, descrição, quantidade e valor.'); return;
+    }
+    var arq = _loteArquivos[id] || {};
+    itens.push({
+      abaSelecao:  aba,
+      fornecedor:  forn,
+      nfd:         document.getElementById('li-nfd-'+id).value.trim(),
+      tipo:        document.getElementById('li-tipo-'+id).value.trim(),
+      motivo:      document.getElementById('li-motivo-'+id).value.trim(),
+      nf:          nf,
+      descricao:   desc,
+      qtd:         qtd,
+      valorUnit:   valor,
+      base64:      arq.b64  || '',
+      mimeType:    arq.mime || '',
+      nomeArquivo: arq.nome || ''
+    });
+  }
+  if (!itens.length) { mostrar('l','erro','❌ Adicione ao menos um item.'); return; }
+  setLoading('l', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('l', false);
+      var r = JSON.parse(resp);
+      if (r.ok) {
+        abrirSucesso('Lote enviado!', r.ok);
+        document.getElementById('l-itens').innerHTML='';
+        _loteArquivos = {};
+        _contadorItens = 0;
+        adicionarItem();
+      } else { mostrar('l','erro','❌ ' + (r.erro||'Erro.')); }
+    })
+    .withFailureHandler(function(e){ setLoading('l',false); mostrar('l','erro','❌ '+e.message); })
+    .salvarLoteLancamentos(itens);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function validarItem(d) {
+  if (!d.abaSelecao) return 'Selecione o fornecedor/aba.';
+  if (!d.nf)         return 'Informe o número da NF.';
+  if (!d.descricao)  return 'Informe a descrição do produto.';
+  if (!d.qtd||isNaN(+d.qtd)||+d.qtd<=0) return 'Informe uma quantidade válida.';
+  if (!d.valorUnit||isNaN(+d.valorUnit)||+d.valorUnit<0) return 'Informe um valor unitário válido.';
+  if (d.abaSelecao==='Fornecedores Variados'&&!d.fornecedor) return 'Informe o nome do fornecedor.';
+  return null;
+}
+
+function setLoading(p, sim) {
+  var btn = document.getElementById(p+'-btn');
+  if (btn) { btn.disabled = sim; btn.classList.toggle('loading', sim); }
+}
+
+// mostrar() mantém a assinatura antiga (p, tipo, txt) mas agora emite toast
+function mostrar(p, tipo, txt) {
+  var t = document.createElement('div');
+  t.className = 'toast ' + tipo;
+  t.textContent = txt;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(function() {
+    t.style.transition = 'opacity .3s,transform .3s';
+    t.style.opacity = '0'; t.style.transform = 'translateY(8px)';
+    setTimeout(function(){ t.remove(); }, 320);
+  }, tipo === 'erro' ? 5500 : 4200);
+}
+
+function abrirSucesso(titulo, msg) {
+  document.getElementById('suc-titulo').textContent = titulo;
+  document.getElementById('suc-msg').textContent = String(msg || '').replace(/^✅\s*/,'');
+  document.getElementById('sucesso').classList.add('on');
+}
+function fecharSucesso() {
+  document.getElementById('sucesso').classList.remove('on');
+  limparUnico();
+}
+
+function esc(s) {
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Carrega fornecedores extras criados pelo usuário ──────────
+(function carregarExtras() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        var extras = r.extras || [];
+        if (!extras.length) return;
+        // Insere antes da opção "Fornecedores Variados" em cada select
+        ['u-aba', 'l-aba'].forEach(function(selId) {
+          var sel = document.getElementById(selId);
+          if (!sel) return;
+          extras.forEach(function(nome) {
+            // Evita duplicar se já existir
+            for (var i = 0; i < sel.options.length; i++) {
+              if (sel.options[i].value === nome) return;
+            }
+            var opt = document.createElement('option');
+            opt.value = nome;
+            opt.textContent = nome;
+            // Insere antes da última opção (Fornecedores Variados)
+            sel.insertBefore(opt, sel.options[sel.options.length - 1]);
+          });
+        });
+      } catch(_) {}
+    })
+    .withFailureHandler(function() {}) // silencioso — lista padrão já está no HTML
+    .obterAbasExtras();
+})();
+
+
+// ── Sugestão de motivos (datalist dinâmico) ────────────────
+(function popularMotivoDatalist() {
+  var _MOTIVOS_PADRAO = [
+    'MEDIDAS FORA DA TOLERÂNCIA','EMBALAGEM AVARIADA','PRODUTO ERRADO',
+    'QUANTIDADE INCORRETA','VALIDADE VENCIDA','PRODUTO SEM REGISTRO',
+    'NF COM ERRO','FALTA DE DOCUMENTAÇÃO','DIVERGÊNCIA DE PREÇO',
+    'PRODUTO IMPRÓPRIO PARA CONSUMO','SOBRA DE ESTOQUE','DEVOLUÇÃO COMERCIAL'
+  ];
+  var dl = document.getElementById('motivo-datalist');
+  if (!dl) return;
+  _MOTIVOS_PADRAO.forEach(function(m) {
+    var opt = document.createElement('option'); opt.value = m; dl.appendChild(opt);
+  });
+  // Complementa com motivos já usados nas notas
+  try {
+    google.script.run.withSuccessHandler(function(r) {
+      try {
+        var lista = JSON.parse(r) || [];
+        lista.forEach(function(m) {
+          if (!m) return;
+          var existe = false;
+          for (var i = 0; i < dl.options.length; i++) { if (dl.options[i].value === m) { existe = true; break; } }
+          if (!existe) { var opt = document.createElement('option'); opt.value = m; dl.appendChild(opt); }
+        });
+      } catch(_){}
+    }).obterMotivosFrequentes();
+  } catch(_){}
+})();
+
+// ── Auto-save de rascunho ─────────────────────────────────────
+var _RASCUNHO_KEY = 'cdv_lancamento_rascunho';
+var _autoSaveTimer = null;
+
+function _rascunhoSetInd(txt) {
+  var pill = document.getElementById('rascunho-pill');
+  var ind  = document.getElementById('rascunho-ind');
+  if (!pill || !ind) return;
+  if (txt) { ind.textContent = txt; pill.classList.add('on'); }
+  else { ind.textContent = ''; pill.classList.remove('on'); }
+}
+
+function _rascunhoSalvar() {
+  try {
+    var d = {
+      aba:   document.getElementById('u-aba').value,
+      nfd:   document.getElementById('u-nfd').value,
+      nf:    document.getElementById('u-nf').value,
+      tipo:  document.getElementById('u-tipo').value,
+      motivo:document.getElementById('u-motivo').value,
+      desc:  document.getElementById('u-desc').value,
+      qtd:   document.getElementById('u-qtd').value,
+      valor: document.getElementById('u-valor').value,
+      forn:  document.getElementById('u-fornecedor').value,
+      ts:    Date.now()
+    };
+    localStorage.setItem(_RASCUNHO_KEY, JSON.stringify(d));
+    _rascunhoSetInd('Rascunho salvo ' + new Date(d.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+    var btn = document.getElementById('btn-descartar-rascunho');
+    if (btn) btn.style.display = '';
+  } catch(_) {}
+}
+
+function _rascunhoRestaurar() {
+  try {
+    var raw = localStorage.getItem(_RASCUNHO_KEY);
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    var idade = (Date.now() - (d.ts||0)) / 3600000;
+    if (idade > 24) { localStorage.removeItem(_RASCUNHO_KEY); return; }
+    var set = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('u-aba', d.aba); set('u-nfd', d.nfd); set('u-nf', d.nf);
+    set('u-tipo', d.tipo); set('u-motivo', d.motivo); set('u-desc', d.desc);
+    set('u-qtd', d.qtd); set('u-valor', d.valor); set('u-fornecedor', d.forn);
+    if (d.aba === 'Fornecedores Variados') document.getElementById('u-campo-forn').style.display = '';
+    _syncTipoChips();
+    calcTotal();
+    _atualizarResumoUnico();
+    _rascunhoSetInd('Rascunho restaurado');
+    var btn = document.getElementById('btn-descartar-rascunho');
+    if (btn) btn.style.display = '';
+  } catch(_) {}
+}
+
+function _rascunhoLimpar() {
+  try { localStorage.removeItem(_RASCUNHO_KEY); } catch(_){}
+  _rascunhoSetInd('');
+  var btn = document.getElementById('btn-descartar-rascunho');
+  if (btn) btn.style.display = 'none';
+}
+
+(function() {
+  var ids = ['u-aba','u-nfd','u-nf','u-tipo','u-motivo','u-desc','u-qtd','u-valor','u-fornecedor'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = setTimeout(_rascunhoSalvar, 3000);
+    });
+    el.addEventListener('change', function() {
+      clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = setTimeout(_rascunhoSalvar, 3000);
+    });
+  });
+  _rascunhoRestaurar();
+})();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+var _modoRO_lanc = false;
+function aplicarModoRO(ativo) {
+  _modoRO_lanc = ativo;
+  if (!ativo) return;
+  var banner = document.createElement('div');
+  banner.style.cssText = 'background:#FFF7E0;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:10px;display:flex;align-items:center;gap:8px';
+  banner.innerHTML = '🔒 <strong>Modo somente leitura</strong> — você não tem permissão para realizar alterações.';
+  document.body.insertBefore(banner, document.body.firstChild);
+  document.querySelectorAll('button:not(.btn-cancel):not(.back):not(.btn-ghost)').forEach(function(b){ b.disabled = true; });
+}
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('lancamento') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) aplicarModoRO(true);
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

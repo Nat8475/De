@@ -1,0 +1,3384 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);padding:14px;overflow-x:hidden}
+    ::-webkit-scrollbar{width:7px;height:7px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:8px}
+
+    .screen{display:none}
+    .screen.ativo{display:block;animation:enterScreen .22s cubic-bezier(.4,0,.2,1) both}
+    .screen.saindo{display:block;animation:exitScreen .15s cubic-bezier(.4,0,.2,1) both}
+    @keyframes enterScreen{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes exitScreen{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-6px)}}
+
+    .sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .sel-card{display:flex;flex-direction:column;gap:8px;background:var(--surface);
+      border:1.5px solid var(--border-def);border-radius:var(--r);padding:12px 11px;
+      cursor:pointer;position:relative;overflow:hidden;
+      transition:border-color .18s var(--ease),box-shadow .18s var(--ease),transform .18s var(--ease)}
+    .sel-card::before{content:'';position:absolute;inset:0;border-radius:inherit;
+      background:radial-gradient(circle at 75% 25%,rgba(37,99,235,.07) 0%,transparent 65%);
+      opacity:0;transition:opacity .2s;pointer-events:none}
+    .sel-card:hover::before{opacity:1}
+    .sel-card:hover{border-color:var(--navy);background:var(--navy-50);
+      box-shadow:0 6px 22px rgba(37,99,235,.13),0 2px 6px rgba(37,99,235,.07);transform:translateY(-2px)}
+    .sel-card:active{transform:translateY(0);box-shadow:none}
+    .icone-box{width:38px;height:38px;border-radius:10px;background:var(--navy-50);
+      display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;
+      transition:background .2s,transform .2s,box-shadow .2s}
+    .sel-card:hover .icone-box{background:var(--navy);transform:scale(1.1) rotate(-5deg);
+      box-shadow:0 4px 14px rgba(37,99,235,.32)}
+    .sel-card .txt strong{display:block;font-size:12px;color:var(--text);font-weight:700;margin-bottom:3px;line-height:1.3}
+    .sel-card .txt span{font-size:11px;color:var(--text-muted);line-height:1.4}
+
+    .campo{margin-bottom:10px}
+    label{display:block;font-weight:700;color:var(--text-body);margin-bottom:4px;font-size:12px}
+    input[type=text],input[type=email],input[type=number],select,textarea{
+      width:100%;padding:9px 11px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+      font-size:13px;background:var(--input-bg);font-family:var(--font);color:var(--text);
+      transition:border-color .15s,box-shadow .15s,background .15s
+    }
+    input:focus,select:focus,textarea:focus{
+      outline:none;border-color:var(--navy);background:var(--surface);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+
+    .info{background:var(--navy-50);border-left:3px solid var(--navy);padding:10px 13px;
+      border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:12px;color:var(--text-body);
+      margin-bottom:12px;line-height:1.6}
+
+    .tags-box{min-height:40px;background:var(--surface);border:1px solid var(--border-def);
+              border-radius:var(--r-sm);padding:5px 8px;margin-bottom:8px;
+              display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+    .email-tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;
+               padding:3px 10px;font-size:11px;font-weight:500}
+    .email-tag.geral {background:#DBEAFE;color:#1E40AF}
+    .email-tag.alerta{background:var(--amber-bg);color:#92400E}
+    .email-tag.transf{background:#CFFAFE;color:#0891B2}
+    .email-tag.admin {background:#EDE9FE;color:#5B21B6}
+    .email-tag .rm{cursor:pointer;background:none;border:none;font-weight:700;
+                   font-size:13px;line-height:1;padding:0 2px;opacity:.7}
+    .email-tag .rm:hover{opacity:1;color:var(--red)}
+
+    .dono-tag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;
+              padding:3px 10px;font-size:11px;font-weight:500;background:#FEF9C3;color:#854D0E}
+
+    .secao-email{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);
+                 padding:10px 12px;margin-bottom:10px}
+    .secao-email .sec-titulo{font-size:11px;font-weight:700;color:var(--text-body);
+                              text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;
+                              display:flex;align-items:center;gap:6px}
+    .linha2{display:flex;gap:8px}
+    .linha2 .campo{flex:1}
+
+    .opcao-alerta{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .opcao-radio{display:flex;align-items:flex-start;gap:8px;background:var(--surface);
+                 border:1.5px solid var(--border-def);border-radius:var(--r-sm);
+                 padding:9px 12px;cursor:pointer;
+                 transition:border-color .15s var(--ease),background .15s var(--ease)}
+    .opcao-radio:hover{border-color:var(--brand-amber);background:var(--navy-50)}
+    .opcao-radio input[type=radio]{margin-top:2px;accent-color:var(--navy);cursor:pointer}
+    .opcao-radio .txt strong{display:block;font-size:12px;color:var(--navy)}
+    .opcao-radio .txt span{font-size:11px;color:var(--text-muted)}
+    #cc-wrapper{display:none;margin-top:6px}
+
+    .cor-grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .cor-item{background:var(--surface);border:1px solid var(--border-def);
+              border-radius:var(--r);padding:10px 12px;box-shadow:var(--sh)}
+    .cor-item label{font-size:11px;margin-bottom:6px;color:var(--text-body)}
+    .cor-preview{display:flex;align-items:center;gap:8px}
+    .cor-preview input[type=color]{width:40px;height:32px;padding:2px;
+                                    border:1px solid var(--border-def);border-radius:var(--r-sm);cursor:pointer}
+    .cor-preview span{font-size:11px;color:var(--text-muted)}
+
+    .diag-card{background:var(--surface);border:1px solid var(--border-def);
+               border-radius:var(--r);padding:10px 14px;margin-bottom:8px;box-shadow:var(--sh)}
+    .diag-titulo{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;
+                 text-transform:uppercase;letter-spacing:.4px}
+    .diag-linha{display:flex;justify-content:space-between;font-size:12px;
+                padding:4px 0;border-bottom:1px solid #F3F4F6}
+    .diag-linha:last-child{border-bottom:none}
+    .diag-val{font-weight:700;color:var(--navy)}
+    .diag-ok  {color:var(--green)}
+    .diag-warn{color:var(--amber)}
+    .diag-erro{color:var(--red)}
+
+    .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:#D1D5DB;border-radius:12px;
+                   transition:background .2s}
+    .toggle-slider:before{position:absolute;content:'';height:18px;width:18px;left:3px;top:3px;
+                          background:#fff;border-radius:50%;transition:transform .2s;
+                          box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle-switch input:checked + .toggle-slider{background:var(--navy)}
+    .toggle-switch input:checked + .toggle-slider:before{transform:translateX(20px)}
+
+    .botoes{display:flex;gap:8px;margin-top:14px}
+    button.btn-principal{
+      flex:1;padding:10px;border:none;border-radius:var(--r-sm);font-size:13px;
+      font-weight:700;cursor:pointer;font-family:var(--font);
+      background:linear-gradient(135deg,#2D4FBD,var(--navy));color:#fff;
+      transition:opacity .15s,box-shadow .15s,transform .12s;
+      box-shadow:0 2px 6px rgba(37,65,154,.28)
+    }
+    button.btn-principal:hover:not(:disabled):not(.loading){opacity:.9;box-shadow:0 4px 14px rgba(37,65,154,.38);transform:translateY(-1px)}
+    button.btn-principal:disabled:not(.loading){opacity:.45;cursor:not-allowed;transform:none}
+    button.btn-principal.loading{
+      opacity:1!important;cursor:not-allowed;transform:none!important;
+      background:linear-gradient(90deg,#1D4ED8 0%,#2563EB 35%,#4B72F0 50%,#2563EB 65%,#1D4ED8 100%);
+      background-size:250% 100%;animation:shimmerBtn 1.4s ease infinite
+    }
+    @keyframes shimmerBtn{0%{background-position:110% 0}100%{background-position:-110% 0}}
+    button.btn-cancel{
+      padding:10px 14px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;
+      font-weight:600;cursor:pointer;font-family:var(--font);
+      background:transparent;color:var(--text-muted);transition:background .15s,color .15s
+    }
+    button.btn-cancel:hover{background:var(--border);color:var(--text-body)}
+    button.btn-sec{
+      padding:8px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+      font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+      background:var(--surface);color:var(--text-body);transition:background .15s
+    }
+    button.btn-sec:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
+
+    .msg{margin-top:10px;padding:9px 12px;border-radius:var(--r-sm);font-size:12.5px;
+         display:none;white-space:pre-wrap;line-height:1.55}
+    .msg-ok   {background:var(--green-bg);color:#166534;border:1px solid #BBF7D0}
+    .msg-erro {background:var(--red-bg);color:#991B1B;border:1px solid #FECACA}
+    .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
+
+    .spinner{display:none;color:var(--text-muted);font-size:12px;margin-top:8px;padding:6px 0}
+    .spin-ring{display:inline-block;width:14px;height:14px;border-radius:50%;
+      border:2px solid var(--border-def);border-top-color:var(--navy);
+      animation:spinRing .7s linear infinite;vertical-align:middle;margin-right:7px}
+    @keyframes spinRing{to{transform:rotate(360deg)}}
+
+    .tab-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+    .tab-btn{padding:7px 14px;border:1.5px solid var(--border-def);
+             border-radius:99px;font-size:11.5px;font-weight:700;
+             cursor:pointer;color:var(--text-muted);font-family:var(--font);
+             background:var(--surface);transition:all .18s var(--ease)}
+    .tab-btn.ativa{background:var(--rd-grad-btn,var(--navy));color:#fff;border-color:transparent;
+             box-shadow:0 3px 10px rgba(37,99,235,.35)}
+    .tab-btn:hover:not(.ativa){border-color:var(--navy);color:var(--navy)}
+    .tab-pane{display:none}
+    .tab-pane.ativo{display:block}
+    button.btn-save{padding:7px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
+                   font-weight:700;cursor:pointer;font-family:var(--font);
+                   background:var(--navy);color:#fff;transition:opacity .15s,transform .12s}
+    button.btn-save:hover{opacity:.88;transform:translateY(-1px)}
+    button.btn-acao{padding:6px 12px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+                   font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+                   background:var(--surface);color:var(--text-body);transition:background .15s}
+    button.btn-acao:hover{background:var(--navy-50);border-color:var(--navy);color:var(--navy)}
+    .btn-salvar{padding:8px 14px;border:none;border-radius:var(--r-sm);font-size:12px;
+      font-weight:700;cursor:pointer;font-family:var(--font);
+      background:var(--navy);color:#fff;transition:opacity .15s}
+    .btn-salvar:hover{opacity:.88}
+  </style>
+  <style id="cdv-v10">
+/* tokens vêm de Styles.html (injetado) */
+body.dark .msg-erro{color:#FCA5A5;border-color:#7F1D1D}
+body.dark .msg-aviso{color:#FCD34D;border-color:#78350F}
+body.dark .email-tag.alerta{color:#FCD34D}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
+thead tr{background:linear-gradient(135deg,#0B1526 0%,var(--navy) 100%)}
+thead th{color:#fff;font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--navy-50)}
+input,select,textarea{background:var(--input-bg);border-radius:var(--r-sm);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,99,235,.12);outline:none}
+button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .12s,opacity .12s}
+.msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
+.spinner{color:var(--navy)}
+.tab-btn{transition:color .15s,background .15s,border-color .15s}
+.tab-btn.ativa{border-bottom-color:var(--navy)}
+.tab-pane{animation:fadeUp .2s both}
+.sec,.card-sec,.config-bloco{animation:fadeUp .25s both}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--navy)}
+/* ── Sel-card enhanced ── */
+.sel-card{animation:fadeUp .25s both;position:relative;
+  transition:transform .15s,box-shadow .15s,border-color .15s,background .15s}
+.sel-card:nth-child(1){animation-delay:.04s}.sel-card:nth-child(2){animation-delay:.08s}
+.sel-card:nth-child(3){animation-delay:.12s}.sel-card:nth-child(4){animation-delay:.16s}
+.sel-card:nth-child(5){animation-delay:.2s}.sel-card:nth-child(6){animation-delay:.24s}
+.sel-card:nth-child(7){animation-delay:.28s}.sel-card:nth-child(8){animation-delay:.32s}
+.sel-card:nth-child(9){animation-delay:.32s}.sel-card:nth-child(10){animation-delay:.36s}
+.sel-card::after{content:'›';position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  font-size:18px;color:var(--text-faint);transition:color .15s,transform .15s;pointer-events:none}
+.sel-card:hover{border-color:var(--navy);background:var(--navy-50);
+  box-shadow:0 6px 20px rgba(37,99,235,.10);transform:translateY(-2px)}
+.sel-card:hover::after{color:var(--navy);transform:translateY(-50%) translateX(3px)}
+.sel-card .icone{width:44px;height:44px;background:var(--navy-50);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:20px;transition:background .15s,transform .15s}
+.sel-card:hover .icone{background:rgba(37,99,235,.12);transform:scale(1.06)}
+.sel-card .txt strong{color:var(--text);font-weight:700}
+.info{border-radius:var(--r);border-left-width:3px;color:var(--text-body);
+  line-height:1.6;animation:fadeIn .2s both;padding:10px 14px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body data-area="sistema">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        window._cdvExecUrl = _execUrl; // reaproveitado pela aba "Backup" do hub Administração
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+        var _btnBk = document.getElementById('adm-backup-abrir-btn');
+        if (_btnBk) {
+          _btnBk.disabled = false;
+          _btnBk.title = 'Abrir tela de Backup e Restauração';
+          _btnBk.onclick = function() { window.open(_execUrl + '?page=Backup', '_blank'); };
+        }
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+
+<!-- ════════ HERO + NAV LATERAL (redesign) ════════ -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic ic-sm"><use href="#i-settings"/></svg> Configurações do Sistema</h1>
+      <div class="rd-sub">Tudo num painel só — navegue pela lateral, sem voltar pra tela de seleção</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-shell">
+  <div class="rd-nav" id="rd-nav-cfg">
+    <div class="grp">Comunicação</div>
+    <button class="rd-nav-item" data-tela="email-hub" onclick="irPara('email-hub', this)"><span class="ic">📧</span>E-mails e Comunicação</button>
+    <div class="grp">Aparência</div>
+    <button class="rd-nav-item" data-tela="visual" onclick="irPara('visual', this)"><span class="ic">🎨</span>Cores e Personalização</button>
+    <div class="grp">Cadastro</div>
+    <button class="rd-nav-item" data-tela="fornecedor" onclick="irPara('fornecedor', this)"><span class="ic">🏭</span>Novo Fornecedor</button>
+    <button class="rd-nav-item" data-tela="aprovacao" onclick="irPara('aprovacao', this)"><span class="ic">✅</span>Aprovação de Lançamentos</button>
+    <div class="grp">Segurança</div>
+    <button class="rd-nav-item" data-tela="acesso-hub" onclick="irPara('acesso-hub', this)"><span class="ic">🔐</span>Acesso e Permissões</button>
+    <div class="grp">Administração</div>
+    <button class="rd-nav-item" data-tela="administracao" onclick="irPara('administracao', this)"><span class="ic">🛠️</span>Administração</button>
+    <div class="grp">Sistema</div>
+    <button class="rd-nav-item" data-tela="versioning" onclick="irPara('versioning', this)"><span class="ic">🕒</span>Versionamento de Config.</button>
+    <button class="rd-nav-item" data-tela="changelog" onclick="irPara('changelog', this)"><span class="ic">📋</span>Changelog</button>
+  </div>
+
+  <div><!-- conteúdo: telas originais, intactas -->
+
+<div id="screen-sel" class="screen ativo">
+  <div class="rd-vazio" style="padding:60px 20px">
+    <div class="ico"><svg class="ic"><use href="#i-settings"/></svg></div>
+    <div class="t">Escolha uma configuração na lateral</div>
+    <div class="s">E-mails, cores, fornecedores, permissões, manutenção,<br>retenção, versionamento e changelog.</div>
+  </div>
+</div>
+
+<!-- ════════ TELA — E-MAILS E COMUNICAÇÃO (hub) ════════ -->
+<div id="screen-email-hub" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">📧</span>
+      <h2>E-mails e Comunicação</h2>
+      <span class="rd-tag">CONFIG</span>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="dest" onclick="mudarTab('email-hub','dest',this)">📋 Destinatários</button>
+    <button class="tab-btn" data-tab="ccbcc" onclick="mudarTab('email-hub','ccbcc',this)">📧 CC/BCC</button>
+    <button class="tab-btn" data-tab="assn" onclick="mudarTab('email-hub','assn',this)">✍️ Assinaturas</button>
+    <button class="tab-btn" data-tab="tpl" onclick="mudarTab('email-hub','tpl',this)">✉️ Templates</button>
+    <button class="tab-btn" data-tab="webhook" onclick="mudarTab('email-hub','webhook',this);_carregarWebhook();_verificarStatusWebhookTelegram()">📲 Telegram</button>
+  </div>
+
+  <!-- Aba: Destinatários -->
+  <div id="email-hub-tab-dest" class="tab-pane ativo">
+    <div class="secao-email">
+      <div class="sec-titulo">📋 Lista geral — relatórios e resumos</div>
+      <div class="info" style="margin-bottom:8px">
+        Estes e-mails recebem <strong>todos</strong> os relatórios gerados (mensal, semanal, diário) e o resumo automático de segunda-feira.
+      </div>
+      <div class="tags-box" id="tags-geral"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-geral" placeholder="novo@email.com.br"
+                 onkeydown="if(event.key==='Enter') addEmail('geral')">
+        </div>
+        <div><button class="btn-sec" onclick="addEmail('geral')">+ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔔 Alertas de atraso — enviar para:</div>
+      <div class="opcao-alerta">
+        <label class="opcao-radio">
+          <input type="radio" name="alerta-dest" value="todos" id="r-todos" checked onchange="onAlertaChange()">
+          <div class="txt">
+            <strong>Todos da lista geral</strong>
+            <span>O alerta de atraso vai para todos os e-mails cadastrados acima</span>
+          </div>
+        </label>
+        <label class="opcao-radio">
+          <input type="radio" name="alerta-dest" value="cc" id="r-cc" onchange="onAlertaChange()">
+          <div class="txt">
+            <strong>Somente destinatários CC</strong>
+            <span>O alerta vai apenas para os e-mails abaixo (em CC — um único e-mail enviado)</span>
+          </div>
+        </label>
+      </div>
+      <div id="cc-wrapper">
+        <div class="tags-box" id="tags-alerta"></div>
+        <div class="linha2">
+          <div class="campo" style="margin-bottom:0">
+            <input type="email" id="inp-alerta" placeholder="alerta@email.com.br"
+                   onkeydown="if(event.key==='Enter') addEmail('alerta')">
+          </div>
+          <div><button class="btn-sec" onclick="addEmail('alerta')">+ Adicionar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="secao-email" style="border-color:#0891B2;background:#F0FDFF">
+      <div class="sec-titulo" style="color:#0891B2">🚛 Alertas de transferências vencidas — enviar para:</div>
+      <div class="info" style="background:#CFFAFE;border-color:#0891B2;margin-bottom:8px">
+        E-mails que recebem o alerta quando uma transferência agendada passa da data sem baixa.
+        Se deixar vazio, o alerta vai para a <strong>lista geral</strong>.
+      </div>
+      <div class="tags-box" id="tags-transf"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-transf" placeholder="transporte@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') addEmail('transf')">
+        </div>
+        <div><button class="btn-sec" onclick="addEmail('transf')">+ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="em-btn" onclick="salvarEmailConfig()">💾 Salvar Configurações</button>
+      <button class="btn-cancel" onclick="google.script.host.close()">✖ Fechar</button>
+    </div>
+    <div class="spinner" id="em-spin"><div class="spin-ring"></div>Salvando...</div>
+    <div class="msg" id="em-msg"></div>
+  </div>
+
+  <!-- Aba: CC/BCC por Fornecedor -->
+  <div id="email-hub-tab-ccbcc" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">Configure cópia automática de e-mails por fornecedor.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <input type="text" id="ccf-forn" placeholder="Nome do fornecedor"
+        style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <input type="text" id="ccf-cc" placeholder="CC (e-mails separados por vírgula)"
+        style="flex:2;min-width:160px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <input type="text" id="ccf-bcc" placeholder="BCC"
+        style="flex:1;min-width:120px;padding:6px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+      <button class="btn-acao" onclick="salvarCCForn()">💾 Salvar</button>
+    </div>
+    <div class="msg" id="ccf-msg"></div>
+    <div id="ccf-lista" style="margin-top:8px"></div>
+
+    <div style="border-top:1px solid var(--border-def);margin-top:14px;padding-top:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">CC/BCC por tipo de alerta automático</div>
+      <div class="info" style="margin-bottom:8px;font-size:11px">
+        Configure destinatários extras (CC/BCC) para cada tipo de alerta enviado automaticamente pelo sistema.
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
+        <thead>
+          <tr style="background:var(--navy);color:#fff">
+            <th style="padding:5px 8px;text-align:left">Tipo de Alerta</th>
+            <th style="padding:5px 8px">CC</th>
+            <th style="padding:5px 8px">BCC</th>
+            <th style="padding:5px 8px;width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="cca-tbody">
+          <tr><td colspan="4" style="padding:8px;color:#9CA3AF;font-size:11px">Carregando...</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="cca-tipo" style="padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+          <option value="atraso">⚠️ Atraso (+30 dias)</option>
+          <option value="semanal">📊 Semanal</option>
+          <option value="mensal">📊 Mensal</option>
+          <option value="diario">📋 Diário</option>
+          <option value="pendencias">⏳ Pendências</option>
+          <option value="transferencia">🚚 Transferência vencida</option>
+          <option value="fornecedor">🏭 Por fornecedor</option>
+        </select>
+        <input type="text" id="cca-cc" placeholder="CC"
+          style="flex:2;min-width:140px;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+        <input type="text" id="cca-bcc" placeholder="BCC"
+          style="flex:1;min-width:100px;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:12px">
+        <button class="btn-acao" onclick="salvarCCAlertaConf()">💾 Salvar</button>
+      </div>
+      <div class="msg" id="cca-msg" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Assinaturas -->
+  <div id="email-hub-tab-assn" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">
+      Cadastre as assinaturas disponíveis para seleção ao enviar e-mail. Use um <strong>nome livre</strong>
+      como identificador (ex: "João Silva", "Diretoria").
+    </div>
+    <div id="assn-lista" style="margin-bottom:12px"></div>
+    <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Adicionar / atualizar assinatura</div>
+      <div style="display:grid;gap:6px">
+        <input id="assn-email" type="text" placeholder="Nome / identificador (ex: João Silva, Setor Logística)"
+          style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+        <input id="assn-fileid" type="text" placeholder="ID do arquivo Drive (ex: 1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap)"
+          style="padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;box-sizing:border-box">
+        <div id="assn-preview-thumb" style="display:none;margin-top:4px">
+          <img id="assn-thumb-img" src="" alt="Preview"
+            style="max-height:60px;max-width:220px;border:1px solid var(--border);border-radius:4px;object-fit:contain">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-save" onclick="salvarAssinaturaConf()">💾 Salvar</button>
+        <button class="btn-cancel" onclick="previewAssinaturaThumb()">👁 Preview</button>
+        <button class="btn-cancel" onclick="document.getElementById('assn-email').value='';document.getElementById('assn-fileid').value='';document.getElementById('assn-preview-thumb').style.display='none'">✕ Limpar</button>
+      </div>
+      <div class="msg" id="assn-msg"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Templates de E-mail -->
+  <div id="email-hub-tab-tpl" class="tab-pane">
+    <div class="info" style="margin-bottom:10px">
+      Defina assunto padrão para cada tipo. Use <code>{forn}</code>, <code>{qtd}</code>, <code>{tipo}</code> como variáveis.
+    </div>
+    <div id="tpl-lista"></div>
+    <div class="msg" id="tpl-msg"></div>
+  </div>
+
+  <!-- Aba: Telegram -->
+  <div id="email-hub-tab-webhook" class="tab-pane">
+    <div class="info" style="margin-bottom:12px">
+      Envie notificações do sistema (aprovações, transferências, vendas, alertas) para um grupo do <strong>Telegram</strong>, organizadas por tópico.
+    </div>
+
+    <div class="sec-linha" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <label class="toggle-lbl" for="wh-ativo" style="font-weight:600;font-size:13px">Notificações ativas</label>
+      <input type="checkbox" id="wh-ativo"
+             style="width:18px;height:18px;accent-color:var(--navy);cursor:pointer">
+    </div>
+
+    <div class="secao-email" style="margin-bottom:10px">
+      <div class="sec-titulo">🤖 Telegram — Bot</div>
+      <div class="form-group">
+        <label class="campo-label">Bot Token</label>
+        <input type="password" id="wh-tg-token" class="campo-inp" placeholder="1234567890:ABC...">
+        <div class="info" style="margin-top:4px">Obtenha em @BotFather no Telegram.</div>
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <label class="campo-label">Chat ID do grupo</label>
+        <input type="text" id="wh-tg-chat" class="campo-inp" placeholder="-100987654321">
+        <div class="info" style="margin-top:4px">ID do grupo/supergrupo. Use @userinfobot ou @RawDataBot para descobrir.</div>
+      </div>
+    </div>
+
+    <div class="secao-email" style="margin-bottom:10px">
+      <div class="sec-titulo">🗂️ Tópicos</div>
+      <div class="info" style="margin-bottom:8px">Cria 4 tópicos no grupo (Aprovações, Transferências, Vendas/Lançamentos, Sistema/Alertas) e guarda os IDs. Requer supergrupo com tópicos habilitados e o bot como admin.</div>
+      <div id="wh-topicos-status" style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Nenhum tópico criado ainda.</div>
+      <button class="btn-sec" onclick="_criarTopicosWebhook()">🗂️ Criar tópicos</button>
+    </div>
+
+    <div class="secao-email" style="margin-bottom:10px">
+      <div class="sec-titulo">🔗 Webhook do Telegram</div>
+      <div class="info" style="margin-bottom:8px">Registra a URL deste Web App no Telegram para receber as atualizações. Sempre que o sistema for reimplantado (redeploy), a URL muda e o webhook precisa ser registrado de novo.</div>
+      <div id="wh-webhook-status" style="font-size:12px;color:var(--text-muted);margin-bottom:8px">⏳ Verificando status...</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sec" onclick="_registrarWebhookTelegram()">🔗 Registrar Webhook</button>
+        <button class="btn-sec" onclick="_verificarStatusWebhookTelegram()">🔍 Verificar Status</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn-salvar" onclick="_salvarWebhook()">💾 Salvar</button>
+      <button class="btn-sec" onclick="_testarWebhook()">📤 Testar agora</button>
+    </div>
+    <div class="msg" id="wh-msg" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ════════ TELA — CORES E PERSONALIZAÇÃO VISUAL (hub) ════════ -->
+<div id="screen-visual" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">🎨</span>
+      <h2>Cores e Personalização Visual</h2>
+      <span class="rd-tag">CONFIG</span>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="cores" onclick="mudarTab('visual','cores',this)">🎨 Cores da Planilha</button>
+    <button class="tab-btn" data-tab="vis" onclick="mudarTab('visual','vis',this)">✨ Personalização</button>
+  </div>
+
+  <!-- Aba: Cores -->
+  <div id="visual-tab-cores" class="tab-pane ativo">
+    <div class="info">
+      Personalize as cores de fundo das linhas por status. Após salvar, a planilha será atualizada automaticamente.
+    </div>
+    <div class="cor-grade">
+      <div class="cor-item">
+        <label>🔵 Pendente</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-pendente" value="#DDEEFF"
+                 oninput="document.getElementById('hex-pendente').textContent=this.value.toUpperCase()">
+          <span id="hex-pendente">#DDEEFF</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🟢 Devolvido</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-devolvido" value="#DDFFDD"
+                 oninput="document.getElementById('hex-devolvido').textContent=this.value.toUpperCase()">
+          <span id="hex-devolvido">#DDFFDD</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🟠 Venda</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-venda" value="#FFE5CC"
+                 oninput="document.getElementById('hex-venda').textContent=this.value.toUpperCase()">
+          <span id="hex-venda">#FFE5CC</span>
+        </div>
+      </div>
+      <div class="cor-item">
+        <label>🔴 Alerta (+30 dias)</label>
+        <div class="cor-preview">
+          <input type="color" id="cor-alerta" value="#FFD5D5"
+                 oninput="document.getElementById('hex-alerta').textContent=this.value.toUpperCase()">
+          <span id="hex-alerta">#FFD5D5</span>
+        </div>
+      </div>
+    </div>
+    <div class="campo" style="margin-top:10px">
+      <label>Cor do Cabeçalho</label>
+      <div class="cor-preview">
+        <input type="color" id="cor-header" value="#25419A"
+               oninput="document.getElementById('hex-header').textContent=this.value.toUpperCase()">
+        <span id="hex-header">#25419A</span>
+      </div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="c-btn" onclick="salvarCores()">🎨 Salvar e Reaplicar Cores</button>
+      <button class="btn-sec" onclick="restaurarCoresPadrao()">↺ Padrão</button>
+      <button class="btn-cancel" onclick="google.script.host.close()">✖</button>
+    </div>
+    <div class="spinner" id="c-spin"><div class="spin-ring"></div>Reaplicando cores em todas as abas...</div>
+    <div class="msg" id="c-msg"></div>
+  </div>
+
+  <!-- Aba: Personalização Visual -->
+  <div id="visual-tab-vis" class="tab-pane">
+    <div style="display:grid;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">Nome do Sistema</div>
+        <input type="text" id="vis-nome" placeholder="Controle de Devoluções"
+          style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">URL ou ID da Logo (Google Drive)</div>
+        <input type="text" id="vis-logo" placeholder="ID do arquivo Drive ou URL da imagem"
+          style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <div id="vis-logo-preview" style="margin-top:6px"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;margin-bottom:4px">Cores por Status</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Pendente <input type="color" id="vis-cor-pendente" value="#D97706"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Devolvido <input type="color" id="vis-cor-devolvido" value="#059669"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Venda <input type="color" id="vis-cor-venda" value="#2563EB"></label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px">Em Frete <input type="color" id="vis-cor-emfrete" value="#7C3AED"></label>
+        </div>
+      </div>
+    </div>
+    <button class="btn-save" onclick="salvarVisuais()" style="width:100%">💾 Salvar</button>
+    <div class="msg" id="vis-msg"></div>
+  </div>
+</div>
+
+<!-- ════════ TELA — ADMINISTRAÇÃO (hub unificado) ════════ -->
+<!-- Consolida: antigo "Sistema e Manutenção" (diag/mnt/inst), "Limpeza do Log Antigo",
+     "Limpeza de Arquivos Drive", "Retenção de Dados", "Integridade do Backup" + o novo
+     painel de controles administrativos (aba "Admin"). -->
+<div id="screen-administracao" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">🛠️</span>
+      <h2>Administração</h2>
+      <span class="rd-tag">Painel unificado</span>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="visao" onclick="mudarTab('administracao','visao',this)">🎛️ Visão Geral</button>
+    <button class="tab-btn" data-tab="erros" onclick="mudarTab('administracao','erros',this)">⚠️ Erros do Sistema</button>
+    <button class="tab-btn" data-tab="diagnostico" onclick="mudarTab('administracao','diagnostico',this)">🔍 Diagnóstico e Manutenção</button>
+    <button class="tab-btn" data-tab="limpeza" onclick="mudarTab('administracao','limpeza',this)">🗑️ Limpeza</button>
+    <button class="tab-btn" data-tab="retencao" onclick="mudarTab('administracao','retencao',this)">⏳ Retenção</button>
+    <button class="tab-btn" data-tab="backup" onclick="mudarTab('administracao','backup',this)">💾 Backup</button>
+    <button class="tab-btn" data-tab="gatilhos" onclick="mudarTab('administracao','gatilhos',this)">⏰ Gatilhos &amp; Cotas</button>
+    <button class="tab-btn" data-tab="flags" onclick="mudarTab('administracao','flags',this)">🚦 Flags &amp; Implantação</button>
+    <button class="tab-btn" data-tab="auditoria" onclick="mudarTab('administracao','auditoria',this)">🧾 Auditoria</button>
+    <button class="tab-btn" data-tab="usuarios" onclick="mudarTab('administracao','usuarios',this)">👥 Usuários</button>
+    <button class="tab-btn" data-tab="integridade" onclick="mudarTab('administracao','integridade',this)">🩺 Integridade</button>
+    <button class="tab-btn" data-tab="dadoscfg" onclick="mudarTab('administracao','dadoscfg',this)">🔁 Dados &amp; Config</button>
+    <button class="tab-btn" data-tab="resumo" onclick="mudarTab('administracao','resumo',this)">📋 Resumo diário</button>
+  </div>
+
+  <!-- Aba: Visão Geral ================================================= -->
+  <div id="administracao-tab-visao" class="tab-pane ativo">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
+      <div class="diag-card" style="margin-bottom:0">
+        <div class="diag-titulo">⚠️ Erros (24h)</div>
+        <div id="adm-visao-erros24h" style="font-size:22px;font-weight:800;color:var(--navy)">—</div>
+      </div>
+      <div class="diag-card" style="margin-bottom:0">
+        <div class="diag-titulo">💾 Backup automático</div>
+        <div id="adm-visao-backup" style="font-size:16px;font-weight:800;color:var(--navy)">—</div>
+      </div>
+      <div class="diag-card" style="margin-bottom:0">
+        <div class="diag-titulo">📊 Maior ocupação de aba</div>
+        <div id="adm-visao-capacidade" style="font-size:22px;font-weight:800;color:var(--navy)">—</div>
+      </div>
+      <div class="diag-card" style="margin-bottom:0">
+        <div class="diag-titulo">⏰ Gatilhos ativos</div>
+        <div id="adm-visao-gatilhos" style="font-size:22px;font-weight:800;color:var(--navy)">—</div>
+      </div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔗 Atalhos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sec" onclick="mudarTab('administracao','erros')">⚠️ Ver erros</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','diagnostico')">🔍 Diagnóstico e Manutenção</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','limpeza')">🗑️ Limpeza</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','retencao')">⏳ Retenção de Dados</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','backup')">💾 Backup</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','gatilhos')">⏰ Gatilhos &amp; Cotas</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','flags')">🚦 Flags &amp; Implantação</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','auditoria')">🧾 Auditoria</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','usuarios')">👥 Usuários</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','integridade')">🩺 Integridade</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','dadoscfg')">🔁 Dados &amp; Config</button>
+        <button class="btn-sec" onclick="mudarTab('administracao','resumo')">📋 Resumo diário</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba: Erros do Sistema ============================================ -->
+  <div id="administracao-tab-erros" class="tab-pane">
+    <div class="secao-email">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec-titulo" style="margin-bottom:0">⚠️ Erros recentes do sistema</div>
+        <button class="btn-cancel" style="font-size:11px;padding:4px 10px" onclick="_limparErrosRecentes()">🗑️ Limpar erros</button>
+      </div>
+      <div id="admin-erros-recentes"></div>
+      <div class="msg" id="admin-erros-msg" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Diagnóstico e Manutenção ==================================== -->
+  <div id="administracao-tab-diagnostico" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">🔍 Verificação do sistema</div>
+      <button class="btn-save" onclick="executarDiagnostico()" style="width:100%">▶ Verificar sistema</button>
+      <div class="spinner" id="diag-spin" style="display:none"><div class="spin-ring"></div>Verificando...</div>
+      <div id="diag-resultado" style="margin-top:8px"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">📧 Teste de envio de e-mail</div>
+      <div style="display:flex;gap:6px">
+        <input type="email" id="diag-email-dest" placeholder="destinatario@email.com"
+          style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn-save" onclick="testarEmail()" style="white-space:nowrap">📧 Testar</button>
+      </div>
+      <div class="msg" id="diag-email-msg" style="margin-top:6px"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔨 Manutenção rápida</div>
+      <p style="font-size:12px;color:var(--text-body);line-height:1.5;margin-bottom:10px">
+        Realiza pequenos ajustes no sistema sem recriar ou apagar nenhuma aba ou dado:
+      </p>
+      <div class="info" style="margin-bottom:10px">
+        ✅ Reaplica as cores de status em todas as abas<br>
+        ✅ Atualiza as métricas do Dashboard<br>
+        ✅ Verifica e reinstala os triggers automáticos<br>
+        ✅ Inclui as abas extras de fornecedores criadas pelo usuário<br><br>
+        <strong>Nenhuma aba é recriada ou limpa.</strong> Use esta opção para corrigir cores incorretas,
+        contadores desatualizados ou triggers parados — sem risco de perder lançamentos.
+      </div>
+      <button class="btn-principal" id="mn-btn" onclick="executarManutencao()" style="width:100%">🔨 Executar Manutenção Rápida</button>
+      <div class="spinner" id="mn-spin"><div class="spin-ring"></div>Executando manutenção...</div>
+      <div class="msg" id="mn-msg"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">⚙️ Reinstalar sistema</div>
+      <p style="font-size:12px;color:var(--text-body);line-height:1.5;margin-bottom:10px">
+        Recria as abas operacionais, o layout/formatação padrão, o Dashboard e os <em>triggers</em> automáticos
+        (onEdit, resumo semanal, verificação de atrasos, reaplicação de cores).
+        <strong>Não apaga lançamentos existentes.</strong>
+        Se for reinstalar por algum problema na planilha, recomenda-se fazer
+        <strong>💾 Backup</strong> antes e <strong>Restaurar</strong> depois.
+      </p>
+      <button class="btn-principal" id="re-btn" onclick="executarReinstalar()" style="width:100%">🔧 Configurar / Reinstalar Agora</button>
+      <div class="spinner" id="re-spin"><div class="spin-ring"></div>Configurando o sistema...</div>
+      <div class="msg" id="re-msg"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Limpeza (Log + Drive) ======================================= -->
+  <div id="administracao-tab-limpeza" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">🗂️ Limpeza do Log Antigo</div>
+      <div class="info" style="margin-bottom:8px">
+        O <strong>_Log</strong> cresce indefinidamente. Esta função arquiva registros antigos para manter a performance.
+      </div>
+      <div class="campo">
+        <label>Arquivar registros com mais de (meses)</label>
+        <select id="lg-meses">
+          <option value="3">3 meses</option>
+          <option value="6" selected>6 meses</option>
+          <option value="12">12 meses</option>
+          <option value="24">24 meses</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>O que fazer com os registros antigos?</label>
+        <select id="lg-acao">
+          <option value="arquivar">Mover para aba _Log_Arquivo (recomendado)</option>
+          <option value="apagar">Apagar permanentemente</option>
+        </select>
+      </div>
+      <button class="btn-principal" id="lg-btn" onclick="executarLimpezaLog()" style="width:100%;background:#D97706">
+        🗂️ Executar Limpeza
+      </button>
+      <div class="spinner" id="lg-spin"><div class="spin-ring"></div>Processando log...</div>
+      <div class="msg" id="lg-msg"></div>
+    </div>
+
+    <div class="secao-email">
+      <div class="sec-titulo">🗑️ Limpeza de Arquivos no Drive</div>
+      <div style="background:#FEF2F2;border-left:4px solid #DC2626;padding:9px 12px;
+                  border-radius:0 5px 5px 0;font-size:12px;color:var(--text-body);margin-bottom:12px;line-height:1.6">
+        ⚠️ <strong>Atenção:</strong> Os arquivos vão para a lixeira do Drive. Podem ser restaurados em até 30 dias.<br>
+        Os <strong>anexos de NF</strong> (fotos/PDFs das notas originais) <strong>nunca são apagados</strong>.
+      </div>
+      <div class="campo">
+        <label>O que deseja apagar?</label>
+        <select id="dr-tipo">
+          <option value="relatorios">📊 Relatórios PDF gerados (mensais, semanais, diários)</option>
+          <option value="vendas">🛒 PDFs de Baixa para Venda</option>
+          <option value="devolucoes">📄 PDFs de Devolução (dar baixa)</option>
+          <option value="tudo">🗑️ Tudo (relatórios + vendas + devoluções)</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Filtrar por data de criação</label>
+        <select id="dr-periodo">
+          <option value="0">Sem filtro (apagar todos)</option>
+          <option value="30">Mais de 30 dias</option>
+          <option value="60">Mais de 60 dias</option>
+          <option value="90">Mais de 90 dias</option>
+          <option value="180">Mais de 6 meses</option>
+          <option value="365">Mais de 1 ano</option>
+        </select>
+      </div>
+      <div id="dr-preview" style="display:none;margin-bottom:10px">
+        <div style="background:#F3F4F6;border-radius:5px;padding:10px 12px;font-size:12px">
+          <strong id="dr-preview-titulo"></strong>
+          <div id="dr-preview-lista" style="margin-top:6px;max-height:120px;overflow-y:auto;
+               font-size:11px;color:#374151;line-height:1.8"></div>
+        </div>
+      </div>
+      <button class="btn-principal" id="dr-btn-pre" onclick="previewDrive()" style="width:100%;background:#D97706">
+        🔍 Verificar o que será apagado
+      </button>
+      <button id="dr-btn-apagar" onclick="executarLimpezaDrive()"
+              style="display:none;width:100%;margin-top:8px;padding:9px;border:none;
+                     border-radius:4px;font-size:13px;font-weight:bold;cursor:pointer;
+                     background:#DC2626;color:#fff">
+        🗑️ Confirmar e Mover para Lixeira
+      </button>
+      <div class="spinner" id="dr-spin"><div class="spin-ring"></div>Processando...</div>
+      <div class="msg" id="dr-msg"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Retenção de Dados ============================================ -->
+  <div id="administracao-tab-retencao" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">⏳ Retenção de Dados</div>
+      <div class="info" style="margin-bottom:10px">
+        Defina há quantos dias manter registros históricos. Registros mais antigos serão marcados para arquivamento.
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <input type="number" id="ret-dias" min="30" max="3650" value="730"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;width:100px">
+        <span style="font-size:12px;color:var(--text-muted)">dias</span>
+        <button class="btn-save" onclick="salvarRetencao()">💾 Salvar</button>
+      </div>
+      <div class="info" style="margin-bottom:0">
+        ℹ️ Este valor é apenas uma <strong>referência manual</strong> por enquanto — o sistema ainda não arquiva
+        nem apaga registros automaticamente com base nele.
+      </div>
+      <div class="msg" id="ret-msg"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Backup ======================================================= -->
+  <div id="administracao-tab-backup" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">🔍 Integridade do Backup</div>
+      <button class="btn-save" onclick="verificarBackup()" style="width:100%;margin-bottom:10px">▶ Verificar agora</button>
+      <div class="spinner" id="bk-spin" style="display:none"><div class="spin-ring"></div>Verificando...</div>
+      <div id="bk-resultado"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">📦 Histórico e rotação de backups</div>
+      <div id="adm-backup-hist" style="font-size:12px;color:var(--text-body);margin-bottom:10px">⏳ Carregando...</div>
+      <!-- A tela completa de Backup e Restauração (FormBackup.html) hoje só é aberta pelo menu
+           "📦 Devoluções ▸ 💾 Backup e Restauração" da planilha (função servidora abrirBackup()).
+           Reaproveitamos aqui o mesmo mecanismo já usado no topo deste arquivo para o link
+           "🏠 Menu Principal" (google.script.run.._getWebAppExecUrl(), depois "?page=Backup") —
+           só funciona quando este formulário está aberto como Web App publicado; dentro de um
+           diálogo do Sheets, o botão fica desabilitado com essa explicação. -->
+      <button class="btn-sec" id="adm-backup-abrir-btn" disabled
+              title="Abra pelo menu 📦 Devoluções ▸ 💾 Backup e Restauração, na planilha">
+        💾 Abrir tela de Backup e Restauração
+      </button>
+    </div>
+
+    <!-- Backup manual com etiqueta (movido de "Admin" — §10.1) -->
+    <div class="secao-email">
+      <div class="sec-titulo">🏷️ Backup manual com etiqueta</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="adm-backupetq-rotulo" placeholder="Rótulo / motivo (opcional, ex: antes da migração)"
+          style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn-save" id="adm-backupetq-btn" onclick="_executarBackupManualAdmin()" style="white-space:nowrap">💾 Fazer backup</button>
+      </div>
+      <div class="msg" id="adm-backupetq-msg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Gatilhos & Cotas ============================================= -->
+  <div id="administracao-tab-gatilhos" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">⏰ Gatilhos agendados</div>
+      <div id="adm-trig-info" style="font-size:11px;color:var(--text-muted);margin-bottom:8px"></div>
+      <div id="adm-trig-lista"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">📶 Monitor de cotas do Google</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div class="diag-card" style="margin-bottom:0">
+          <div class="diag-titulo">✉️ E-mails restantes hoje</div>
+          <div id="adm-cotas-email" style="font-size:20px;font-weight:800;color:var(--navy)">—</div>
+        </div>
+        <div class="diag-card" style="margin-bottom:0">
+          <div class="diag-titulo">⏰ Gatilhos (ativos / máx.)</div>
+          <div id="adm-cotas-gatilhos" style="font-size:20px;font-weight:800;color:var(--navy)">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba: Flags & Implantação =========================================== -->
+  <div id="administracao-tab-flags" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">🚦 Flags e interruptores</div>
+
+      <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+                  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-weight:700;font-size:12.5px;color:var(--text)">🔒 Modo somente-leitura</div>
+          <div style="font-size:11px;color:var(--text-muted)" id="adm-ro-status-txt">Verificando...</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="adm-ro-toggle" onchange="_alterarROAdmin(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+                  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-weight:700;font-size:12.5px;color:var(--text)">✅ Aprovação obrigatória de lançamentos</div>
+          <div style="font-size:11px;color:var(--text-muted)" id="adm-aprv-status-txt">Verificando...</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="adm-aprv-toggle" onchange="_alterarAprovacaoAdmin(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+                  padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:12.5px;color:var(--text)">🚧 Modo manutenção</div>
+          <div style="font-size:11px;color:var(--text-muted)" id="adm-manut-status-txt">Verificando...</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="adm-manut-toggle" onchange="_alterarManutencaoAdmin(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="info" style="margin-top:8px;margin-bottom:0">
+        ⚠️ Com o modo manutenção ativo, usuários sem perfil de administrador ficam sem acesso ao sistema até que seja desativado.
+      </div>
+      <div class="msg" id="adm-flags-msg" style="margin-top:8px"></div>
+    </div>
+
+    <div class="secao-email">
+      <div class="sec-titulo">🚀 Informações de implantação</div>
+      <div class="diag-linha"><span>URL do Web App</span><span class="diag-val" id="adm-impl-url" style="word-break:break-all;text-align:right;max-width:60%">—</span></div>
+      <div class="diag-linha"><span>Publicado em</span><span class="diag-val" id="adm-impl-publicadoem">—</span></div>
+      <div class="diag-linha"><span>Publicado por</span><span class="diag-val" id="adm-impl-publicadopor">—</span></div>
+      <div class="campo" style="margin-top:10px">
+        <label>Nota da versão publicada</label>
+        <input type="text" id="adm-impl-nota" placeholder="Ex: v2.4 — correção de e-mail de transferência">
+      </div>
+      <button class="btn-save" id="adm-impl-btn" onclick="_marcarImplantacaoPublicadaAdmin()">📌 Marcar versão atual como publicada</button>
+      <div class="msg" id="adm-impl-msg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Auditoria ===================================================== -->
+  <div id="administracao-tab-auditoria" class="tab-pane">
+    <div class="secao-email">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="sec-titulo" style="margin-bottom:0">🧾 Auditoria de ações administrativas</div>
+        <button class="btn-cancel" style="font-size:11px;padding:4px 10px" onclick="_limparAuditoriaAdmin()">🗑️ Limpar auditoria</button>
+      </div>
+      <div style="max-height:260px;overflow-y:auto;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Ação</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Detalhes</th>
+          </tr></thead>
+          <tbody id="adm-audit-tbody"><tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="msg" id="adm-audit-msg" style="margin-top:6px"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">📜 Trilha de aprovações</div>
+      <div style="max-height:280px;overflow-y:auto;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">NF</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Fornecedor</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Solicitante</th>
+            <th style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--border)">Decisão</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Revisor</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Justificativa</th>
+          </tr></thead>
+          <tbody id="adm-trilha-tbody"><tr><td colspan="7" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba: Usuários ======================================================= -->
+  <div id="administracao-tab-usuarios" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">👥 Usuários e sessões ativas</div>
+      <div class="info" style="margin-bottom:8px">
+        "Ativo" aqui significa <strong>último acesso registrado</strong> — não é uma sessão ao vivo,
+        e não existe recurso para encerrar sessões remotamente.
+      </div>
+      <div style="max-height:260px;overflow-y:auto;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">E-mail</th>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Último acesso</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Acessos</th>
+          </tr></thead>
+          <tbody id="adm-usersativos-tbody"><tr><td colspan="3" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🕵️ Simular como usuário</div>
+      <div class="info" style="margin-bottom:8px">
+        Inspeção somente leitura: mostra quais permissões esse e-mail tem, <strong>não faz login como ele</strong>.
+      </div>
+      <div style="display:flex;gap:6px">
+        <input type="email" id="adm-sim-email" placeholder="usuario@empresa.com.br"
+          style="flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn-save" id="adm-sim-btn" onclick="_consultarSimulacaoAdmin()" style="white-space:nowrap">🔎 Consultar</button>
+      </div>
+      <div id="adm-sim-resultado" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Integridade ==================================================== -->
+  <div id="administracao-tab-integridade" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">📏 Alertas de capacidade das abas</div>
+      <div style="max-height:260px;overflow-y:auto;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Aba</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Linhas</th>
+            <th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Máximo</th>
+            <th style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--border)">Ocupação</th>
+          </tr></thead>
+          <tbody id="adm-cap-tbody"><tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🩺 Checagem de integridade de dados</div>
+      <button class="btn-save" id="adm-integridade-btn" onclick="_verificarIntegridadeDadosAdmin()" style="width:100%">▶ Verificar agora</button>
+      <div class="spinner" id="adm-integridade-spin" style="display:none"><div class="spin-ring"></div>Verificando...</div>
+      <div id="adm-integridade-resultado" style="margin-top:8px"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔌 Status das integrações externas</div>
+      <div id="adm-integracoes-lista" style="font-size:12px;color:var(--text-muted)">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- Aba: Dados & Config ================================================= -->
+  <div id="administracao-tab-dadoscfg" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">📤 Exportação em massa</div>
+      <div class="info" style="margin-bottom:8px">Gera um arquivo <strong>.json</strong> com os dados do sistema para download local.</div>
+      <button class="btn-save" id="adm-exportmassa-btn" onclick="_exportarDadosAdmin()">⬇️ Exportar dados (.json)</button>
+      <div class="msg" id="adm-exportmassa-msg" style="margin-top:8px"></div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔁 Importar / exportar configuração completa</div>
+      <div class="info" style="margin-bottom:8px">A importação <strong>sobrescreve</strong> a configuração em uso — use com cautela.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn-save" id="adm-configexport-btn" onclick="_exportarConfigCompletaAdmin()">⬇️ Exportar configuração</button>
+      </div>
+      <div class="msg" id="adm-configexport-msg" style="margin-bottom:10px"></div>
+      <div style="border-top:1px solid var(--border-def);padding-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="file" id="adm-configimport-file" accept="application/json" style="font-size:12px">
+        <button class="btn-sec" id="adm-configimport-btn" onclick="_importarConfigCompletaAdmin()">⬆️ Importar</button>
+      </div>
+      <div class="msg" id="adm-configimport-msg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- Aba: Resumo diário ================================================== -->
+  <div id="administracao-tab-resumo" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">📋 Resumo diário automático (Telegram)</div>
+      <div class="info" style="margin-bottom:10px">Enviado apenas pelo Telegram configurado (aba "E-mails e Comunicação ▸ Telegram").</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <label class="toggle-switch">
+          <input type="checkbox" id="adm-resumo-ativo">
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-size:12.5px;font-weight:600">Ativar resumo diário automático</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--text-body)">Horário de envio</span>
+        <select id="adm-resumo-horario" style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px"></select>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-save" onclick="_salvarResumoAutomaticoAdmin()">💾 Salvar</button>
+        <button class="btn-sec" onclick="_enviarResumoAgoraAdmin()">📤 Enviar agora (teste)</button>
+      </div>
+      <div class="msg" id="adm-resumo-msg" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ TELA 3 — NOVO FORNECEDOR ════════ -->
+<div id="screen-fornecedor" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">🏭</span>
+      <h2>Adicionar Novo Fornecedor</h2>
+      <span class="rd-tag">CONFIG</span>
+    </div>
+  </div>
+  <div class="info">
+    Cria uma nova aba operacional com o mesmo layout das abas existentes e a registra no sistema.
+  </div>
+  <div class="campo">
+    <label>Abas de notas — alerta de atraso (+30 dias)</label>
+    <div id="ab-lista" style="border:1px solid var(--border-def);border-radius:8px;padding:2px 10px">
+      <div style="padding:8px 0;opacity:.6">Carregando abas…</div>
+    </div>
+  </div>
+  <div class="campo">
+    <label>Nome do Fornecedor <span style="color:#c00">*</span></label>
+    <input type="text" id="f-nome" placeholder="Ex: Magazine Luiza, Casas Bahia...">
+  </div>
+  <div class="campo">
+    <label>Fixar nome na coluna Fornecedor?</label>
+    <select id="f-fixar">
+      <option value="sim">Sim — preencher automaticamente</option>
+      <option value="nao">Não — campo livre por linha</option>
+    </select>
+  </div>
+  <div class="botoes">
+    <button class="btn-principal" id="f-btn" onclick="criarFornecedor()">🏭 Criar Aba de Fornecedor</button>
+    <button class="btn-cancel" onclick="google.script.host.close()">✖ Cancelar</button>
+  </div>
+  <div class="spinner" id="f-spin"><div class="spin-ring"></div>Criando aba...</div>
+  <div class="msg" id="f-msg"></div>
+</div>
+
+<!-- ════ TELA — CONTROLE DE ACESSO E PERMISSÕES (hub) ════ -->
+<div id="screen-acesso-hub" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">🔐</span>
+      <h2>Controle de Acesso e Permissões</h2>
+      <span class="rd-tag">SEGURANÇA</span>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn ativa" data-tab="acesso" onclick="mudarTab('acesso-hub','acesso',this)">🔐 Acesso</button>
+    <button class="tab-btn" data-tab="cargos" onclick="mudarTab('acesso-hub','cargos',this);_carregarCargos()">🏷️ Cargos</button>
+    <button class="tab-btn" data-tab="usuarios" onclick="mudarTab('acesso-hub','usuarios',this);_carregarUsuarios()">👤 Usuários</button>
+  </div>
+
+  <!-- Aba: Acesso -->
+  <div id="acesso-hub-tab-acesso" class="tab-pane ativo">
+    <!-- Seção: Administradores -->
+    <div class="secao-email">
+      <div class="sec-titulo">👑 Dono da planilha (acesso permanente)</div>
+      <div id="acesso-dono" class="tags-box">⏳ Carregando...</div>
+    </div>
+    <div class="secao-email">
+      <div class="sec-titulo">🔐 Administradores adicionais</div>
+      <div class="tags-box" id="tags-admin"></div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0">
+          <input type="email" id="inp-admin" placeholder="responsavel@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') addAdmin()">
+        </div>
+        <div><button class="btn-sec" onclick="addAdmin()">+ Adicionar</button></div>
+      </div>
+    </div>
+    <div class="botoes">
+      <button class="btn-principal" id="ac-btn" onclick="salvarAdmins()">💾 Salvar Administradores</button>
+    </div>
+    <div class="spinner" id="ac-spin"><div class="spin-ring"></div>Salvando...</div>
+    <div class="msg" id="ac-msg"></div>
+
+    <!-- Seção: Modo Somente-Leitura Global -->
+    <div style="margin-top:18px">
+      <div class="secao-email">
+        <div class="sec-titulo">🔒 Modo Somente-Leitura Global</div>
+        <div class="info" style="margin-bottom:10px">
+          Quando ativado, todos os cargos ficam em modo leitura.
+          <strong>Admins mantêm acesso pleno.</strong>
+        </div>
+        <div style="background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">
+              🔒 Modo somente-leitura
+            </div>
+            <div style="font-size:11px;color:var(--text-muted)" id="ro-status-txt">Verificando...</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ro-toggle" onchange="alterarModoRO(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="msg" id="ro-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba: Cargos -->
+  <div id="acesso-hub-tab-cargos" class="tab-pane">
+    <!-- Form de criação / edição -->
+    <div class="secao-email" id="cargo-form-wrap">
+      <div class="sec-titulo" id="cargo-form-titulo">➕ Novo Cargo</div>
+      <div class="campo">
+        <label>Nome do cargo</label>
+        <input type="text" id="cargo-nome" placeholder="Ex: Auditor, Operador, Visualizador">
+        <input type="hidden" id="cargo-edit-id" value="">
+      </div>
+      <div class="campo">
+        <label>Módulos permitidos</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="notas"> Notas Lançadas
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="lancamento"> Lançamento
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="email"> E-mail de Devolução
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="frete"> Programar Frete
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="configuracoes"> Configurações
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="auditoria"> Auditoria
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="relatorios"> Relatórios
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;cursor:pointer">
+            <input type="checkbox" class="cargo-mod" value="backup"> Backup
+          </label>
+        </div>
+      </div>
+      <div class="campo">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
+          <input type="checkbox" id="cargo-ro"> <strong>Somente leitura</strong>
+          <span style="font-size:11px;color:var(--text-muted)">(pode ver, não pode criar/editar/enviar)</span>
+        </label>
+      </div>
+      <div class="botoes">
+        <button class="btn-principal" id="cargo-btn-salvar" onclick="_salvarCargo()">✅ Criar Cargo</button>
+        <button class="btn-cancel" id="cargo-btn-cancel" style="display:none" onclick="_cancelarEdicaoCargo()">✖ Cancelar</button>
+      </div>
+      <div class="msg" id="cargo-msg"></div>
+    </div>
+
+    <!-- Lista de cargos -->
+    <div id="cargos-lista" style="margin-top:4px"></div>
+
+    <!-- Aviso padrão -->
+    <div class="info" style="margin-top:12px">
+      💡 Usuários sem cargo atribuído operam como <strong>Visualizador</strong> — acesso a todos os módulos, somente leitura.
+    </div>
+  </div>
+
+  <!-- Aba: Usuários -->
+  <div id="acesso-hub-tab-usuarios" class="tab-pane">
+    <div class="secao-email">
+      <div class="sec-titulo">👤 Vincular Usuário a Cargo</div>
+      <div class="linha2">
+        <div class="campo" style="margin-bottom:0;flex:2">
+          <input type="email" id="usr-email" placeholder="usuario@empresa.com.br"
+                 onkeydown="if(event.key==='Enter') _adicionarUsuario()">
+        </div>
+        <div class="campo" style="margin-bottom:0;flex:1">
+          <select id="usr-cargo-sel" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);font-size:12px;background:var(--input-bg);color:var(--text)">
+            <option value="">— Selecionar cargo —</option>
+          </select>
+        </div>
+        <div style="flex-shrink:0;padding-top:1px">
+          <button class="btn-sec" onclick="_adicionarUsuario()">+ Adicionar</button>
+        </div>
+      </div>
+      <div class="msg" id="usr-msg" style="margin-top:8px"></div>
+    </div>
+
+    <div id="usuarios-lista" style="margin-top:4px"></div>
+
+    <div class="info" style="margin-top:12px">
+      💡 Usuários não listados aqui operam como <strong>Visualizador</strong> (somente leitura) por padrão.
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ TELA — CHANGELOG ════ -->
+<div id="screen-changelog" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">📋</span>
+      <h2>Changelog</h2>
+    </div>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;margin-bottom:6px">Nova entrada</div>
+    <input type="text" id="chl-versao" placeholder="v1.0.0"
+      style="width:100%;margin-bottom:6px;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    <textarea id="chl-itens" rows="3" placeholder="Um item por linha"
+      style="width:100%;padding:6px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;resize:vertical"></textarea>
+    <button class="btn-save" onclick="adicionarEntradaChangelog()" style="margin-top:6px">➕ Adicionar</button>
+    <div class="msg" id="chl-msg"></div>
+  </div>
+  <div id="chl-lista"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — APROVAÇÃO ════ -->
+<div id="screen-aprovacao" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">✅</span>
+      <h2>Aprovação de Lançamentos</h2>
+    </div>
+  </div>
+  <div class="info" style="margin-bottom:10px">Quando ativado, todo novo lançamento fica pendente de aprovação por um administrador antes de ser salvo.</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="aprv-ativo" style="width:16px;height:16px">
+      <strong>Ativar aprovação de lançamentos</strong>
+    </label>
+  </div>
+  <div style="margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">E-mails dos aprovadores (um por linha)</div>
+    <textarea id="aprv-aprovadores" rows="4"
+      style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;resize:vertical"
+      placeholder="admin@empresa.com&#10;gestor@empresa.com"></textarea>
+  </div>
+  <button class="btn-save" onclick="salvarAprovacao()" style="width:100%;margin-bottom:10px">💾 Salvar configuração</button>
+  <div class="msg" id="aprv-msg"></div>
+
+  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px">⏳ Aprovações Pendentes</div>
+    <button class="btn-save" onclick="carregarAprovacoesPendentes()" style="margin-bottom:6px;padding:5px 12px;font-size:12px">↺ Atualizar</button>
+    <div id="aprv-lista"></div>
+  </div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+<!-- ════ TELA — VERSIONING ════ -->
+<div id="screen-versioning" class="screen">
+  <div class="rd-card" style="margin-bottom:12px">
+    <div class="rd-card-head">
+      <span class="rd-num">🕒</span>
+      <h2>Versionamento de Configurações</h2>
+    </div>
+  </div>
+  <div class="info" style="margin-bottom:10px">Salve um snapshot das configurações atuais. Os últimos 5 snapshots são mantidos.</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input type="text" id="ver-desc" placeholder="Descrição (ex: antes da migração)"
+      style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    <button class="btn-save" onclick="salvarSnapshot()">📸 Salvar Snapshot</button>
+  </div>
+  <div class="msg" id="ver-msg"></div>
+  <div id="ver-hist" style="margin-top:8px"></div>
+  <div class="botoes"><button class="btn-cancel" style="flex:1" onclick="voltar()">← Voltar</button></div>
+</div>
+
+  </div><!-- /conteúdo -->
+</div><!-- /rd-shell -->
+
+<script>
+// ── Estado ────────────────────────────────────────────────────
+var telaAtual = 'sel';
+var _emailsGeral  = [];
+var _emailsAlerta = [];
+var _emailsTransf = [];
+var _alertaDest   = 'todos'; // 'todos' | 'cc'
+var _admins       = [];
+var _donoEmail    = '';
+var _coresPadrao  = {
+  pendente:'#DDEEFF', devolvido:'#DDFFDD',
+  venda:'#FFE5CC', alerta:'#FFD5D5', header:'#25419A'
+};
+
+// ── Navegação ─────────────────────────────────────────────────
+function _marcarNavCfg(tela) {
+  document.querySelectorAll('#rd-nav-cfg .rd-nav-item').forEach(function(b) {
+    b.classList.toggle('on', b.getAttribute('data-tela') === tela);
+  });
+}
+
+function irPara(tela, btn) {
+  if (tela === telaAtual) return;
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-' + tela);
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  _marcarNavCfg(tela);
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = tela;
+    if (tela === 'email-hub')   mudarTab('email-hub','dest');
+    if (tela === 'visual')      mudarTab('visual','cores');
+    if (tela === 'administracao') mudarTab('administracao','visao');
+    if (tela === 'acesso-hub')  { mudarTab('acesso-hub','acesso'); carregarAdminsConfig(); carregarModoRO(); }
+    if (tela === 'versioning')  carregarSnapshots();
+    if (tela === 'aprovacao')   carregarConfigAprovacao();
+    if (tela === 'changelog')   carregarChangelog();
+    if (tela === 'fornecedor')  carregarConfigAbas();
+  }, 150);
+}
+
+function mudarTab(hub, tabId, btn) {
+  document.querySelectorAll('#screen-' + hub + ' .tab-btn').forEach(function(b){ b.classList.remove('ativa'); });
+  document.querySelectorAll('#screen-' + hub + ' .tab-pane').forEach(function(p){ p.classList.remove('ativo'); });
+  var pane = document.getElementById(hub + '-tab-' + tabId);
+  if (pane) pane.classList.add('ativo');
+  if (btn) {
+    btn.classList.add('ativa');
+  } else {
+    var found = document.querySelector('#screen-' + hub + ' .tab-btn[data-tab="' + tabId + '"]');
+    if (found) found.classList.add('ativa');
+  }
+  if (hub === 'acesso-hub' && tabId === 'acesso') { carregarAdminsConfig(); carregarModoRO(); }
+  var loaders = {
+    'email-hub': { dest: carregarEmailConfig, ccbcc: function(){ carregarCCForn(); carregarCCAlerta(); }, assn: carregarAssinaturas, tpl: carregarTemplates },
+    'visual':    { cores: carregarCoresSalvas, vis: carregarVisuais },
+    'administracao': {
+      visao:       carregarVisaoGeralAdmin,
+      erros:       carregarErrosAdmin,
+      diagnostico: executarDiagnostico,
+      limpeza:     resetDrive,
+      retencao:    carregarRetencao,
+      backup:      carregarHistoricoBackupAdmin,
+      gatilhos:    function(){ carregarGatilhosAdmin(); carregarCotasAdmin(); },
+      flags:       function(){ carregarFlagsAdmin(); carregarInfoImplantacaoAdmin(); },
+      auditoria:   function(){ carregarAuditoriaAdmin(); carregarTrilhaAprovacoesAdmin(); },
+      usuarios:    carregarUsuariosAtivosAdmin,
+      integridade: function(){ carregarAlertasCapacidadeAdmin(); carregarStatusIntegracoesAdmin(); },
+      dadoscfg:    null,
+      resumo:      carregarResumoAutomaticoAdmin
+    }
+  };
+  var fn = loaders[hub] && loaders[hub][tabId];
+  if (fn) fn();
+}
+
+function voltar() {
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-sel');
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  _marcarNavCfg('');
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = 'sel';
+    ['em','c','f','lg','dr','diag','ac','re','mn','tpl','ccf','assn','vis','ro','perm','aprv','ret','ver','bk','chl'].forEach(function(p) {
+      var el = document.getElementById(p+'-msg');
+      if (el) el.style.display = 'none';
+    });
+    var dm = document.getElementById('diag-email-msg'); if (dm) dm.style.display = 'none';
+  }, 150);
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA — MANUTENÇÃO RÁPIDA
+// ════════════════════════════════════════════════════════════
+
+function executarManutencao() {
+  if (!confirm('Confirma a manutenção rápida?\n\nIsto reaplica cores, atualiza o Dashboard e reinstala triggers. Nenhuma aba será recriada ou apagada.')) return;
+  setLoading('mn', true, 'mn-spin');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('mn', false, 'mn-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('mn', 'erro', r.erro); return; }
+      showMsg('mn', 'ok', r.sucesso);
+    })
+    .withFailureHandler(function(e) {
+      setLoading('mn', false, 'mn-spin');
+      showMsg('mn', 'erro', e.message);
+    })
+    .manutencaoSistema();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA — CONFIGURAR / REINSTALAR SISTEMA
+// ════════════════════════════════════════════════════════════
+
+function executarReinstalar() {
+  if (!confirm('Confirma a reconfiguração do sistema?\n\nIsso recria abas, formatação, dashboard e triggers. Os lançamentos existentes não são apagados, mas é recomendável ter feito um Backup recente.')) return;
+  setLoading('re', true, 're-spin');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('re', false, 're-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('re', 'erro', r.erro); return; }
+      showMsg('re', 'ok', r.sucesso);
+    })
+    .withFailureHandler(function(e) {
+      setLoading('re', false, 're-spin');
+      showMsg('re', 'erro', e.message);
+    })
+    .configurarPlanilha();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 1 — E-MAILS
+// ════════════════════════════════════════════════════════════
+
+function carregarEmailConfig() {
+  document.getElementById('tags-geral').innerHTML  = '⏳ Carregando...';
+  document.getElementById('tags-alerta').innerHTML = '';
+  document.getElementById('tags-transf').innerHTML = '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      _emailsGeral  = r.geral   || [];
+      _emailsAlerta = r.alerta  || [];
+      _emailsTransf = r.transf  || [];
+      _alertaDest   = r.alertaDest || 'todos';
+
+      renderTags('geral');
+      renderTags('alerta');
+      renderTags('transf');
+
+      document.getElementById(_alertaDest === 'cc' ? 'r-cc' : 'r-todos').checked = true;
+      document.getElementById('cc-wrapper').style.display = _alertaDest === 'cc' ? 'block' : 'none';
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('tags-geral').innerHTML = '❌ Erro ao carregar: ' + e.message;
+    })
+    .obterEmailConfig();
+}
+
+function renderTags(tipo) {
+  var lista = tipo === 'geral' ? _emailsGeral : tipo === 'alerta' ? _emailsAlerta : _emailsTransf;
+  var container = document.getElementById('tags-' + tipo);
+  container.innerHTML = '';
+  if (!lista.length) {
+    container.innerHTML = '<span style="font-size:11px;color:#9CA3AF">Nenhum e-mail cadastrado.</span>';
+    return;
+  }
+  lista.forEach(function(email, idx) {
+    var span = document.createElement('span');
+    span.className = 'email-tag ' + tipo;
+    span.innerHTML = esc(email) +
+      '<button class="rm" onclick="removerEmail(\'' + tipo + '\',' + idx + ')">×</button>';
+    container.appendChild(span);
+  });
+}
+
+function addEmail(tipo) {
+  var inputId = tipo === 'geral' ? 'inp-geral' : tipo === 'alerta' ? 'inp-alerta' : 'inp-transf';
+  var el      = document.getElementById(inputId);
+  var email   = el.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMsg('em','erro','❌ Informe um e-mail válido.'); return;
+  }
+  var lista = tipo === 'geral' ? _emailsGeral : tipo === 'alerta' ? _emailsAlerta : _emailsTransf;
+  if (lista.indexOf(email) !== -1) {
+    showMsg('em','aviso','⚠️ Este e-mail já está na lista de ' + tipo + '.'); return;
+  }
+  lista.push(email);
+  el.value = '';
+  renderTags(tipo);
+  document.getElementById('em-msg').style.display = 'none';
+}
+
+function removerEmail(tipo, idx) {
+  if (tipo === 'geral')  _emailsGeral.splice(idx, 1);
+  else if (tipo === 'alerta') _emailsAlerta.splice(idx, 1);
+  else                   _emailsTransf.splice(idx, 1);
+  renderTags(tipo);
+}
+
+function onAlertaChange() {
+  _alertaDest = document.querySelector('input[name="alerta-dest"]:checked').value;
+  document.getElementById('cc-wrapper').style.display = _alertaDest === 'cc' ? 'block' : 'none';
+}
+
+function salvarEmailConfig() {
+  if (!_emailsGeral.length) { showMsg('em','erro','❌ Adicione ao menos um e-mail na lista geral.'); return; }
+  if (_alertaDest === 'cc' && !_emailsAlerta.length) {
+    showMsg('em','erro','❌ Adicione ao menos um e-mail CC para alertas de atraso.'); return;
+  }
+  setLoading('em', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('em', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('em','ok', r.ok);
+      else      showMsg('em','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('em',false); showMsg('em','erro','❌ '+e.message); })
+    .salvarEmailConfig({ geral: _emailsGeral, alerta: _emailsAlerta, alertaDest: _alertaDest, transf: _emailsTransf });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 2 — CORES
+// ════════════════════════════════════════════════════════════
+
+function carregarCoresSalvas() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      var c = r.cores || _coresPadrao;
+      ['pendente','devolvido','venda','alerta','header'].forEach(function(id) {
+        if (c[id]) setCorInput(id, c[id]);
+      });
+    })
+    .withFailureHandler(function() {}) // silencioso — usa valores padrão do HTML
+    .obterCoresSalvas();
+}
+
+function setCorInput(id, hex) {
+  var el = document.getElementById('cor-' + id);
+  if (el) {
+    el.value = hex;
+    document.getElementById('hex-' + id).textContent = hex.toUpperCase();
+  }
+}
+
+function restaurarCoresPadrao() {
+  Object.keys(_coresPadrao).forEach(function(k) { setCorInput(k, _coresPadrao[k]); });
+}
+
+function salvarCores() {
+  var cores = {};
+  ['pendente','devolvido','venda','alerta','header'].forEach(function(id) {
+    cores[id] = document.getElementById('cor-' + id).value;
+  });
+  setLoading('c', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('c', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('c','ok', r.ok);
+      else      showMsg('c','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('c',false); showMsg('c','erro','❌ '+e.message); })
+    .salvarCoresEReaplicar(cores);
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 3 — NOVO FORNECEDOR
+// ════════════════════════════════════════════════════════════
+
+function criarFornecedor() {
+  var nome  = document.getElementById('f-nome').value.trim();
+  var fixar = document.getElementById('f-fixar').value === 'sim';
+  if (!nome) { showMsg('f','erro','❌ Informe o nome do fornecedor.'); return; }
+  setLoading('f', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('f', false);
+      var r = JSON.parse(resp);
+      if (r.ok) { showMsg('f','ok', r.ok); document.getElementById('f-nome').value=''; carregarConfigAbas(); }
+      else       showMsg('f','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('f',false); showMsg('f','erro','❌ '+e.message); })
+    .criarNovoFornecedor({ nome: nome, fixar: fixar });
+}
+
+// ── Gestão de abas / alerta +30 dias ──────────────────────────
+function carregarConfigAbas() {
+  var box = document.getElementById('ab-lista');
+  box.innerHTML = '<div style="padding:8px 0;opacity:.6">Carregando abas…</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) { box.innerHTML = ''; showMsg('f','erro','❌ ' + r.erro); return; }
+      box.innerHTML = '';
+      r.abas.forEach(function(a) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-def)';
+
+        var nome = document.createElement('strong');
+        nome.style.cssText = 'flex:1;font-size:13px';
+        nome.textContent = a.nome;
+        row.appendChild(nome);
+
+        if (a.fixa) {
+          var badge = document.createElement('span');
+          badge.style.cssText = 'font-size:10px;opacity:.55;letter-spacing:.4px';
+          badge.textContent = 'PADRÃO';
+          row.appendChild(badge);
+        } else {
+          var del = document.createElement('button');
+          del.type = 'button';
+          del.textContent = '✕';
+          del.title = 'Excluir aba';
+          del.style.cssText = 'border:none;background:none;cursor:pointer;color:var(--red);font-size:13px;padding:2px 6px';
+          del.onclick = function() { excluirAba(a.nome, a.usado); };
+          row.appendChild(del);
+        }
+
+        var sw = document.createElement('label');
+        sw.className = 'rd-switch';
+        sw.title = 'Alerta de +30 dias';
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = a.alerta30;
+        chk.onchange = function() { toggleAlerta30(a.nome, chk); };
+        var track = document.createElement('span');
+        track.className = 'track';
+        sw.appendChild(chk); sw.appendChild(track);
+        row.appendChild(sw);
+
+        box.appendChild(row);
+      });
+      if (box.lastChild) box.lastChild.style.borderBottom = 'none';
+    })
+    .withFailureHandler(function(e) { box.innerHTML=''; showMsg('f','erro','❌ ' + e.message); })
+    .obterConfigAbas();
+}
+
+function toggleAlerta30(nome, chk) {
+  var ligado = chk.checked;
+  chk.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      chk.disabled = false;
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('f','ok', r.ok);
+      else { chk.checked = !ligado; showMsg('f','erro','❌ ' + (r.erro||'Erro.')); }
+    })
+    .withFailureHandler(function(e) { chk.disabled=false; chk.checked=!ligado; showMsg('f','erro','❌ '+e.message); })
+    .salvarAlerta30Aba({ nome: nome, ligado: ligado });
+}
+
+function excluirAba(nome, usado) {
+  // aviso local só para UX (usado pode estar velho); a decisão real é sempre do backend
+  var aviso = usado > 0
+    ? 'A aba "' + nome + '" tem ' + usado + ' lançamento(s). Excluir apaga TODOS os dados dela. Continuar?'
+    : 'Excluir a aba "' + nome + '"?';
+  if (!confirm(aviso)) return;
+  _excluirAbaExtraChamada(nome, false);
+}
+
+function _excluirAbaExtraChamada(nome, confirmado) {
+  setLoading('f', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('f', false);
+      var r = JSON.parse(resp);
+      if (r.confirmar) {
+        // backend revalidou e encontrou dados — confirma de novo com o número real
+        if (confirm('A aba "' + nome + '" tem ' + r.usado + ' lançamento(s). Apagar mesmo assim?')) {
+          _excluirAbaExtraChamada(nome, true);
+        }
+        return;
+      }
+      if (r.ok) { showMsg('f','ok', r.ok); carregarConfigAbas(); }
+      else showMsg('f','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('f',false); showMsg('f','erro','❌ '+e.message); })
+    .excluirAbaExtra({ nome: nome, confirmado: confirmado });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA — LIMPEZA LOG
+// ════════════════════════════════════════════════════════════
+
+function executarLimpezaLog() {
+  var meses = parseInt(document.getElementById('lg-meses').value, 10);
+  var acao  = document.getElementById('lg-acao').value;
+  setLoading('lg', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('lg', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('lg','ok', r.ok);
+      else      showMsg('lg','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('lg',false); showMsg('lg','erro','❌ '+e.message); })
+    .executarLimpezaLog({ meses: meses, acao: acao });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 6 — DRIVE
+// ════════════════════════════════════════════════════════════
+
+function resetDrive() {
+  document.getElementById('dr-preview').style.display = 'none';
+  document.getElementById('dr-btn-apagar').style.display = 'none';
+  document.getElementById('dr-msg').style.display = 'none';
+}
+
+function previewDrive() {
+  var tipo    = document.getElementById('dr-tipo').value;
+  var periodo = parseInt(document.getElementById('dr-periodo').value, 10);
+  setLoading('dr', true, 'dr-spin');
+  resetDrive();
+  document.getElementById('dr-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('dr', false, 'dr-spin');
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('dr','erro','❌ ' + r.erro); return; }
+      var lista = r.arquivos || [];
+      document.getElementById('dr-preview-titulo').textContent =
+        lista.length + ' arquivo(s) encontrado(s):';
+      document.getElementById('dr-preview-lista').innerHTML = lista.length
+        ? lista.map(function(f) {
+            return '📄 ' + esc(f.nome) + (f.data?' <span style="color:#9CA3AF">('+esc(f.data)+')</span>':'');
+          }).join('<br>')
+        : '<span style="color:#6B7280">Nenhum arquivo encontrado.</span>';
+      document.getElementById('dr-preview').style.display = 'block';
+      document.getElementById('dr-btn-apagar').style.display = lista.length ? 'block' : 'none';
+    })
+    .withFailureHandler(function(e) {
+      setLoading('dr', false, 'dr-spin');
+      showMsg('dr','erro','❌ ' + e.message);
+    })
+    .previewLimpezaDrive({ tipo: tipo, periodo: periodo });
+}
+
+function executarLimpezaDrive() {
+  var tipo    = document.getElementById('dr-tipo').value;
+  var periodo = parseInt(document.getElementById('dr-periodo').value, 10);
+  document.getElementById('dr-btn-apagar').style.display = 'none';
+  setLoading('dr', true, 'dr-spin');
+  document.getElementById('dr-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('dr', false, 'dr-spin');
+      var r = JSON.parse(resp);
+      if (r.ok) { showMsg('dr','ok', r.ok); document.getElementById('dr-preview').style.display='none'; }
+      else       showMsg('dr','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) {
+      setLoading('dr', false, 'dr-spin');
+      showMsg('dr','erro','❌ ' + e.message);
+    })
+    .executarLimpezaDrive({ tipo: tipo, periodo: periodo });
+}
+
+// ════════════════════════════════════════════════════════════
+//  TELA 7 — CONTROLE DE ACESSO
+// ════════════════════════════════════════════════════════════
+
+function carregarAdminsConfig() {
+  document.getElementById('acesso-dono').innerHTML = '⏳ Carregando...';
+  document.getElementById('tags-admin').innerHTML   = '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) {
+        document.getElementById('acesso-dono').innerHTML = '❌ ' + esc(r.erro);
+        return;
+      }
+      _donoEmail = r.dono || '';
+      _admins    = r.admins || [];
+      document.getElementById('acesso-dono').innerHTML = _donoEmail
+        ? '<span class="dono-tag">👑 ' + esc(_donoEmail) + '</span>'
+        : '<span style="font-size:11px;color:#9CA3AF">Não foi possível detectar o dono (ex.: planilha em Drive compartilhado). Use a lista de administradores abaixo.</span>';
+      renderAdmins();
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('acesso-dono').innerHTML = '❌ Erro ao carregar: ' + esc(e.message);
+    })
+    .obterAdminsConfig();
+}
+
+function renderAdmins() {
+  var container = document.getElementById('tags-admin');
+  container.innerHTML = '';
+  if (!_admins.length) {
+    container.innerHTML = '<span style="font-size:11px;color:#9CA3AF">Nenhum administrador adicional cadastrado.</span>';
+    return;
+  }
+  _admins.forEach(function(email, idx) {
+    var span = document.createElement('span');
+    span.className = 'email-tag admin';
+    span.innerHTML = esc(email) +
+      '<button class="rm" onclick="removerAdmin(' + idx + ')">×</button>';
+    container.appendChild(span);
+  });
+}
+
+function addAdmin() {
+  var el    = document.getElementById('inp-admin');
+  var email = el.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMsg('ac','erro','❌ Informe um e-mail válido.'); return;
+  }
+  if (email === _donoEmail) {
+    showMsg('ac','aviso','⚠️ Este já é o dono da planilha — acesso permanente, não precisa adicionar.'); return;
+  }
+  if (_admins.indexOf(email) !== -1) {
+    showMsg('ac','aviso','⚠️ Este e-mail já está na lista.'); return;
+  }
+  _admins.push(email);
+  el.value = '';
+  renderAdmins();
+  document.getElementById('ac-msg').style.display = 'none';
+}
+
+function removerAdmin(idx) {
+  _admins.splice(idx, 1);
+  renderAdmins();
+}
+
+function salvarAdmins() {
+  setLoading('ac', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      setLoading('ac', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showMsg('ac','ok', r.ok);
+      else      showMsg('ac','erro','❌ ' + (r.erro||'Erro.'));
+    })
+    .withFailureHandler(function(e) { setLoading('ac',false); showMsg('ac','erro','❌ '+e.message); })
+    .salvarAdminsConfig({ admins: _admins });
+}
+
+// ════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════
+
+function setLoading(p, sim, spinId) {
+  var spin = document.getElementById(spinId || (p+'-spin'));
+  var btn  = document.getElementById(p+'-btn');
+  if (spin) spin.style.display = sim ? 'block' : 'none';
+  if (btn) {
+    btn.disabled = sim;
+    if (sim) btn.classList.add('loading');
+    else btn.classList.remove('loading');
+  }
+}
+
+function showMsg(p, tipo, txt) {
+  var el = document.getElementById(p+'-msg');
+  if (!el) return;
+  el.className = 'msg msg-'+tipo;
+  el.textContent = txt;
+  el.style.display = 'block';
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Modo somente-leitura ──────────────────────────────────────
+function carregarModoRO() {
+  document.getElementById('ro-status-txt').textContent = 'Verificando...';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      var ativo = !!r.ativo;
+      document.getElementById('ro-toggle').checked = ativo;
+      document.getElementById('ro-status-txt').textContent =
+        ativo ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo — sistema em operação normal';
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('ro-status-txt').textContent = '❌ ' + e.message;
+    })
+    .obterModoSomenteLeitura();
+}
+
+function alterarModoRO(ativo) {
+  var roMsg = document.getElementById('ro-msg');
+  roMsg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.ok) {
+        showMsg('ro', 'ok', r.ok);
+        document.getElementById('ro-status-txt').textContent =
+          ativo ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo — sistema em operação normal';
+      } else {
+        showMsg('ro', 'erro', '❌ ' + (r.erro || 'Erro'));
+        document.getElementById('ro-toggle').checked = !ativo;
+      }
+    })
+    .withFailureHandler(function(e) {
+      showMsg('ro', 'erro', '❌ ' + e.message);
+      document.getElementById('ro-toggle').checked = !ativo;
+    })
+    .salvarModoSomenteLeitura(ativo);
+}
+
+// ── Templates de e-mail ────────────────────────────────────
+var _TIPOS_EMAIL = ['avaria', 'vencimento', 'rejeicao', 'extravio', 'outros'];
+
+function carregarTemplates() {
+  document.getElementById('tpl-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('tpl-lista').innerHTML = '❌ ' + r.erro; return; }
+        renderTemplates(r.templates || {});
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterEmailTemplates();
+}
+
+function renderTemplates(tpls) {
+  var el = document.getElementById('tpl-lista');
+  el.innerHTML = _TIPOS_EMAIL.map(function(tipo) {
+    var t = tpls[tipo] || { assunto: '', corpo: '' };
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:6px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:12px;margin-bottom:6px;color:var(--navy)">Tipo: ' + tipo + '</div>'
+      + '<input type="text" id="tpl-ass-'+tipo+'" placeholder="Assunto (deixe vazio para padrão)" value="'+esc(t.assunto)+'" '
+      + 'style="width:100%;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:11px;margin-bottom:4px;background:var(--surface);color:var(--text)">'
+      + '<button class="btn-acao" style="font-size:11px;padding:4px 10px" onclick="salvarTemplate(\''+tipo+'\')">💾 Salvar</button>'
+      + '</div>';
+  }).join('');
+}
+
+function salvarTemplate(tipo) {
+  var assunto = (document.getElementById('tpl-ass-'+tipo)||{}).value || '';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('tpl', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+    })
+    .withFailureHandler(function(e) { showMsg('tpl','erro','❌ '+e.message); })
+    .salvarEmailTemplate(tipo, assunto, '');
+}
+
+// ── CC/BCC por tipo de alerta ─────────────────────────────
+var _ccAlertaLocal = {};
+var _ccAlertaNomes = { atraso:'Atraso (+30 dias)', semanal:'Semanal', mensal:'Mensal', diario:'Diário', pendencias:'Pendências', transferencia:'Transferência vencida', fornecedor:'Por fornecedor' };
+
+function carregarCCAlerta() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) return;
+        _ccAlertaLocal = r.ccAlerta || {};
+        renderCCAlerta();
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterCCAlerta();
+}
+
+function renderCCAlerta() {
+  var tbody = document.getElementById('cca-tbody');
+  var keys = Object.keys(_ccAlertaLocal);
+  if (!keys.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:#9CA3AF;font-size:11px">Nenhuma configuração de alerta.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = keys.map(function(k) {
+    var v = _ccAlertaLocal[k] || {};
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      +'<td style="padding:4px 8px;font-weight:600">'+(esc(_ccAlertaNomes[k]||k))+'</td>'
+      +'<td style="padding:4px 8px;font-size:11px">'+esc(v.cc||'—')+'</td>'
+      +'<td style="padding:4px 8px;font-size:11px">'+esc(v.bcc||'—')+'</td>'
+      +'<td style="padding:4px 8px;text-align:center"><button style="font-size:10px;padding:1px 6px;cursor:pointer" onclick="excluirCCAlerta(\''+k+'\')">✕</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function salvarCCAlertaConf() {
+  var tipo = (document.getElementById('cca-tipo').value||'').trim();
+  var cc   = (document.getElementById('cca-cc').value||'').trim();
+  var bcc  = (document.getElementById('cca-bcc').value||'').trim();
+  if (!tipo) { showMsg('cca','erro','❌ Selecione um tipo.'); return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('cca', r.sucesso ? 'ok' : 'erro', r.sucesso || ('❌ '+(r.erro||'Erro')));
+      if (r.sucesso) carregarCCAlerta();
+    })
+    .withFailureHandler(function(e){ showMsg('cca','erro','❌ '+e.message); })
+    .salvarCCAlerta(tipo, cc, bcc);
+}
+
+function excluirCCAlerta(tipo) {
+  google.script.run
+    .withSuccessHandler(function(){ carregarCCAlerta(); })
+    .withFailureHandler(function(){})
+    .salvarCCAlerta(tipo, '', '');
+}
+
+// ── CC/BCC por fornecedor ──────────────────────────────────
+var _ccFornLocal = {};
+
+function carregarCCForn() {
+  document.getElementById('ccf-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('ccf-lista').innerHTML = '❌ ' + r.erro; return; }
+        _ccFornLocal = r.ccForn || {};
+        renderCCForn();
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterCCFornecedores();
+}
+
+function renderCCForn() {
+  var el = document.getElementById('ccf-lista');
+  var keys = Object.keys(_ccFornLocal);
+  if (!keys.length) { el.innerHTML = '<div style="color:#9CA3AF;font-size:11px">Nenhuma configuração.</div>'; return; }
+  el.innerHTML = '<table style="width:100%;font-size:11px;border-collapse:collapse">'
+    + '<tr style="font-weight:bold;border-bottom:1px solid var(--border-def)"><td style="padding:4px">Fornecedor</td><td>CC</td><td>BCC</td><td></td></tr>'
+    + keys.map(function(k) {
+      var v = _ccFornLocal[k] || {};
+      return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px">'+esc(k)+'</td>'
+        +'<td>'+esc(v.cc||'')+'</td><td>'+esc(v.bcc||'')+'</td>'
+        +'<td><button style="font-size:10px;padding:1px 6px;cursor:pointer" onclick="excluirCCForn(\''+k.replace(/'/g,"\\'")+'\')" title="Remover">✕</button></td></tr>';
+    }).join('')
+    + '</table>';
+}
+
+function salvarCCForn() {
+  var forn = (document.getElementById('ccf-forn').value||'').trim();
+  var cc   = (document.getElementById('ccf-cc').value||'').trim();
+  var bcc  = (document.getElementById('ccf-bcc').value||'').trim();
+  if (!forn) { showMsg('ccf','erro','❌ Informe o nome do fornecedor.'); return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('ccf', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+      if (r.ok) carregarCCForn();
+    })
+    .withFailureHandler(function(e) { showMsg('ccf','erro','❌ '+e.message); })
+    .salvarCCFornecedor(forn, cc, bcc);
+}
+
+function excluirCCForn(forn) {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.ok) carregarCCForn();
+    })
+    .withFailureHandler(function(){})
+    .salvarCCFornecedor(forn, '', '');
+}
+
+// ── Permissões por módulo ──────────────────────────────────
+var _MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria'];
+var _permLocal = {};
+var _permROLocal = {};
+
+function carregarPermissoes() {
+  document.getElementById('perm-lista').innerHTML = '<div style="color:#9CA3AF;font-size:11px">Carregando...</div>';
+  var pendente = { wl: false, ro: false };
+  function tentarRender() { if (!pendente.wl || !pendente.ro) return; renderPermissoes(); }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try { var r = JSON.parse(resp); if (!r.erro) _permLocal = r.permissoes || {}; } catch(_) {}
+      pendente.wl = true; tentarRender();
+    })
+    .withFailureHandler(function(){ pendente.wl = true; tentarRender(); })
+    .obterPermissoesModulos();
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try { var r = JSON.parse(resp); if (!r.erro) _permROLocal = r.permissoes || {}; } catch(_) {}
+      pendente.ro = true; tentarRender();
+    })
+    .withFailureHandler(function(){ pendente.ro = true; tentarRender(); })
+    .obterPermissoesROModulos();
+}
+
+function renderPermissoes() {
+  var el = document.getElementById('perm-lista');
+  el.innerHTML = _MODULOS.map(function(mod) {
+    var lista = (_permLocal[mod] || []).join(', ');
+    var ehRO  = !!_permROLocal[mod];
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:6px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:700;font-size:12px;margin-bottom:5px;color:var(--navy)">📦 '+mod+'</div>'
+      + '<input type="text" id="perm-inp-'+mod+'" value="'+esc(lista)+'" placeholder="E-mails separados por vírgula (vazio = todos)" '
+      + 'style="width:100%;padding:5px;border:1px solid var(--border-def);border-radius:4px;font-size:11px;background:var(--surface);color:var(--text);margin-bottom:6px">'
+      + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      + '<button class="btn-acao" style="font-size:11px;padding:4px 10px" onclick="salvarPermModulo(\''+mod+'\')">💾 Salvar lista</button>'
+      + (lista ? '<span style="font-size:10px;color:#DC2626">Restrito</span>' : '<span style="font-size:10px;color:#059669">Aberto a todos</span>')
+      + '<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;margin-left:auto">'
+      + '<input type="checkbox" id="perm-ro-'+mod+'" '+(ehRO?'checked':'')+' onchange="salvarROModulo(\''+mod+'\')">'
+      + '🔒 Somente-leitura para não-admins</label>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function salvarPermModulo(mod) {
+  var val = (document.getElementById('perm-inp-'+mod)||{}).value || '';
+  var emails = val.split(',').map(function(e){ return e.trim(); }).filter(Boolean);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('perm', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+      if (r.ok) carregarPermissoes();
+    })
+    .withFailureHandler(function(e) { showMsg('perm','erro','❌ '+e.message); })
+    .salvarPermissoesModulo(mod, emails);
+}
+
+function salvarROModulo(mod) {
+  var ativo = !!(document.getElementById('perm-ro-'+mod)||{}).checked;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('perm', r.ok ? 'ok' : 'erro', r.ok || ('❌ '+(r.erro||'Erro')));
+      if (r.ok) { _permROLocal[mod] = ativo || undefined; if (!ativo) delete _permROLocal[mod]; }
+    })
+    .withFailureHandler(function(e) { showMsg('perm','erro','❌ '+e.message); })
+    .salvarPermissaoROModulo(mod, ativo);
+}
+
+// ── Assinaturas de e-mail ─────────────────────────────────
+var _assinaturasMap = {};
+
+function carregarAssinaturas() {
+  document.getElementById('assn-lista').innerHTML = '<span style="font-size:11px;color:#9CA3AF">Carregando...</span>';
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); _assinaturasMap = p.assinaturas || {}; renderAssinaturas(); }
+    catch(_) {}
+  }).obterAssinaturas();
+}
+
+function renderAssinaturas() {
+  var lista = document.getElementById('assn-lista');
+  var keys = Object.keys(_assinaturasMap);
+  if (!keys.length) { lista.innerHTML = '<div style="font-size:11px;color:#9CA3AF;padding:6px 0">Nenhuma assinatura cadastrada.</div>'; return; }
+  lista.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr>'
+    +'<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Nome / Identificador</th>'
+    +'<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">ID Drive</th>'
+    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)">Preview</th>'
+    +'<th style="padding:4px 8px;border-bottom:1px solid var(--border)"></th>'
+    +'</tr></thead><tbody>'
+    + keys.map(function(nome) {
+      var id = _assinaturasMap[nome];
+      var thumb = 'https://drive.google.com/thumbnail?id='+id+'&sz=w80';
+      return '<tr>'
+        +'<td style="padding:4px 8px;font-weight:600">'+esc(nome)+'</td>'
+        +'<td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6B7280">'+esc(id)+'</td>'
+        +'<td style="padding:4px 8px;text-align:center"><img src="'+esc(thumb)+'" style="max-height:40px;border-radius:3px" onerror="this.style.display=\'none\'"></td>'
+        +'<td style="padding:4px 8px;text-align:center">'
+        +'<button class="btn-cancel" onclick="editarAssinatura(\''+esc(nome)+'\',\''+esc(id)+'\')">✏️</button> '
+        +'<button class="btn-cancel" onclick="excluirAssinatura(\''+esc(nome)+'\')">✕</button></td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function previewAssinaturaThumb() {
+  var fileId = document.getElementById('assn-fileid').value.trim();
+  if (!fileId) { mostrarMsg('assn-msg','Informe o ID do arquivo Drive.','erro'); return; }
+  var thumb = document.getElementById('assn-preview-thumb');
+  var img   = document.getElementById('assn-thumb-img');
+  img.src   = 'https://drive.google.com/uc?export=view&id=' + fileId;
+  thumb.style.display = 'block';
+}
+
+function editarAssinatura(nome, fileId) {
+  document.getElementById('assn-email').value  = nome;
+  document.getElementById('assn-fileid').value = fileId;
+  previewAssinaturaThumb();
+  document.getElementById('assn-email').focus();
+}
+
+function salvarAssinaturaConf() {
+  var nome   = document.getElementById('assn-email').value.trim();
+  var fileId = document.getElementById('assn-fileid').value.trim();
+  if (!nome || !fileId) { mostrarMsg('assn-msg','Preencha o nome e o ID do arquivo.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) {
+      mostrarMsg('assn-msg', p.ok, 'ok');
+      document.getElementById('assn-email').value  = '';
+      document.getElementById('assn-fileid').value = '';
+      document.getElementById('assn-preview-thumb').style.display = 'none';
+      carregarAssinaturas();
+    } else { mostrarMsg('assn-msg', p.erro || 'Erro', 'erro'); } } catch(_){}
+  }).salvarAssinatura(nome, fileId);
+}
+
+function excluirAssinatura(nome) {
+  if (!confirm('Remover assinatura "'+nome+'"?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) carregarAssinaturas(); } catch(_){}
+  }).salvarAssinatura(nome, '');
+}
+
+// ── Personalização Visual ─────────────────────────────────
+function carregarVisuais() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('vis-nome').value = p.nomeSistema || '';
+      document.getElementById('vis-logo').value = p.logoUrl     || '';
+      var c = p.cores || {};
+      if (c.Pendente)    document.getElementById('vis-cor-pendente').value  = c.Pendente;
+      if (c.Devolvido)   document.getElementById('vis-cor-devolvido').value = c.Devolvido;
+      if (c.Venda)       document.getElementById('vis-cor-venda').value     = c.Venda;
+      if (c['Em Frete']) document.getElementById('vis-cor-emfrete').value   = c['Em Frete'];
+      if (p.logoUrl) document.getElementById('vis-logo-preview').innerHTML =
+        '<img src="https://drive.google.com/thumbnail?id='+p.logoUrl+'&sz=w120" style="max-height:40px" onerror="this.style.display=\'none\'">';
+    } catch(_){}
+  }).obterConfigVisuais();
+}
+function salvarVisuais() {
+  var cores = {
+    Pendente:    document.getElementById('vis-cor-pendente').value,
+    Devolvido:   document.getElementById('vis-cor-devolvido').value,
+    Venda:       document.getElementById('vis-cor-venda').value,
+    'Em Frete':  document.getElementById('vis-cor-emfrete').value
+  };
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('vis-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfigVisuais(cores, document.getElementById('vis-logo').value.trim(), document.getElementById('vis-nome').value.trim());
+}
+
+// ── Diagnóstico ───────────────────────────────────────────
+function executarDiagnostico() {
+  document.getElementById('diag-spin').style.display='block';
+  document.getElementById('diag-resultado').innerHTML='';
+  google.script.run.withSuccessHandler(function(r) {
+    document.getElementById('diag-spin').style.display='none';
+    try {
+      var p=JSON.parse(r);
+      if (p.erro) { document.getElementById('diag-resultado').innerHTML='<span style="color:red">'+p.erro+'</span>'; return; }
+      document.getElementById('diag-resultado').innerHTML =
+        '<div style="font-size:12px;background:#F9FAFB;border:1px solid var(--border);border-radius:6px;padding:10px">'
+        +'<div>📁 <b>Tamanho:</b> '+p.sizeMB+' MB '+(p.alerta?'<span style="color:#DC2626">⚠️ Próximo do limite</span>':'')+'</div>'
+        +'<div>🗂️ <b>Abas:</b> '+p.abas+'</div>'
+        +'<div>📊 <b>Total linhas:</b> '+p.totalLinhas+'</div></div>';
+    } catch(_){}
+  }).monitorarTamanhoPlanilha();
+}
+
+// ── Erros recentes (aba "Erros do Sistema" do hub Administração) ────────
+function carregarErrosAdmin() {
+  var el = document.getElementById('admin-erros-recentes');
+  el.innerHTML = '<div style="font-size:11px;color:#9CA3AF">Carregando...</div>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhum erro registrado.</div>'; return; }
+      el.innerHTML = '<div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;padding:4px 8px">'
+        + lista.map(function(e) {
+          return '<div style="font-size:10px;border-bottom:1px solid var(--border);padding:3px 0">'
+            +'<span style="color:#9CA3AF">'+esc(new Date(e.ts).toLocaleString('pt-BR'))+'</span> '
+            +'<b>'+esc(e.func)+'</b>: '+esc(e.msg)+'</div>';
+        }).join('')+'</div>';
+    } catch(_) { el.innerHTML = '<div style="font-size:11px;color:#DC2626">Erro ao processar resposta.</div>'; }
+  }).withFailureHandler(function(e) {
+    el.innerHTML = '<div style="font-size:11px;color:#DC2626">❌ ' + esc(e.message) + '</div>';
+  }).obterErrosRecentes();
+}
+function _limparErrosRecentes() {
+  if (!confirm('Confirma a limpeza de todos os erros recentes registrados?\n\nEsta ação não pode ser desfeita.')) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { mostrarMsg('admin-erros-msg', '❌ ' + r.erro, 'erro'); return; }
+        document.getElementById('admin-erros-recentes').innerHTML = '<div style="font-size:11px;color:#9CA3AF">Nenhum erro registrado.</div>';
+        mostrarMsg('admin-erros-msg', r.ok || 'Erros limpos.', 'ok');
+      } catch(_) {}
+    })
+    .withFailureHandler(function(e) { mostrarMsg('admin-erros-msg', '❌ ' + e.message, 'erro'); })
+    .limparErrosRecentes();
+}
+function testarEmail() {
+  var dest = document.getElementById('diag-email-dest').value.trim();
+  if (!dest) { mostrarMsg('diag-email-msg','Informe um e-mail.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('diag-email-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).testarEnvioEmail(dest);
+}
+
+// ── Changelog ─────────────────────────────────────────────
+function carregarChangelog() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var el = document.getElementById('chl-lista');
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma entrada.</div>'; return; }
+      el.innerHTML = lista.map(function(e) {
+        return '<div style="margin-bottom:10px;border-left:3px solid var(--navy);padding:6px 10px;background:#F9FAFB;border-radius:0 6px 6px 0">'
+          +'<div style="font-weight:700;font-size:13px">'+esc(e.versao)+' <span style="font-size:10px;color:#9CA3AF">'+esc(e.data)+'</span></div>'
+          +'<ul style="font-size:12px;margin:4px 0 0 14px">'
+          + (e.itens||[]).map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')
+          +'</ul></div>';
+      }).join('');
+    } catch(_){}
+  }).obterChangelog();
+}
+function adicionarEntradaChangelog() {
+  var versao = document.getElementById('chl-versao').value.trim();
+  var itens  = document.getElementById('chl-itens').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!versao || !itens.length) { mostrarMsg('chl-msg','Preencha versão e itens.','erro'); return; }
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('chl-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarChangelog(); } catch(_){}
+  }).adicionarChangelog(versao, itens);
+}
+
+// ── Aprovação de Lançamentos ──────────────────────────────
+function carregarConfigAprovacao() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('aprv-ativo').checked = !!p.ativo;
+      document.getElementById('aprv-aprovadores').value = (p.aprovadores||[]).join('\n');
+    } catch(_){}
+  }).obterConfigAprovacao();
+}
+function salvarAprovacao() {
+  var ativo = document.getElementById('aprv-ativo').checked;
+  var emails = document.getElementById('aprv-aprovadores').value.split('\n')
+    .map(function(e){ return e.trim(); }).filter(Boolean);
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('aprv-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfigAprovacao(ativo, emails);
+}
+function carregarAprovacoesPendentes() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var el = document.getElementById('aprv-lista');
+      if (!lista.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhuma aprovação pendente.</div>'; return; }
+      el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Data</th>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Usuário</th>'
+        +'<th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">NF</th>'
+        +'<th style="padding:5px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
+        + lista.map(function(it) {
+          return '<tr><td style="padding:5px 8px">'+esc(new Date(it.ts).toLocaleString('pt-BR'))+'</td>'
+            +'<td style="padding:5px 8px">'+esc(it.usuario)+'</td>'
+            +'<td style="padding:5px 8px">'+esc(it.dados&&it.dados.nf||'—')+'</td>'
+            +'<td style="padding:5px 8px;display:flex;gap:4px">'
+            +'<button class="btn-save" onclick="_acaoAprv(\''+esc(it.id)+'\',true)" style="font-size:11px;padding:3px 8px">✅</button>'
+            +'<button class="btn-cancel" onclick="_acaoAprv(\''+esc(it.id)+'\',false)" style="font-size:11px;padding:3px 8px">❌</button>'
+            +'</td></tr>';
+        }).join('')+'</tbody></table>';
+    } catch(_){}
+  }).listarAprovacoesPendentes();
+}
+function _acaoAprv(id, aprovar) {
+  var just = aprovar ? '' : (prompt('Justificativa da reprovação:')||'');
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); mostrarMsg('aprv-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarAprovacoesPendentes(); } catch(_){}
+  }).processarAprovacao(id, aprovar, just);
+}
+
+// ── Retenção ──────────────────────────────────────────────
+function carregarRetencao() {
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p=JSON.parse(r); document.getElementById('ret-dias').value = p.dias||730; } catch(_){}
+  }).obterConfiguracaoRetencao();
+}
+function salvarRetencao() {
+  var dias = parseInt(document.getElementById('ret-dias').value)||730;
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ret-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).salvarConfiguracaoRetencao(dias);
+}
+
+// ── Versionamento ─────────────────────────────────────────
+function carregarSnapshots() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p=JSON.parse(r); var hist=p.historico||[];
+      var el=document.getElementById('ver-hist');
+      if (!hist.length) { el.innerHTML='<div style="font-size:11px;color:#9CA3AF">Nenhum snapshot salvo.</div>'; return; }
+      el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Data</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Usuário</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Descrição</th><th></th></tr></thead><tbody>'
+      + hist.map(function(h,i){ return '<tr><td style="padding:4px 8px">'+esc(new Date(h.ts).toLocaleString('pt-BR'))+'</td><td style="padding:4px 8px">'+esc(h.usuario)+'</td><td style="padding:4px 8px">'+esc(h.descricao)+'</td><td style="padding:4px 8px"><button class="btn-cancel" onclick="restaurarSnapshot('+i+')" style="font-size:11px">♻️ Restaurar</button></td></tr>'; }).join('')
+      +'</tbody></table>';
+    } catch(_){}
+  }).obterHistoricoConfiguracao();
+}
+function salvarSnapshot() {
+  var desc=document.getElementById('ver-desc').value.trim();
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ver-msg',p.ok||p.erro,p.ok?'ok':'erro'); if(p.ok) carregarSnapshots(); } catch(_){}
+  }).salvarSnapshotConfiguracao(desc);
+}
+function restaurarSnapshot(i) {
+  if (!confirm('Restaurar snapshot #'+i+'? As configurações atuais serão substituídas.')) return;
+  google.script.run.withSuccessHandler(function(r){
+    try { var p=JSON.parse(r); mostrarMsg('ver-msg',p.ok||p.erro,p.ok?'ok':'erro'); } catch(_){}
+  }).restaurarSnapshotConfiguracao(i);
+}
+
+// ── Integridade do Backup ─────────────────────────────────
+function verificarBackup() {
+  var spin=document.getElementById('bk-spin'); var res=document.getElementById('bk-resultado');
+  spin.style.display='block'; res.innerHTML='';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display='none';
+    try {
+      var p=JSON.parse(r);
+      if (p.erro) { res.innerHTML='<span style="color:red">'+p.erro+'</span>'; return; }
+      res.innerHTML='<div style="font-size:10px;color:#9CA3AF;margin-bottom:6px">Verificado em '+(new Date(p.ts).toLocaleString('pt-BR'))+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)">Verificação</th><th style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border)">Valor</th><th style="padding:5px 8px;border-bottom:1px solid var(--border)">Status</th></tr></thead><tbody>'
+        + (p.checks||[]).map(function(c,i){ return '<tr style="'+(i%2===0?'background:#F9FAFB':'')+'"><td style="padding:5px 8px">'+esc(c.label)+'</td><td style="padding:5px 8px;text-align:right">'+esc(String(c.valor))+'</td><td style="padding:5px 8px;text-align:center">'+(c.ok?'<span style="color:#059669">✓</span>':'<span style="color:#DC2626">✗</span>')+'</td></tr>'; }).join('')
+        +'</tbody></table>';
+    } catch(_){}
+  }).verificarIntegridadeBackup();
+}
+
+function mostrarMsg(id, txt, tipo) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'msg msg-'+tipo;
+  el.textContent = txt;
+  el.style.display = 'block';
+}
+
+// ── Telegram webhook ──────────────────────────────────────
+function _carregarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  msg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) return;
+        var c = r.conf || {};
+        document.getElementById('wh-ativo').checked   = !!c.ativo;
+        document.getElementById('wh-tg-token').value  = (c.telegram && c.telegram.token)  || '';
+        document.getElementById('wh-tg-chat').value   = (c.telegram && c.telegram.chatId) || '';
+        var t = c.topicos || {};
+        var status = document.getElementById('wh-topicos-status');
+        if (t.aprovacoes || t.transferencias || t.vendas || t.sistema) {
+          status.textContent = '✅ Aprovações: ' + (t.aprovacoes||'—') +
+            ' · Transferências: ' + (t.transferencias||'—') +
+            ' · Vendas: ' + (t.vendas||'—') +
+            ' · Sistema: ' + (t.sistema||'—');
+        } else {
+          status.textContent = 'Nenhum tópico criado ainda.';
+        }
+      } catch(_) {}
+    })
+    .withFailureHandler(function(){})
+    .obterConfWebhook();
+}
+
+function _whConf() {
+  return {
+    ativo: document.getElementById('wh-ativo').checked,
+    telegram: {
+      token:  (document.getElementById('wh-tg-token').value || '').trim(),
+      chatId: (document.getElementById('wh-tg-chat').value  || '').trim()
+    }
+  };
+}
+
+function _salvarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  msg.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .salvarConfWebhook(_whConf());
+}
+
+function _testarWebhook() {
+  var msg = document.getElementById('wh-msg');
+  mostrarMsg('wh-msg', '⏳ Enviando mensagem de teste...', 'ok');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .testarWebhookAlerta(_whConf());
+}
+
+function _criarTopicosWebhook() {
+  mostrarMsg('wh-msg', '⏳ Criando tópicos...', 'ok');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+      if (r.ok) _carregarWebhook();
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .criarTopicosWebhook(_whConf());
+}
+
+function _verificarStatusWebhookTelegram() {
+  var el = document.getElementById('wh-webhook-status');
+  el.textContent = '⏳ Verificando status...';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { el.innerHTML = '❌ ' + esc(r.erro); return; }
+        var txt = r.registrado
+          ? '✅ Webhook registrado' + (r.pendingUpdateCount ? ' · ' + r.pendingUpdateCount + ' atualização(ões) pendente(s)' : '')
+          : '⚠️ Nenhum webhook registrado.';
+        if (r.ultimoErro) txt += '<br><span style="color:#DC2626">Último erro do Telegram: ' + esc(r.ultimoErro) + '</span>';
+        if (r.divergente) {
+          txt += '<br><span style="color:#DC2626">⚠️ A URL registrada não bate com a URL de implantação atual — clique em "🔗 Registrar Webhook" para atualizar.</span>';
+        }
+        el.innerHTML = txt;
+      } catch(_) { el.textContent = '❌ Erro ao verificar status.'; }
+    })
+    .withFailureHandler(function(e) { el.textContent = '❌ ' + e.message; })
+    .obterStatusWebhookTelegram();
+}
+
+function _registrarWebhookTelegram() {
+  mostrarMsg('wh-msg', '⏳ Registrando webhook...', 'ok');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      mostrarMsg('wh-msg', r.ok || ('❌ ' + (r.erro || 'Erro')), r.ok ? 'ok' : 'erro');
+      if (r.ok) _verificarStatusWebhookTelegram();
+    })
+    .withFailureHandler(function(e) {
+      mostrarMsg('wh-msg', '❌ Falha: ' + (e.message || e), 'erro');
+    })
+    .configurarWebhookTelegram();
+}
+
+// ════════════════════════════════════════════════════════════
+//  HUB — ADMINISTRAÇÃO (visão geral, erros, diagnóstico, limpeza,
+//  retenção, backup e o painel de controles administrativos)
+// ════════════════════════════════════════════════════════════
+
+// ── Aba: Visão Geral ──────────────────────────────────────────
+function carregarVisaoGeralAdmin() {
+  document.getElementById('adm-visao-erros24h').textContent   = '…';
+  document.getElementById('adm-visao-backup').textContent     = '…';
+  document.getElementById('adm-visao-capacidade').textContent = '…';
+  document.getElementById('adm-visao-gatilhos').textContent   = '…';
+
+  // Erros nas últimas 24h — a lista completa não traz um recorte por período,
+  // então contamos aqui no cliente quantos registros têm timestamp dentro
+  // das últimas 24h (suposição: "ts" é um valor aceito por `new Date()`).
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var lista = JSON.parse(r);
+      var limite = Date.now() - 24 * 3600 * 1000;
+      var n = lista.filter(function(e) { return new Date(e.ts).getTime() >= limite; }).length;
+      document.getElementById('adm-visao-erros24h').textContent = n;
+    } catch(_) { document.getElementById('adm-visao-erros24h').textContent = '—'; }
+  }).withFailureHandler(function(){ document.getElementById('adm-visao-erros24h').textContent = '—'; })
+  .obterErrosRecentes();
+
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('adm-visao-backup').textContent = p.ativo ? '✅ Ativo' : '⛔ Inativo';
+    } catch(_) { document.getElementById('adm-visao-backup').textContent = '—'; }
+  }).withFailureHandler(function(){ document.getElementById('adm-visao-backup').textContent = '—'; })
+  .obterConfigBackupAutomatico();
+
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var abas = p.abas || [];
+      var maior = abas.reduce(function(m, a) { return Math.max(m, a.pct || 0); }, 0);
+      document.getElementById('adm-visao-capacidade').textContent = abas.length ? (maior + '%') : '—';
+    } catch(_) { document.getElementById('adm-visao-capacidade').textContent = '—'; }
+  }).withFailureHandler(function(){ document.getElementById('adm-visao-capacidade').textContent = '—'; })
+  .obterAlertasCapacidadeAdmin();
+
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('adm-visao-gatilhos').textContent = (p.gatilhos || []).length;
+    } catch(_) { document.getElementById('adm-visao-gatilhos').textContent = '—'; }
+  }).withFailureHandler(function(){ document.getElementById('adm-visao-gatilhos').textContent = '—'; })
+  .obterGatilhosAdmin();
+}
+
+// ── Aba: Backup — histórico e rotação ───────────────────────────
+function carregarHistoricoBackupAdmin() {
+  var el = document.getElementById('adm-backup-hist');
+  el.textContent = '⏳ Carregando...';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var hist = p.historico || [];
+      if (!hist.length) { el.textContent = 'Nenhum backup na rotação ainda.'; return; }
+      var maisRecente = hist[0];
+      el.innerHTML = hist.length + ' backup(s) na rotação (máx. ' + (p.mantidos || 7) + ') — mais recente em '
+        + esc(new Date(maisRecente.ts).toLocaleString('pt-BR'))
+        + (maisRecente.totalLinhas != null ? ' · ' + maisRecente.totalLinhas + ' linha(s)' : '') + '.';
+    } catch(_) { el.textContent = '❌ Erro ao carregar histórico.'; }
+  }).withFailureHandler(function(e) { el.textContent = '❌ ' + e.message; })
+  .listarHistoricoBackups();
+}
+
+// 1 ── Gatilhos agendados ────────────────────────────────────────
+function carregarGatilhosAdmin() {
+  document.getElementById('adm-trig-lista').innerHTML = '<div style="font-size:11px;color:var(--text-muted)">Carregando...</div>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var lista = p.gatilhos || [];
+      document.getElementById('adm-trig-info').textContent = lista.length + ' gatilho(s) de ' + (p.max != null ? p.max : '—') + ' permitido(s) pela conta.';
+      var el = document.getElementById('adm-trig-lista');
+      if (!lista.length) { el.innerHTML = '<div style="font-size:11px;color:var(--text-muted)">Nenhum gatilho encontrado.</div>'; return; }
+      el.innerHTML = lista.map(function(g) {
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:12px;font-weight:700;color:var(--text)">' + esc(g.funcao) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-muted)">' + esc(g.tipo || '') + (g.detalhe ? ' · ' + esc(g.detalhe) : '') + '</div>'
+          + '</div>'
+          + '<button class="btn-acao" onclick="_pausarGatilhoAdmin(\'' + esc(g.id) + '\')">⏸ Pausar</button>'
+          + '<button class="btn-acao" onclick="_retomarGatilhoAdmin(\'' + esc(g.id) + '\')">▶ Retomar</button>'
+          + '</div>';
+      }).join('');
+    } catch(_) { document.getElementById('adm-trig-lista').innerHTML = '<div style="font-size:11px;color:var(--red)">❌ Erro ao carregar gatilhos.</div>'; }
+  }).withFailureHandler(function(e) {
+    document.getElementById('adm-trig-lista').innerHTML = '<div style="font-size:11px;color:var(--red)">❌ ' + esc(e.message) + '</div>';
+  }).obterGatilhosAdmin();
+}
+function _pausarGatilhoAdmin(id) {
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) carregarGatilhosAdmin(); else alert(p.erro || 'Erro ao pausar gatilho.'); } catch(_) {}
+  }).withFailureHandler(function(e) { alert(e.message); }).pausarGatilhoAdmin(id);
+}
+function _retomarGatilhoAdmin(id) {
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); if (p.ok) carregarGatilhosAdmin(); else alert(p.erro || 'Erro ao retomar gatilho.'); } catch(_) {}
+  }).withFailureHandler(function(e) { alert(e.message); }).retomarGatilhoAdmin(id);
+}
+
+// 2 ── Auditoria de ações administrativas ───────────────────────
+function carregarAuditoriaAdmin() {
+  var tbody = document.getElementById('adm-audit-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var lista = p.registros || [];
+      if (!lista.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Nenhum registro de auditoria.</td></tr>'; return; }
+      tbody.innerHTML = lista.map(function(a) {
+        return '<tr>'
+          + '<td style="padding:4px 8px;white-space:nowrap">' + esc(new Date(a.ts).toLocaleString('pt-BR')) + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.usuario || '') + '</td>'
+          + '<td style="padding:4px 8px;font-weight:700">' + esc(a.acao || '') + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.detalhes || '') + '</td>'
+          + '</tr>';
+      }).join('');
+    } catch(_) { tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--red)">❌ Erro ao carregar auditoria.</td></tr>'; }
+  }).withFailureHandler(function(e) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--red)">❌ ' + esc(e.message) + '</td></tr>';
+  }).obterAuditoriaAdmin();
+}
+function _limparAuditoriaAdmin() {
+  if (!confirm('Confirma a limpeza de toda a trilha de auditoria administrativa?\n\nEsta ação não pode ser desfeita.')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (p.ok) { mostrarMsg('adm-audit-msg', p.ok, 'ok'); carregarAuditoriaAdmin(); }
+      else mostrarMsg('adm-audit-msg', '❌ ' + (p.erro || 'Erro'), 'erro');
+    } catch(_) {}
+  }).withFailureHandler(function(e) { mostrarMsg('adm-audit-msg', '❌ ' + e.message, 'erro'); })
+  .limparAuditoriaAdmin();
+}
+
+// 3 ── Monitor de cotas do Google ────────────────────────────────
+function carregarCotasAdmin() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('adm-cotas-email').textContent = (p.emailRestante != null ? p.emailRestante : '—');
+      document.getElementById('adm-cotas-gatilhos').textContent =
+        (p.gatilhosAtivos != null ? p.gatilhosAtivos : '—') + ' / ' + (p.gatilhosMax != null ? p.gatilhosMax : '—');
+    } catch(_) {
+      document.getElementById('adm-cotas-email').textContent = '—';
+      document.getElementById('adm-cotas-gatilhos').textContent = '—';
+    }
+  }).withFailureHandler(function() {
+    document.getElementById('adm-cotas-email').textContent = '—';
+    document.getElementById('adm-cotas-gatilhos').textContent = '—';
+  }).obterCotasAdmin();
+}
+
+// 4 ── Flags / interruptores ─────────────────────────────────────
+var _adm_aprovadoresAtuais = [];
+function carregarFlagsAdmin() {
+  document.getElementById('adm-ro-status-txt').textContent    = 'Verificando...';
+  document.getElementById('adm-aprv-status-txt').textContent  = 'Verificando...';
+  document.getElementById('adm-manut-status-txt').textContent = 'Verificando...';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var ro = !!p.somenteLeitura, aprv = !!p.aprovacaoAtiva, mnt = !!p.modoManutencao;
+      document.getElementById('adm-ro-toggle').checked    = ro;
+      document.getElementById('adm-aprv-toggle').checked  = aprv;
+      document.getElementById('adm-manut-toggle').checked = mnt;
+      document.getElementById('adm-ro-status-txt').textContent    = ro   ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo';
+      document.getElementById('adm-aprv-status-txt').textContent  = aprv ? '✅ Ativo — lançamentos exigem aprovação' : '✅ Inativo';
+      document.getElementById('adm-manut-status-txt').textContent = mnt  ? '🚧 Ativo — acesso restrito a admins' : '✅ Inativo';
+    } catch(_) {}
+  }).withFailureHandler(function(e) {
+    document.getElementById('adm-ro-status-txt').textContent    = '❌ ' + e.message;
+    document.getElementById('adm-aprv-status-txt').textContent  = '❌ ' + e.message;
+    document.getElementById('adm-manut-status-txt').textContent = '❌ ' + e.message;
+  }).obterFlagsAdmin();
+
+  // aprovadores atuais preservados à parte, para não serem apagados ao alternar o toggle daqui
+  google.script.run.withSuccessHandler(function(r) {
+    try { var p = JSON.parse(r); _adm_aprovadoresAtuais = p.aprovadores || []; } catch(_) {}
+  }).obterConfigAprovacao();
+}
+function _alterarROAdmin(ativo) {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (p.ok) { mostrarMsg('adm-flags-msg', p.ok, 'ok'); document.getElementById('adm-ro-status-txt').textContent = ativo ? '🔒 Ativo — ações de escrita bloqueadas' : '✅ Inativo'; }
+      else { document.getElementById('adm-ro-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + (p.erro || 'Erro'), 'erro'); }
+    } catch(_) {}
+  }).withFailureHandler(function(e) { document.getElementById('adm-ro-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + e.message, 'erro'); })
+  .salvarModoSomenteLeitura(ativo);
+}
+function _alterarAprovacaoAdmin(ativo) {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (p.ok) { mostrarMsg('adm-flags-msg', p.ok, 'ok'); document.getElementById('adm-aprv-status-txt').textContent = ativo ? '✅ Ativo — lançamentos exigem aprovação' : '✅ Inativo'; }
+      else { document.getElementById('adm-aprv-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + (p.erro || 'Erro'), 'erro'); }
+    } catch(_) {}
+  }).withFailureHandler(function(e) { document.getElementById('adm-aprv-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + e.message, 'erro'); })
+  .salvarConfigAprovacao(ativo, _adm_aprovadoresAtuais);
+}
+function _alterarManutencaoAdmin(ativo) {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (p.ok) { mostrarMsg('adm-flags-msg', p.ok, 'ok'); document.getElementById('adm-manut-status-txt').textContent = ativo ? '🚧 Ativo — acesso restrito a admins' : '✅ Inativo'; }
+      else { document.getElementById('adm-manut-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + (p.erro || 'Erro'), 'erro'); }
+    } catch(_) {}
+  }).withFailureHandler(function(e) { document.getElementById('adm-manut-toggle').checked = !ativo; mostrarMsg('adm-flags-msg', '❌ ' + e.message, 'erro'); })
+  .salvarModoManutencao(ativo);
+}
+
+// 5 ── Informações de implantação ────────────────────────────────
+function carregarInfoImplantacaoAdmin() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('adm-impl-url').textContent          = p.urlWebApp    || '—';
+      document.getElementById('adm-impl-publicadoem').textContent  = p.publicadoEm  || '—';
+      document.getElementById('adm-impl-publicadopor').textContent = p.publicadoPor || '—';
+      document.getElementById('adm-impl-nota').value                = p.nota || '';
+    } catch(_) {}
+  }).withFailureHandler(function() {}).obterInfoImplantacaoAdmin();
+}
+function _marcarImplantacaoPublicadaAdmin() {
+  var nota = document.getElementById('adm-impl-nota').value.trim();
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      mostrarMsg('adm-impl-msg', p.ok || ('❌ ' + (p.erro || 'Erro')), p.ok ? 'ok' : 'erro');
+      if (p.ok) carregarInfoImplantacaoAdmin();
+    } catch(_) {}
+  }).withFailureHandler(function(e) { mostrarMsg('adm-impl-msg', '❌ ' + e.message, 'erro'); })
+  .marcarImplantacaoPublicada(nota);
+}
+
+// 6 ── Exportação em massa ───────────────────────────────────────
+function _baixarJSON(dados, nomeArquivo) {
+  var a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(dados, null, 2));
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+function _dataHojeArquivo() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function _exportarDadosAdmin() {
+  mostrarMsg('adm-exportmassa-msg', '⏳ Gerando exportação...', 'ok');
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (!p.ok) { mostrarMsg('adm-exportmassa-msg', '❌ ' + (p.erro || 'Erro'), 'erro'); return; }
+      _baixarJSON(p.dados, 'admin-export-' + _dataHojeArquivo() + '.json');
+      mostrarMsg('adm-exportmassa-msg', '✅ Exportação gerada — verifique os downloads do navegador.', 'ok');
+    } catch(_) { mostrarMsg('adm-exportmassa-msg', '❌ Erro ao processar exportação.', 'erro'); }
+  }).withFailureHandler(function(e) { mostrarMsg('adm-exportmassa-msg', '❌ ' + e.message, 'erro'); })
+  .exportarDadosAdmin();
+}
+
+// 7 ── Usuários e sessões ativas ─────────────────────────────────
+function carregarUsuariosAtivosAdmin() {
+  var tbody = document.getElementById('adm-usersativos-tbody');
+  tbody.innerHTML = '<tr><td colspan="3" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var lista = p.usuarios || [];
+      if (!lista.length) { tbody.innerHTML = '<tr><td colspan="3" style="padding:8px;color:var(--text-muted)">Nenhum acesso registrado.</td></tr>'; return; }
+      tbody.innerHTML = lista.map(function(u) {
+        return '<tr>'
+          + '<td style="padding:4px 8px">' + esc(u.email || '') + '</td>'
+          + '<td style="padding:4px 8px">' + (u.ultimoAcesso ? esc(new Date(u.ultimoAcesso).toLocaleString('pt-BR')) : '—') + '</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + (u.contagem != null ? u.contagem : '—') + '</td>'
+          + '</tr>';
+      }).join('');
+    } catch(_) { tbody.innerHTML = '<tr><td colspan="3" style="padding:8px;color:var(--red)">❌ Erro ao carregar usuários.</td></tr>'; }
+  }).withFailureHandler(function(e) {
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:8px;color:var(--red)">❌ ' + esc(e.message) + '</td></tr>';
+  }).obterUsuariosAtivosAdmin();
+}
+
+// 8 ── Simular como usuário ──────────────────────────────────────
+function _consultarSimulacaoAdmin() {
+  var email = document.getElementById('adm-sim-email').value.trim().toLowerCase();
+  var el = document.getElementById('adm-sim-resultado');
+  if (!email) { el.innerHTML = '<span style="color:var(--red);font-size:12px">Informe um e-mail.</span>'; return; }
+  el.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">⏳ Consultando...</span>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (p.erro) { el.innerHTML = '<span style="color:var(--red);font-size:12px">❌ ' + esc(p.erro) + '</span>'; return; }
+      var mods = (p.modulos || []).join(', ') || '(nenhum)';
+      el.innerHTML = '<div class="secao-email" style="margin-bottom:0">'
+        + '<div style="font-size:12px"><b>Admin:</b> ' + (p.admin ? '✅ Sim' : '⛔ Não') + '</div>'
+        + '<div style="font-size:12px"><b>Módulos:</b> ' + esc(mods) + '</div>'
+        + '<div style="font-size:12px"><b>Somente leitura:</b> ' + (p.somenteLeitura ? '🔒 Sim' : '✅ Não') + '</div>'
+        + '</div>';
+    } catch(_) { el.innerHTML = '<span style="color:var(--red);font-size:12px">❌ Erro ao processar resposta.</span>'; }
+  }).withFailureHandler(function(e) { el.innerHTML = '<span style="color:var(--red);font-size:12px">❌ ' + esc(e.message) + '</span>'; })
+  .obterSimulacaoAdmin(email);
+}
+
+// 9 ── Alertas de capacidade das abas ────────────────────────────
+function _pillCapacidade(pct) {
+  var cor = pct > 90 ? 'var(--red)' : (pct >= 70 ? 'var(--amber)' : 'var(--green)');
+  var bg  = pct > 90 ? 'var(--red-bg)' : (pct >= 70 ? 'var(--amber-bg)' : 'var(--green-bg)');
+  return '<span style="background:'+bg+';color:'+cor+';border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+pct+'%</span>';
+}
+function carregarAlertasCapacidadeAdmin() {
+  var tbody = document.getElementById('adm-cap-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var lista = p.abas || [];
+      if (!lista.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--text-muted)">Nenhuma aba monitorada.</td></tr>'; return; }
+      tbody.innerHTML = lista.map(function(a) {
+        return '<tr>'
+          + '<td style="padding:4px 8px">' + esc(a.nome || '') + '</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + (a.linhas != null ? a.linhas : '—') + '</td>'
+          + '<td style="padding:4px 8px;text-align:right">' + (a.max != null ? a.max : '—') + '</td>'
+          + '<td style="padding:4px 8px;text-align:center">' + _pillCapacidade(a.pct || 0) + '</td>'
+          + '</tr>';
+      }).join('');
+    } catch(_) { tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--red)">❌ Erro ao carregar capacidade.</td></tr>'; }
+  }).withFailureHandler(function(e) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:8px;color:var(--red)">❌ ' + esc(e.message) + '</td></tr>';
+  }).obterAlertasCapacidadeAdmin();
+}
+
+// 10 ── Checagem de integridade de dados ─────────────────────────
+function _verificarIntegridadeDadosAdmin() {
+  document.getElementById('adm-integridade-spin').style.display = 'block';
+  document.getElementById('adm-integridade-resultado').innerHTML = '';
+  google.script.run.withSuccessHandler(function(r) {
+    document.getElementById('adm-integridade-spin').style.display = 'none';
+    var el = document.getElementById('adm-integridade-resultado');
+    try {
+      var p = JSON.parse(r);
+      var problemas = p.problemas || [];
+      var totalTxt = p.totalVerificado != null ? ' (' + p.totalVerificado + ' registro(s) verificado(s))' : '';
+      if (!problemas.length) { el.innerHTML = '<div style="font-size:12px;color:var(--green)">✅ Nenhum problema encontrado' + totalTxt + '.</div>'; return; }
+      el.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">' + problemas.length + ' problema(s) encontrado(s)' + totalTxt + ':</div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Aba</th>'
+        + '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid var(--border)">Linha</th>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border)">Descrição</th>'
+        + '</tr></thead><tbody>' + problemas.map(function(pr) {
+          return '<tr><td style="padding:4px 8px">' + esc(pr.aba || '') + '</td>'
+            + '<td style="padding:4px 8px;text-align:right">' + (pr.linha != null ? pr.linha : '—') + '</td>'
+            + '<td style="padding:4px 8px">' + esc(pr.descricao || '') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    } catch(_) { el.innerHTML = '<div style="font-size:12px;color:var(--red)">❌ Erro ao processar verificação.</div>'; }
+  }).withFailureHandler(function(e) {
+    document.getElementById('adm-integridade-spin').style.display = 'none';
+    document.getElementById('adm-integridade-resultado').innerHTML = '<div style="font-size:12px;color:var(--red)">❌ ' + esc(e.message) + '</div>';
+  }).verificarIntegridadeDadosAdmin();
+}
+
+// 11 ── Status das integrações externas ──────────────────────────
+var _ADM_INTEGRACOES_LABEL = { email: '✉️ E-mail', telegram: '📲 Telegram', webhook: '🔗 Webhook' };
+function carregarStatusIntegracoesAdmin() {
+  var el = document.getElementById('adm-integracoes-lista');
+  el.textContent = 'Carregando...';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var chaves = Object.keys(p || {});
+      if (!chaves.length) { el.innerHTML = '<span style="color:var(--text-muted)">Nenhuma integração reportada.</span>'; return; }
+      el.innerHTML = chaves.map(function(k) {
+        var v = p[k] || {};
+        var cor = v.ok ? 'var(--green)' : 'var(--red)';
+        var label = _ADM_INTEGRACOES_LABEL[k] || k;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">'
+          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></span>'
+          + '<span style="font-weight:700;min-width:100px">' + esc(label) + '</span>'
+          + '<span style="color:var(--text-muted)">' + esc(v.detalhe || (v.ok ? 'OK' : 'Com problema')) + '</span>'
+          + '</div>';
+      }).join('');
+    } catch(_) { el.innerHTML = '<span style="color:var(--red)">❌ Erro ao carregar status.</span>'; }
+  }).withFailureHandler(function(e) { el.innerHTML = '<span style="color:var(--red)">❌ ' + esc(e.message) + '</span>'; })
+  .obterStatusIntegracoesAdmin();
+}
+
+// 12 ── Backup manual com etiqueta ────────────────────────────────
+function _executarBackupManualAdmin() {
+  var rotulo = document.getElementById('adm-backupetq-rotulo').value.trim();
+  document.getElementById('adm-backupetq-btn').disabled = true;
+  google.script.run.withSuccessHandler(function(resp) {
+    document.getElementById('adm-backupetq-btn').disabled = false;
+    try {
+      var r = JSON.parse(resp);
+      if (r.sucesso) {
+        mostrarMsg('adm-backupetq-msg', String(r.sucesso), 'ok');
+        document.getElementById('adm-backupetq-rotulo').value = '';
+        carregarHistoricoBackupAdmin();
+      } else {
+        mostrarMsg('adm-backupetq-msg', '❌ ' + (r.erro || 'Erro'), 'erro');
+      }
+    } catch(_) { mostrarMsg('adm-backupetq-msg', '❌ Erro ao processar resposta.', 'erro'); }
+  }).withFailureHandler(function(e) {
+    document.getElementById('adm-backupetq-btn').disabled = false;
+    mostrarMsg('adm-backupetq-msg', '❌ ' + e.message, 'erro');
+  }).executarBackup(rotulo);
+}
+
+// 13 ── Importar / exportar configuração completa ────────────────
+function _exportarConfigCompletaAdmin() {
+  mostrarMsg('adm-configexport-msg', '⏳ Gerando exportação...', 'ok');
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      if (!p.ok) { mostrarMsg('adm-configexport-msg', '❌ ' + (p.erro || 'Erro'), 'erro'); return; }
+      _baixarJSON(p.dados, 'admin-config-' + _dataHojeArquivo() + '.json');
+      mostrarMsg('adm-configexport-msg', '✅ Configuração exportada — verifique os downloads do navegador.', 'ok');
+    } catch(_) { mostrarMsg('adm-configexport-msg', '❌ Erro ao processar exportação.', 'erro'); }
+  }).withFailureHandler(function(e) { mostrarMsg('adm-configexport-msg', '❌ ' + e.message, 'erro'); })
+  .exportarConfiguracaoCompletaAdmin();
+}
+function _importarConfigCompletaAdmin() {
+  var input = document.getElementById('adm-configimport-file');
+  var arquivo = input.files && input.files[0];
+  if (!arquivo) { mostrarMsg('adm-configimport-msg', '❌ Selecione um arquivo .json.', 'erro'); return; }
+  if (!confirm('Importar esta configuração vai SOBRESCREVER a configuração atual do sistema. Continuar?')) return;
+  var leitor = new FileReader();
+  leitor.onload = function() {
+    google.script.run.withSuccessHandler(function(r) {
+      try {
+        var p = JSON.parse(r);
+        mostrarMsg('adm-configimport-msg', p.ok || ('❌ ' + (p.erro || 'Erro')), p.ok ? 'ok' : 'erro');
+      } catch(_) { mostrarMsg('adm-configimport-msg', '❌ Erro ao processar resposta.', 'erro'); }
+    }).withFailureHandler(function(e) { mostrarMsg('adm-configimport-msg', '❌ ' + e.message, 'erro'); })
+    .importarConfiguracaoCompletaAdmin(String(leitor.result));
+  };
+  leitor.onerror = function() { mostrarMsg('adm-configimport-msg', '❌ Não foi possível ler o arquivo.', 'erro'); };
+  leitor.readAsText(arquivo);
+}
+
+// 14 ── Trilha de aprovações ──────────────────────────────────────
+var _ADM_DECISAO_COR = { submetido: ['var(--amber)','var(--amber-bg)'], aprovado: ['var(--green)','var(--green-bg)'], reprovado: ['var(--red)','var(--red-bg)'] };
+function carregarTrilhaAprovacoesAdmin() {
+  var tbody = document.getElementById('adm-trilha-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="padding:8px;color:var(--text-muted)">Carregando...</td></tr>';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var lista = p.registros || [];
+      if (!lista.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:8px;color:var(--text-muted)">Nenhum registro.</td></tr>'; return; }
+      tbody.innerHTML = lista.map(function(a) {
+        var cores = _ADM_DECISAO_COR[a.decisao] || ['var(--text-muted)','var(--bg)'];
+        var pill = '<span style="background:'+cores[1]+';color:'+cores[0]+';border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;text-transform:uppercase">'+esc(a.decisao||'—')+'</span>';
+        return '<tr>'
+          + '<td style="padding:4px 8px;white-space:nowrap">' + esc(new Date(a.ts).toLocaleString('pt-BR')) + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.nf || '') + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.fornecedor || '') + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.usuarioSolicitante || '') + '</td>'
+          + '<td style="padding:4px 8px;text-align:center">' + pill + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.revisor || '') + '</td>'
+          + '<td style="padding:4px 8px">' + esc(a.justificativa || '') + '</td>'
+          + '</tr>';
+      }).join('');
+    } catch(_) { tbody.innerHTML = '<tr><td colspan="7" style="padding:8px;color:var(--red)">❌ Erro ao carregar trilha.</td></tr>'; }
+  }).withFailureHandler(function(e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:8px;color:var(--red)">❌ ' + esc(e.message) + '</td></tr>';
+  }).obterTrilhaAprovacoesAdmin();
+}
+
+// 15 ── Resumo diário automático (Telegram) ──────────────────────
+(function _initHoraResumoAdmin() {
+  var sel = document.getElementById('adm-resumo-horario');
+  if (!sel) return;
+  for (var h = 0; h < 24; h++) {
+    var opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = (h < 10 ? '0' : '') + h + 'h';
+    sel.appendChild(opt);
+  }
+})();
+function carregarResumoAutomaticoAdmin() {
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('adm-resumo-ativo').checked = !!p.ativo;
+      document.getElementById('adm-resumo-horario').value = (p.horario != null ? p.horario : 8);
+    } catch(_) {}
+  }).withFailureHandler(function() {}).obterConfigResumoAutomatico();
+}
+function _salvarResumoAutomaticoAdmin() {
+  var ativo   = document.getElementById('adm-resumo-ativo').checked;
+  var horario = parseInt(document.getElementById('adm-resumo-horario').value, 10);
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      mostrarMsg('adm-resumo-msg', p.ok || ('❌ ' + (p.erro || 'Erro')), p.ok ? 'ok' : 'erro');
+    } catch(_) { mostrarMsg('adm-resumo-msg', '❌ Erro ao processar resposta.', 'erro'); }
+  }).withFailureHandler(function(e) { mostrarMsg('adm-resumo-msg', '❌ ' + e.message, 'erro'); })
+  .configurarResumoAutomatico(ativo, horario);
+}
+function _enviarResumoAgoraAdmin() {
+  mostrarMsg('adm-resumo-msg', '⏳ Enviando resumo de teste...', 'ok');
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      mostrarMsg('adm-resumo-msg', p.ok || ('❌ ' + (p.erro || 'Erro')), p.ok ? 'ok' : 'erro');
+    } catch(_) { mostrarMsg('adm-resumo-msg', '❌ Erro ao processar resposta.', 'erro'); }
+  }).withFailureHandler(function(e) { mostrarMsg('adm-resumo-msg', '❌ ' + e.message, 'erro'); })
+  .enviarResumoAgora();
+}
+
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+
+// ════ CARGOS ══════════════════════════════════════════════════
+var _cargosLocal = [];
+var _MOD_LABELS  = { notas:'Notas', lancamento:'Lançamento', email:'E-mail', frete:'Frete', configuracoes:'Config', auditoria:'Auditoria', relatorios:'Relatórios', backup:'Backup' };
+
+function _carregarCargos() {
+  document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Carregando...</div>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) { document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+esc(r.erro)+'</div>'; return; }
+      _cargosLocal = r.cargos || [];
+      _renderCargos();
+    })
+    .withFailureHandler(function(e) { document.getElementById('cargos-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+e.message+'</div>'; })
+    .obterCargos();
+}
+
+function _renderCargos() {
+  var el = document.getElementById('cargos-lista');
+  if (!_cargosLocal.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum cargo criado ainda.</div>';
+    return;
+  }
+  el.innerHTML = _cargosLocal.map(function(c) {
+    var badges = c.modulos.map(function(m) {
+      return '<span style="background:var(--navy-50);color:var(--navy);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">'+esc(_MOD_LABELS[m]||m)+'</span>';
+    }).join(' ');
+    var roIcon = c.somenteLeitura ? ' <span style="font-size:11px;color:var(--text-muted)">🔒 RO</span>' : '';
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<strong style="font-size:13px;color:var(--text);flex:1;min-width:80px">'+esc(c.nome)+roIcon+'</strong>'
+      + '<div style="display:flex;gap:4px;flex-wrap:wrap;flex:2">'+badges+'</div>'
+      + '<div style="display:flex;gap:4px;flex-shrink:0">'
+      + '<button class="btn-acao" onclick="_iniciarEdicaoCargo(\''+esc(c.id)+'\')">✏️ Editar</button>'
+      + '<button class="btn-acao" style="color:var(--red);border-color:var(--red)" onclick="_excluirCargo(\''+esc(c.id)+'\',\''+esc(c.nome)+'\')">🗑️ Excluir</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _salvarCargo() {
+  var nome = (document.getElementById('cargo-nome').value || '').trim();
+  var id   = document.getElementById('cargo-edit-id').value || '';
+  var mods = [];
+  var modChecks = document.querySelectorAll('.cargo-mod:checked');
+  for (var i = 0; i < modChecks.length; i++) { mods.push(modChecks[i].value); }
+  var ro   = document.getElementById('cargo-ro').checked;
+  if (!nome) { showMsg('cargo','erro','❌ Informe o nome do cargo.'); return; }
+  document.getElementById('cargo-btn-salvar').disabled = true;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      document.getElementById('cargo-btn-salvar').disabled = false;
+      showMsg('cargo', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) { _limparFormCargo(); _carregarCargos(); }
+    })
+    .withFailureHandler(function(e) { document.getElementById('cargo-btn-salvar').disabled = false; showMsg('cargo','erro','❌ '+e.message); })
+    .salvarCargo(id, nome, mods, ro);
+}
+
+function _iniciarEdicaoCargo(id) {
+  var cargo = null;
+  for (var i = 0; i < _cargosLocal.length; i++) { if (_cargosLocal[i].id === id) { cargo = _cargosLocal[i]; break; } }
+  if (!cargo) return;
+  document.getElementById('cargo-nome').value    = cargo.nome;
+  document.getElementById('cargo-edit-id').value = cargo.id;
+  document.getElementById('cargo-ro').checked    = !!cargo.somenteLeitura;
+  Array.prototype.slice.call(document.querySelectorAll('.cargo-mod')).forEach(function(cb){ cb.checked = cargo.modulos.indexOf(cb.value) !== -1; });
+  document.getElementById('cargo-form-titulo').textContent = '✏️ Editar Cargo';
+  document.getElementById('cargo-btn-salvar').textContent  = '💾 Salvar Alterações';
+  document.getElementById('cargo-btn-cancel').style.display = '';
+  document.getElementById('cargo-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _cancelarEdicaoCargo() {
+  _limparFormCargo();
+}
+
+function _limparFormCargo() {
+  document.getElementById('cargo-nome').value    = '';
+  document.getElementById('cargo-edit-id').value = '';
+  document.getElementById('cargo-ro').checked    = false;
+  Array.prototype.slice.call(document.querySelectorAll('.cargo-mod')).forEach(function(cb){ cb.checked = false; });
+  document.getElementById('cargo-form-titulo').textContent  = '➕ Novo Cargo';
+  document.getElementById('cargo-btn-salvar').textContent   = '✅ Criar Cargo';
+  document.getElementById('cargo-btn-cancel').style.display = 'none';
+  document.getElementById('cargo-msg').style.display        = 'none';
+}
+
+function _excluirCargo(id, nome) {
+  if (!confirm('Excluir o cargo "' + nome + '"?\n\nCertifique-se de que não há usuários vinculados a ele.')) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('cargo', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) _carregarCargos();
+    })
+    .withFailureHandler(function(e) { showMsg('cargo','erro','❌ '+e.message); })
+    .excluirCargo(id);
+}
+
+// ════ USUÁRIOS ═════════════════════════════════════════════════
+var _usuariosLocal = [];
+var _CARGO_COLORS  = ['#DBEAFE','#DCFCE7','#FEF9C3','#FAE8FF','#FFEDD5','#CFFAFE','#FFE4E6','#F1F5F9'];
+var _CARGO_TEXT_COLORS = ['#1E40AF','#166534','#854D0E','#6B21A8','#9A3412','#0E7490','#9F1239','#334155'];
+
+function _carregarUsuarios() {
+  document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Carregando...</div>';
+  // Carregar cargos para o dropdown (se ainda não carregados)
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (!r.erro) {
+        _cargosLocal = r.cargos || [];
+        _renderCargoDropdown();
+      }
+    })
+    .obterCargos();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) { document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+esc(r.erro)+'</div>'; return; }
+      _usuariosLocal = r.usuarios || [];
+      _renderUsuarios();
+    })
+    .withFailureHandler(function(e) { document.getElementById('usuarios-lista').innerHTML = '<div style="color:var(--red);font-size:12px">❌ '+e.message+'</div>'; })
+    .obterUsuariosCargos();
+}
+
+function _renderCargoDropdown() {
+  var sel = document.getElementById('usr-cargo-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Selecionar cargo —</option>'
+    + _cargosLocal.map(function(c) {
+        return '<option value="'+esc(c.id)+'">'+esc(c.nome)+(c.somenteLeitura?' 🔒':'')+'</option>';
+      }).join('');
+}
+
+function _renderUsuarios() {
+  var el = document.getElementById('usuarios-lista');
+  if (!_usuariosLocal.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Nenhum usuário vinculado.</div>';
+    return;
+  }
+  el.innerHTML = _usuariosLocal.map(function(u, i) {
+    var cargo = _cargosLocal.filter(function(c){ return c.id === u.cargoId; })[0];
+    var cargoNome = cargo ? cargo.nome : '(cargo removido)';
+    var ci   = _cargosLocal.indexOf(cargo);
+    var colorIdx = ci >= 0 ? ci % _CARGO_COLORS.length : _CARGO_COLORS.length - 1;
+    var badge = '<span style="background:'+_CARGO_COLORS[colorIdx]+';color:'+_CARGO_TEXT_COLORS[colorIdx]+';border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+esc(cargoNome)+'</span>';
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'
+      + '<span style="font-size:12px;color:var(--text);flex:1">'+esc(u.email)+'</span>'
+      + badge
+      + '<button class="btn-acao" style="color:var(--red);border-color:var(--red);flex-shrink:0" onclick="_removerUsuario(\''+esc(u.email)+'\')">🗑️</button>'
+      + '</div>';
+  }).join('');
+}
+
+function _adicionarUsuario() {
+  var email   = (document.getElementById('usr-email').value || '').trim().toLowerCase();
+  var cargoId = document.getElementById('usr-cargo-sel').value;
+  if (!email) { showMsg('usr','erro','❌ Informe o e-mail.'); return; }
+  if (!cargoId) { showMsg('usr','erro','❌ Selecione um cargo.'); return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('usr', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) {
+        document.getElementById('usr-email').value = '';
+        document.getElementById('usr-cargo-sel').value = '';
+        _carregarUsuarios();
+      }
+    })
+    .withFailureHandler(function(e) { showMsg('usr','erro','❌ '+e.message); })
+    .salvarUsuarioCargo(email, cargoId);
+}
+
+function _removerUsuario(email) {
+  if (!confirm('Remover vínculo de "' + email + '"?\nEle passará a operar como Visualizador.')) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      showMsg('usr', r.ok ? 'ok' : 'erro', r.ok || r.erro);
+      if (r.ok) _carregarUsuarios();
+    })
+    .withFailureHandler(function(e) { showMsg('usr','erro','❌ '+e.message); })
+    .removerUsuarioCargo(email);
+}
+
+// ── Enforcement de permissões ────────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('configuracoes') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+        // Note: somenteLeitura not applied here — FormConfiguracoes is write-only for admins
+        // and non-admins without the module are already blocked above
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

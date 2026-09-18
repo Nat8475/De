@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px}
+    .wrap{max-width:820px;margin:0 auto}
+
+    /* ── Header ── */
+    .hero{
+      background:var(--grad-hero);border-radius:var(--r);color:#fff;
+      padding:16px 18px;margin-bottom:14px;position:relative;overflow:hidden;
+      box-shadow:0 6px 22px rgba(11,21,38,.30);animation:fadeUp .35s var(--ease) both
+    }
+    .hero::after{
+      content:'';position:absolute;right:-70px;top:-70px;width:210px;height:210px;
+      background:radial-gradient(circle,rgba(59,118,246,.35),transparent 70%);pointer-events:none
+    }
+    .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+    .hero h1{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .hero .sub{font-size:11px;color:#8FA6C8;margin-top:3px}
+
+    /* ── Stepper ── */
+    .stepper{display:flex;align-items:center;gap:0;margin-bottom:14px;padding:0 4px}
+    .step{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .step .dot{
+      width:24px;height:24px;border-radius:99px;display:grid;place-items:center;
+      font-size:11px;font-weight:800;font-family:var(--mono);
+      background:var(--surface);border:2px solid var(--border-def);color:var(--text-faint);
+      transition:background .3s var(--ease),border-color .3s var(--ease),color .3s var(--ease),transform .3s var(--ease-spring)
+    }
+    .step .lbl{font-size:11px;font-weight:700;color:var(--text-faint);transition:color .3s}
+    .step.active .dot{background:var(--navy);border-color:var(--navy);color:#fff;transform:scale(1.1);box-shadow:0 3px 10px rgba(37,99,235,.35)}
+    .step.active .lbl{color:var(--navy)}
+    .step.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+    .step.done .lbl{color:var(--green)}
+    .step-line{flex:1;height:2px;background:var(--border);margin:0 10px;border-radius:2px;position:relative;overflow:hidden}
+    .step-line::after{
+      content:'';position:absolute;inset:0;background:var(--green);border-radius:2px;
+      transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)
+    }
+    .step-line.fill::after{transform:scaleX(1)}
+
+    /* ── Card system (mockup-derived, page-local) ── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+      box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+    .card-head{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--border)}
+    .card-head .n{width:22px;height:22px;border-radius:7px;background:var(--navy-50);color:var(--navy);
+      display:grid;place-items:center;font-size:10.5px;font-weight:800;font-family:var(--mono);flex-shrink:0}
+    .card-head h2{font-size:12px;font-weight:800;color:var(--text);letter-spacing:.02em}
+    .card-head .hint{margin-left:auto;font-size:10px;color:var(--text-faint);font-weight:600}
+    .card-body{padding:14px 15px}
+    .grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
+    @media(max-width:620px){.grid2{grid-template-columns:1fr}}
+
+    /* ── Form basics ── */
+    .campo{margin-bottom:var(--gap-field)}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opt{font-weight:500;color:var(--text-muted)}
+    /* input/select/textarea base+foco vêm de Styles.html §6.2 */
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+
+    /* ── NFD chips ── */
+    .chipbox{
+      min-height:96px;border:1.5px dashed var(--border-def);border-radius:var(--r-sm);
+      background:var(--input-bg);padding:10px;cursor:text;
+      display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;
+      transition:border-color .18s,box-shadow .18s,background .18s
+    }
+    .chipbox:focus-within{border-color:var(--navy);border-style:solid;background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;height:25px;padding:0 4px 0 10px;
+      background:var(--navy-50);color:var(--navy);border:1px solid rgba(37,99,235,.25);
+      border-radius:8px;font-size:11.5px;font-weight:700;font-family:var(--mono);
+      animation:popIn .2s var(--ease-spring) both
+    }
+    .chip button{
+      border:none;background:transparent;color:var(--navy);width:17px;height:17px;border-radius:6px;
+      cursor:pointer;font-size:13px;line-height:1;display:grid;place-items:center;
+      transition:background .15s,color .15s
+    }
+    .chip button:hover{background:var(--red);color:#fff}
+    .chip.leaving{transition:opacity .18s,transform .18s;opacity:0;transform:scale(.8)}
+    .chipbox input{
+      flex:1;min-width:130px;border:none!important;background:transparent!important;
+      box-shadow:none!important;padding:4px 6px;font-family:var(--mono);font-size:12px;color:var(--text)
+    }
+    .chip-count{font-size:10.5px;font-weight:700;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:5px}
+    .chip-count b{color:var(--navy);font-family:var(--mono)}
+
+    /* ── E-mails padrão ── */
+    .mail-found{
+      background:var(--green-bg);border:1px solid rgba(5,150,105,.3);border-radius:var(--r-sm);
+      padding:9px 11px;font-size:11.5px;color:var(--text-body);
+      display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:38px
+    }
+    .mail-found .tag{
+      background:var(--surface);border:1px solid rgba(5,150,105,.35);color:var(--green);
+      padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;
+      animation:popIn .22s var(--ease-spring) both
+    }
+    .mail-found .empty{color:var(--text-faint);font-style:italic}
+    body.dark .mail-found .tag{color:#4ADE80}
+
+    /* ── Toggle switch (anexo comunicado) ── */
+    .com-strip{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:8px}
+    .switch-row{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+    .switch{position:relative;width:36px;height:21px;border-radius:99px;flex-shrink:0;background:var(--border-def);transition:background .22s var(--ease)}
+    .switch::after{content:'';position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:99px;
+      background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .22s var(--ease-spring)}
+    .switch-row input{display:none}
+    .switch-row input:checked+.switch{background:var(--navy)}
+    .switch-row input:checked+.switch::after{transform:translateX(15px)}
+    .switch-row .txt{font-size:12px;font-weight:700;color:var(--text-body)}
+
+    /* ── collapse (mockup pattern) ── */
+    .collapse{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s var(--ease)}
+    .collapse.open{grid-template-rows:1fr}
+    .collapse>div{overflow:hidden;min-height:0}
+    .collapse-inner{padding-top:11px}
+
+    /* ── Dropzone ── */
+    .drop{
+      border:2px dashed rgba(37,99,235,.3);border-radius:var(--r-sm);background:var(--input-bg);
+      padding:16px 10px;text-align:center;cursor:pointer;color:var(--text-muted);font-size:12px;
+      transition:border-color .18s,background .18s,transform .12s var(--ease)
+    }
+    .drop:hover,.drop.over{border-color:var(--navy);background:var(--navy-50);transform:scale(1.006)}
+    .drop.has-files{background:var(--green-bg);border-color:rgba(5,150,105,.4);border-style:solid;color:var(--green)}
+    .drop small{display:block;font-size:10px;color:var(--text-faint);margin-top:3px}
+    .file-item{
+      display:flex;align-items:center;gap:9px;background:var(--surface);
+      border:1.5px solid var(--border-def);border-radius:var(--r-sm);padding:7px 11px;margin-top:6px;
+      font-size:11px;animation:fadeUp .2s var(--ease) both
+    }
+    .file-item:hover{border-color:var(--navy);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+    .file-item .nm{flex:1;font-weight:600;color:var(--text-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .file-item .sz{font-family:var(--mono);font-size:10px;color:var(--text-faint)}
+    .file-item .rm{border:none;background:transparent;color:var(--text-faint);cursor:pointer;
+      width:20px;height:20px;border-radius:6px;font-size:14px;display:grid;place-items:center;
+      transition:background .15s,color .15s}
+    .file-item .rm:hover{background:var(--red-bg);color:var(--red)}
+
+    /* ── Assinatura preview ── */
+    .sig-preview{
+      margin-top:10px;border:1.5px dashed var(--border-def);border-radius:var(--r-sm);
+      background:var(--input-bg);padding:12px 14px;min-height:70px;
+      align-items:center;justify-content:center;text-align:center;
+      transition:border-color .2s var(--ease),background .2s var(--ease)
+    }
+    .sig-preview.filled{border-style:solid;border-color:rgba(37,99,235,.35);background:#fff}
+    .sig-preview .placeholder{font-size:11px;color:var(--text-faint);font-style:italic}
+    .sig-preview img{max-height:64px;max-width:260px;display:block;margin:0 auto;border-radius:4px}
+    .sig-preview .cap{font-size:10px;color:var(--text-muted);margin-top:5px}
+
+    /* ── Buttons ── */
+    .botoes{display:flex;gap:8px;margin-top:12px;position:sticky;bottom:0;padding:9px 0 2px;
+      background:linear-gradient(to top,var(--bg) 65%,transparent);z-index:5}
+    .botoes button{flex:1;padding:10px;border:none;border-radius:var(--r-sm);font-size:13px;
+      font-weight:700;cursor:pointer;font-family:var(--font)}
+    #btnPreview{background:linear-gradient(135deg,var(--navy-800),var(--navy));color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+    #btnPreview:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(37,99,235,.4)}
+    #btnPreview:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+    .btn-send{background:linear-gradient(135deg,#047857,var(--green));color:#fff;display:none;box-shadow:0 2px 8px rgba(5,150,105,.3)}
+    .btn-send:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(5,150,105,.4)}
+    .btn-send:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    #btnCancelar{background:transparent;border:1.5px solid var(--border-def);color:var(--text-muted);flex:0 0 auto;padding:10px 18px}
+    #btnCancelar:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-50)}
+
+    #aviso-duplicado{display:none;background:var(--amber-bg);border:1px solid #FCD34D;
+                     border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;
+                     font-size:12px;color:#92400E;line-height:1.5}
+    #aviso-duplicado strong{color:#78350F}
+    body.dark #aviso-duplicado{color:#FCD34D}
+    body.dark #aviso-duplicado strong{color:#FDE68A}
+    #btn-confirmar-envio{display:none;width:100%;padding:10px;border:none;
+                         border-radius:var(--r-sm);font-size:13px;font-weight:700;
+                         cursor:pointer;font-family:var(--font);
+                         background:linear-gradient(135deg,#B45309,var(--amber));color:#fff;margin-bottom:8px;
+                         transition:opacity .15s;box-shadow:0 2px 6px rgba(217,119,6,.28)}
+    #btn-confirmar-envio:hover{opacity:.9}
+
+    /* ── Preview card ── */
+    #preview{display:none;margin-bottom:12px;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);
+      border:1px solid var(--border);background:var(--surface);animation:fadeUp .25s var(--ease) both}
+    .prev-header{background:var(--grad-hero);color:#fff;padding:10px 14px;font-size:12px;font-weight:700}
+    .prev-subject{background:var(--navy-50);border-bottom:1px solid var(--border);
+                  padding:8px 13px;font-size:12px;color:var(--text-body)}
+    .prev-subject strong{color:var(--navy)}
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    thead tr{background:var(--surface-2)}
+    th{color:var(--text-faint);padding:8px 9px;text-align:left;font-weight:700;font-size:10px;
+       letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;border-bottom:2px solid var(--accent-border)}
+    td{padding:7px 9px;border-bottom:1px solid var(--border);color:var(--text-body)}
+    tbody tr{transition:background .12s}
+    tbody tr:hover{background:var(--accent-bg)}
+    .badge-f{background:var(--navy-50);color:var(--navy);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+    .badge-a{background:var(--amber-bg);color:#B45309;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+    .badge-r{background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+    body.dark .badge-a{color:#FCD34D}
+    body.dark .badge-r{color:#FCA5A5}
+    .total-row td{background:var(--navy-50)!important;color:var(--navy);font-weight:700}
+
+    /* ── Agendamento ── */
+    .agendar-box{background:var(--slate-100);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:9px 11px;margin:8px 12px}
+    .agendar-box .lbl{font-size:11px;font-weight:700;color:var(--text-body);margin-bottom:6px}
+    .agendar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .agendar-row input{flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--border-def);
+      border-radius:var(--r-sm);font-size:12px}
+    .agendar-row button{background:var(--amber);color:#fff;border:none;border-radius:var(--r-sm);
+      padding:7px 13px;cursor:pointer;font-size:12px;font-weight:700}
+    .prev-actions{display:flex;gap:8px;margin:10px 12px 12px}
+    .prev-actions button{border:none;border-radius:var(--r-sm);padding:8px 14px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:var(--font)}
+    #btnPreviewHtml{background:var(--text-muted);color:#fff;flex:1}
+    #btnEnviar{flex:2}
+
+    /* ── Messages ── */
+    #msg{margin-top:10px;padding:9px 12px;border-radius:var(--r-sm);font-size:12.5px;
+         display:none;white-space:pre-wrap;line-height:1.55}
+    .msg-ok  {background:var(--green-bg);color:#166534;border:1px solid #BBF7D0}
+    .msg-erro{background:var(--red-bg);color:#991B1B;border:1px solid #FECACA}
+    .msg-aviso{background:var(--amber-bg);color:#92400E;border:1px solid #FCD34D}
+    body.dark .msg-erro{color:#FCA5A5;border-color:#7F1D1D}
+    body.dark .msg-aviso{color:#FCD34D;border-color:#78350F}
+    .spinner{display:none;text-align:center;color:var(--text-muted);margin-top:8px;font-size:12px}
+
+    /* ── Modal preview email ── */
+    #modal-preview-email{display:none;position:fixed;inset:0;background:rgba(11,21,38,.55);z-index:9999;
+      align-items:center;justify-content:center;padding:16px}
+    .mpe-box{background:var(--surface);border-radius:var(--r);width:90vw;max-width:680px;max-height:85vh;
+      display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh-lg,0 20px 60px rgba(0,0,0,.4))}
+    .mpe-head{background:var(--grad-hero);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+    .mpe-head span{font-weight:700;font-size:14px}
+    .mpe-head button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer}
+    .mpe-meta{padding:12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+    #preview-iframe{flex:1;border:none;min-height:400px;background:#fff}
+
+    /* ── Success check-circle (usado ao final do envio) ── */
+    #successCard{display:none;text-align:center;padding:34px 20px}
+    #successCard.show{display:block;animation:popIn .4s var(--ease-spring) both}
+    #successCard h3{font-size:16px;font-weight:800;margin-bottom:6px;color:var(--text)}
+    #successCard p{font-size:12.5px;color:var(--text-muted);line-height:1.6}
+    .check-circle{width:56px;height:56px;border-radius:99px;background:var(--green);margin:0 auto 12px;
+      display:grid;place-items:center;animation:pulseRing 1.2s var(--ease) .3s 2}
+    .check-circle svg{width:28px;height:28px}
+    .check-circle path{stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;
+      stroke-dasharray:30;stroke-dashoffset:30;animation:drawCheck .5s var(--ease) .1s forwards}
+    @keyframes drawCheck{to{stroke-dashoffset:0}}
+    @keyframes pulseRing{0%{box-shadow:0 0 0 0 rgba(5,150,105,.4)}100%{box-shadow:0 0 0 16px rgba(5,150,105,0)}}
+
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body data-area="registro">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+<div class="wrap">
+
+<!-- ════════ HERO ════════ -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-mail"/></svg> Enviar E-mail de Devolução</h1>
+      <div class="sub">Monte e envie o comunicado de devolução por NFD</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ STEPPER ════════ -->
+<nav class="stepper" aria-label="Progresso do envio">
+  <div class="step active" id="st1"><div class="dot">1</div><div class="lbl">Notas</div></div>
+  <div class="step-line" id="ln1"></div>
+  <div class="step" id="st2"><div class="dot">2</div><div class="lbl">Revisão</div></div>
+  <div class="step-line" id="ln2"></div>
+  <div class="step" id="st3"><div class="dot">3</div><div class="lbl">Envio</div></div>
+</nav>
+
+<div id="formArea">
+
+<!-- CARD 1: NFDs + Destinatários -->
+<div class="card">
+  <div class="card-head"><span class="n">1</span><h2>NFDs e Destinatários</h2><span class="hint">Enter, vírgula ou colar lista</span></div>
+  <div class="card-body grid2">
+    <div>
+      <label for="nfdVisible">Números das NFDs</label>
+      <div class="chipbox" id="chipbox" onclick="document.getElementById('nfdVisible').focus()">
+        <input id="nfdVisible" type="text" placeholder="Digite e pressione Enter…" autocomplete="off">
+      </div>
+      <div class="chip-count" id="chipCount" style="display:none">
+        <b id="chipN">0</b>&nbsp;NFD(s) adicionada(s)
+      </div>
+      <textarea id="nfds" style="display:none" aria-hidden="true"></textarea>
+    </div>
+    <div>
+      <label>E-mails padrão <span class="opt">(exibidos após buscar)</span></label>
+      <div id="emailsBase" class="mail-found"><span class="empty">Aparecem após "Buscar e Pré-visualizar"</span></div>
+      <div style="margin-top:10px">
+        <label for="emailsExtras">E-mails extras <span class="opt">(opcional)</span></label>
+        <input type="text" id="emailsExtras" placeholder="ex@email.com; outro@email.com">
+        <div class="helper">Separe múltiplos endereços com ponto e vírgula.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comunicado: toggle + collapse -->
+<div class="com-strip">
+  <label class="switch-row">
+    <input type="checkbox" id="chk-comunicado" onchange="toggleComunicado()">
+    <span class="switch" aria-hidden="true"></span>
+    <span class="txt"><svg class="ic ic-sm"><use href="#i-file-check"/></svg> Incluir comunicado de retorno como anexo</span>
+  </label>
+  <div class="collapse" id="comunicado-fields">
+    <div><div class="collapse-inner">
+      <input type="file" id="file-comunicado" accept=".pdf,.jpg,.jpeg,.png"
+             style="display:none" onchange="onFileComunicado(this)">
+      <div class="drop" id="drop-com"
+           onclick="document.getElementById('file-comunicado').click()"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="onDropComunicado(event)">
+        <svg class="ic ic-sm"><use href="#i-download"/></svg> Clique ou arraste para adicionar arquivo(s)
+        <small>PDF, JPG ou PNG — máx. 8 MB por arquivo</small>
+      </div>
+      <div id="com-lista"></div>
+      <div style="margin-top:8px">
+        <label for="obs-comunicado">Observação <span class="opt">(opcional)</span></label>
+        <input type="text" id="obs-comunicado"
+               placeholder="Ex: Em anexo segue comunicado referente à NF 123456">
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- CARD 2: Assunto + Assinatura -->
+<div class="card">
+  <div class="card-head"><span class="n">2</span><h2>Assunto e assinatura</h2><span class="hint">Opcional</span></div>
+  <div class="card-body grid2">
+    <div>
+      <div class="campo">
+        <label for="assunto">Assunto <span class="opt">(gerado automaticamente)</span></label>
+        <input type="text" id="assunto" placeholder="Gerado após buscar as NFDs...">
+      </div>
+      <div class="campo" style="margin-bottom:0">
+        <label for="obs">Observações <span class="opt">(opcional)</span></label>
+        <textarea id="obs" rows="3" placeholder="Observações adicionais que aparecerão no e-mail..."></textarea>
+      </div>
+    </div>
+    <div>
+      <label for="sel-assinatura">Assinatura</label>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <select id="sel-assinatura" onchange="onMudarAssinatura()" style="flex:1">
+          <option value="">— Sem assinatura —</option>
+        </select>
+        <button type="button" onclick="carregarAssinaturas()" title="Recarregar lista"
+          style="background:none;border:1px solid var(--border-def);border-radius:var(--r-sm);padding:7px 10px;cursor:pointer;font-size:13px;color:var(--text-muted);display:inline-flex"><svg class="ic ic-sm"><use href="#i-refresh-cw"/></svg></button>
+      </div>
+      <div id="assn-thumb-preview" class="sig-preview" style="display:none">
+        <img id="assn-thumb-img-email" src="" alt="Assinatura">
+        <div class="cap">Preview da assinatura inserida no e-mail</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de ação — sticky no rodapé -->
+<div class="botoes">
+  <button id="btnPreview" onclick="buscarPreview()"><svg class="ic ic-sm"><use href="#i-search"/></svg> Buscar e Pré-visualizar</button>
+  <button id="btnCancelar" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Cancelar</button>
+</div>
+
+<!-- ═══ AVISO DE E-MAIL JÁ ENVIADO ═══ -->
+<div id="aviso-duplicado"></div>
+<button id="btn-confirmar-envio" onclick="enviar(true)">
+  <svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg> E-mail já enviado — Confirmar e Enviar mesmo assim
+</button>
+
+<!-- Preview -->
+<div id="preview">
+  <div class="prev-header"><svg class="ic ic-sm"><use href="#i-list"/></svg> Pré-visualização — confira antes de enviar</div>
+  <div class="prev-subject" id="prevAssunto"></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>NFD</th><th>Tipo</th><th>Motivo</th><th>Nº NF</th>
+          <th>Descrição</th><th style="text-align:center">Qtd</th>
+          <th style="text-align:right">Valor</th><th style="text-align:center">Data</th>
+        </tr>
+      </thead>
+      <tbody id="prevTabela"></tbody>
+      <tfoot><tr class="total-row" id="prevTotal"></tr></tfoot>
+    </table>
+  </div>
+  <div class="agendar-box">
+    <div class="lbl"><svg class="ic ic-sm"><use href="#i-calendar"/></svg> Agendamento</div>
+    <div class="agendar-row">
+      <input type="datetime-local" id="agendar-dt">
+      <button type="button" onclick="agendarEnvio()"><svg class="ic ic-sm"><use href="#i-calendar"/></svg> Agendar</button>
+    </div>
+    <div id="msg-agendar" style="font-size:11px;margin-top:4px"></div>
+  </div>
+  <div class="prev-actions">
+    <button type="button" id="btnPreviewHtml" onclick="previewEmail()"><svg class="ic ic-sm"><use href="#i-external-link"/></svg> Preview HTML</button>
+    <button type="button" id="btnEnviar" class="btn-send" onclick="enviar(false)"><svg class="ic ic-sm"><use href="#i-mail"/></svg> Confirmar e Enviar</button>
+  </div>
+</div>
+
+</div><!-- /#formArea -->
+
+<!-- ════════ SUCESSO ════════ -->
+<div class="card" id="successCard">
+  <div class="check-circle">
+    <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+  </div>
+  <h3>E-mail enviado!</h3>
+  <p id="successMsg">Comunicado de devolução enviado com sucesso.</p>
+  <div style="max-width:240px;margin:18px auto 0">
+    <button type="button" onclick="novoEnvio()"
+      style="width:100%;padding:10px;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;
+             cursor:pointer;font-family:var(--font);background:linear-gradient(135deg,var(--navy-800),var(--navy));color:#fff">
+      <svg class="ic ic-sm"><use href="#i-refresh-cw"/></svg> Novo envio
+    </button>
+  </div>
+</div>
+
+<!-- Modal preview email -->
+<div id="modal-preview-email">
+  <div class="mpe-box">
+    <div class="mpe-head">
+      <span style="display:inline-flex;align-items:center;gap:7px"><svg class="ic ic-sm"><use href="#i-external-link"/></svg> Preview do E-mail</span>
+      <button type="button" onclick="document.getElementById('modal-preview-email').style.display='none'" aria-label="Fechar"><svg class="ic ic-sm"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="mpe-meta">
+      <strong>Para:</strong> <span id="preview-para"></span><br>
+      <strong>Assunto:</strong> <span id="preview-assunto"></span>
+    </div>
+    <iframe id="preview-iframe"></iframe>
+  </div>
+</div>
+
+<div class="spinner" id="spinner">⏳ Processando...</div>
+<div id="msg"></div>
+
+</div><!-- /.wrap -->
+
+<script>
+var _dadosPreview      = null;
+var _jaEnviadas        = [];
+var _comunicados       = [];   // [{base64, mime, nome}]
+var _assinaturas       = [];   // lista de { nome, fileId }
+var _nfdChips          = [];   // chips visuais de NFD (sincronizados com #nfds)
+
+// ── Chips de NFD ─────────────────────────────────────────────
+var _dropComDefaultHTML =
+  '<svg class="ic ic-sm"><use href="#i-download"/></svg> Clique ou arraste para adicionar arquivo(s)<br><small>PDF, JPG ou PNG — máx. 8 MB por arquivo</small>';
+
+function nfdSync() {
+  document.getElementById('nfds').value = _nfdChips.join('\n');
+  var c = document.getElementById('chipCount');
+  document.getElementById('chipN').textContent = _nfdChips.length;
+  c.style.display = _nfdChips.length ? 'flex' : 'none';
+}
+
+function addNfdChipsFrom(raw) {
+  String(raw || '').split(/[\s,;]+/).map(function(s){ return s.trim().toUpperCase(); }).filter(Boolean).forEach(function(v) {
+    if (_nfdChips.indexOf(v) >= 0) { mostrar('aviso', '⚠️ NFD "' + v + '" já adicionada.'); return; }
+    _nfdChips.push(v);
+    var el = document.createElement('span');
+    el.className = 'chip';
+    el.dataset.v = v;
+    el.innerHTML = esc(v) + '<button type="button" aria-label="Remover ' + esc(v) + '" onclick="removeNfdChip(\'' + v.replace(/'/g, "\\'") + '\')">×</button>';
+    document.getElementById('chipbox').insertBefore(el, document.getElementById('nfdVisible'));
+  });
+  nfdSync();
+}
+
+function removeNfdChip(v) {
+  var i = _nfdChips.indexOf(v);
+  if (i < 0) return;
+  _nfdChips.splice(i, 1);
+  var el = document.querySelector('.chip[data-v="' + v + '"]');
+  if (el) { el.classList.add('leaving'); setTimeout(function(){ el.remove(); }, 190); }
+  nfdSync();
+}
+
+function clearNfdChips() {
+  _nfdChips = [];
+  document.querySelectorAll('#chipbox .chip').forEach(function(e){ e.remove(); });
+  nfdSync();
+}
+
+(function() {
+  var input = document.getElementById('nfdVisible');
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addNfdChipsFrom(input.value); input.value = ''; }
+    if (e.key === 'Backspace' && !input.value && _nfdChips.length) removeNfdChip(_nfdChips[_nfdChips.length - 1]);
+  });
+  input.addEventListener('paste', function(e) {
+    e.preventDefault();
+    addNfdChipsFrom((e.clipboardData || window.clipboardData).getData('text'));
+  });
+  input.addEventListener('blur', function() {
+    if (input.value.trim()) { addNfdChipsFrom(input.value); input.value = ''; }
+  });
+})();
+
+// ── Assinaturas ────────────────────────────────────────────
+function carregarAssinaturas() {
+  var sel = document.getElementById('sel-assinatura');
+  sel.innerHTML = '<option value="">— Sem assinatura —</option>';
+  try {
+    google.script.run
+      .withSuccessHandler(function(r) {
+        try {
+          var p = JSON.parse(r);
+          _assinaturas = p.lista || [];
+          _assinaturas.forEach(function(a) {
+            var opt = document.createElement('option');
+            opt.value = a.fileId;
+            opt.textContent = a.nome;
+            sel.appendChild(opt);
+          });
+        } catch(_){}
+      })
+      .withFailureHandler(function(){})
+      .obterListaAssinaturasPublico();
+  } catch(_){}
+}
+
+function onMudarAssinatura() {
+  var sel    = document.getElementById('sel-assinatura');
+  var fileId = sel.value;
+  var thumb  = document.getElementById('assn-thumb-preview');
+  var img    = document.getElementById('assn-thumb-img-email');
+  if (!fileId) {
+    thumb.style.display = 'none';
+    thumb.classList.remove('filled');
+    img.src = '';
+    return;
+  }
+  img.src = '';
+  img.alt = 'Carregando…';
+  thumb.style.display = 'flex';
+  thumb.classList.remove('filled');
+  google.script.run
+    .withSuccessHandler(function(dataUrl) {
+      if (dataUrl) {
+        img.src = dataUrl;
+        img.alt = 'Assinatura';
+        thumb.classList.add('filled');
+      } else {
+        img.alt = 'Não foi possível carregar';
+      }
+    })
+    .withFailureHandler(function() {
+      img.alt = 'Erro ao carregar imagem';
+    })
+    .obterAssinaturaBase64(fileId);
+}
+// ── Comunicado — múltiplos arquivos ─────────────────────────
+function toggleComunicado() {
+  var chk = document.getElementById('chk-comunicado').checked;
+  document.getElementById('comunicado-fields').classList.toggle('open', chk);
+  if (!chk) removerComunicado();
+}
+
+function _renderComunicados() {
+  var lista = document.getElementById('com-lista');
+  var drop  = document.getElementById('drop-com');
+  lista.innerHTML = '';
+  _comunicados.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'file-item';
+    var tamStr = c.size < 1048576
+      ? Math.round(c.size / 1024) + ' KB'
+      : (c.size / 1048576).toFixed(1) + ' MB';
+    item.innerHTML = '<span style="font-size:15px">📄</span>'
+      + '<span class="nm">' + esc(c.nome) + '</span>'
+      + '<span class="sz">' + tamStr + '</span>'
+      + '<button class="rm" title="Remover" onclick="removerComunicadoIdx(' + i + ')">✕</button>';
+    lista.appendChild(item);
+  });
+  if (_comunicados.length > 0) {
+    drop.classList.add('has-files');
+    drop.innerHTML = '➕ Clique ou arraste para adicionar mais arquivos<br>'
+      + '<small>(' + _comunicados.length + ' arquivo(s) selecionado(s))</small>';
+  } else {
+    drop.classList.remove('has-files');
+    drop.innerHTML = _dropComDefaultHTML;
+  }
+  // reset input so same file can be re-added after removal
+  document.getElementById('file-comunicado').value = '';
+}
+
+// ── Comunicado — drop ────────────────────────────────────────
+function onDropComunicado(evt) {
+  evt.preventDefault();
+  document.getElementById('drop-com').classList.remove('over');
+  var arquivos = evt.dataTransfer.files;
+  for (var i = 0; i < arquivos.length; i++) processarArquivoComunicado(arquivos[i]);
+}
+
+function onFileComunicado(input) {
+  if (input.files) {
+    for (var i = 0; i < input.files.length; i++) processarArquivoComunicado(input.files[i]);
+  }
+}
+
+function processarArquivoComunicado(file) {
+  var maxBytes = 8 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    mostrar('erro', '❌ Arquivo muito grande: ' + file.name + ' (limite 8 MB).');
+    return;
+  }
+  var tipos = ['application/pdf','image/jpeg','image/jpg','image/png'];
+  if (tipos.indexOf(file.type) === -1) {
+    mostrar('erro', '❌ Formato inválido: ' + file.name + '. Use PDF, JPG ou PNG.');
+    return;
+  }
+  // evitar duplicatas pelo nome
+  for (var k = 0; k < _comunicados.length; k++) {
+    if (_comunicados[k].nome === file.name) {
+      mostrar('aviso', '⚠️ Arquivo "' + file.name + '" já adicionado.');
+      return;
+    }
+  }
+
+  var reader = new FileReader();
+  reader.onload = (function(f) {
+    return function(e) {
+      _comunicados.push({ base64: e.target.result.split(',')[1], mime: f.type, nome: f.name, size: f.size });
+      _renderComunicados();
+      document.getElementById('msg').style.display = 'none';
+    };
+  })(file);
+  reader.readAsDataURL(file);
+}
+
+function removerComunicadoIdx(idx) {
+  _comunicados.splice(idx, 1);
+  _renderComunicados();
+}
+
+function removerComunicado() {
+  _comunicados = [];
+  _renderComunicados();
+}
+
+// ── Preview / Envio ──────────────────────────────────────────
+function buscarPreview() {
+  var nfds = document.getElementById('nfds').value.trim();
+  if (!nfds) { mostrar('erro', '❌ Informe ao menos uma NFD.'); return; }
+
+  document.getElementById('preview').style.display           = 'none';
+  document.getElementById('btnEnviar').style.display         = 'none';
+  document.getElementById('aviso-duplicado').style.display   = 'none';
+  document.getElementById('btn-confirmar-envio').style.display = 'none';
+  document.getElementById('msg').style.display               = 'none';
+  document.getElementById('spinner').style.display           = 'block';
+  document.getElementById('btnPreview').disabled             = true;
+  setStep(1);
+
+  google.script.run
+    .withSuccessHandler(function(respCheck) {
+      try { _jaEnviadas = JSON.parse(respCheck).jaEnviadas || []; } catch(_) { _jaEnviadas = []; }
+      buscarPreviewDireto();
+    })
+    .withFailureHandler(function() { _jaEnviadas = []; buscarPreviewDireto(); })
+    .verificarEmailsJaEnviados(nfds);
+}
+
+function buscarPreviewDireto() {
+  var nfds = document.getElementById('nfds').value.trim();
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('spinner').style.display  = 'none';
+      document.getElementById('btnPreview').disabled    = false;
+      var r = JSON.parse(resp);
+      if (r.erro) { mostrar('erro', '❌ ' + r.erro); return; }
+      _dadosPreview = r;
+
+      if (r.emailsBase) {
+        var tagsHtml = r.emailsBase.map(function(e){ return '<span class="tag">' + esc(e) + '</span>'; }).join('');
+        document.getElementById('emailsBase').innerHTML =
+          '<strong>E-mails padrão (sempre incluídos):</strong> ' + tagsHtml;
+      }
+      if (!document.getElementById('assunto').value) {
+        document.getElementById('assunto').value = r.titulo;
+      }
+
+      var tbody = document.getElementById('prevTabela');
+      tbody.innerHTML = '';
+      var total = 0;
+      r.itens.forEach(function(it) {
+        var badge = it.tipo === 'Avaria'   ? '<span class="badge-a">Avaria</span>'
+                  : it.tipo === 'Falta'    ? '<span class="badge-f">Falta</span>'
+                  : it.tipo === 'Rejeição' ? '<span class="badge-r">Rejeição</span>'
+                  : it.tipo || '—';
+        var val = it.valor > 0 ? 'R$ ' + it.valor.toFixed(2).replace('.',',') : '—';
+        total += it.valor;
+        var anexoIcon = it.urlAnexo
+          ? ' <span title="NF anexada" style="color:#2E7D32">📎</span>' : '';
+        tbody.innerHTML +=
+          '<tr><td><b>' + esc(it.nfd) + '</b>' + anexoIcon + '</td>' +
+          '<td>' + badge + '</td>' +
+          '<td style="color:var(--text-muted);font-size:11px">' + esc((it.motivo||'—').substring(0,35)) + '</td>' +
+          '<td>' + esc(it.nf) + '</td>' +
+          '<td>' + esc(it.desc.substring(0,35)) + '</td>' +
+          '<td style="text-align:center">' + it.qtd + '</td>' +
+          '<td style="text-align:right">' + val + '</td>' +
+          '<td style="text-align:center">' + esc(it.data) + '</td></tr>';
+      });
+
+      document.getElementById('prevTotal').innerHTML =
+        '<td colspan="6" style="text-align:right;padding:6px 8px">TOTAL:</td>' +
+        '<td style="text-align:right;padding:6px 8px">R$ ' +
+        total.toFixed(2).replace('.',',') + '</td><td></td>';
+
+      document.getElementById('prevAssunto').innerHTML =
+        '<strong>Assunto:</strong> ' + esc(document.getElementById('assunto').value || r.titulo) +
+        ' &nbsp;|&nbsp; <strong>Fornecedor:</strong> ' + esc(r.forn) +
+        ' &nbsp;|&nbsp; <strong>' + r.itens.length + ' NFD(s)</strong>';
+
+      document.getElementById('preview').style.display = 'block';
+      setStep(2);
+
+      if (_jaEnviadas.length > 0) {
+        var avisoEl = document.getElementById('aviso-duplicado');
+        var linhas  = _jaEnviadas.map(function(j) {
+          return '• <strong>' + esc(j.nfd) + '</strong>: já enviada ' + j.total +
+                 ' vez(es) — último envio em <strong>' + esc(j.data) + '</strong>';
+        });
+        avisoEl.innerHTML =
+          '⚠️ <strong>Atenção: e-mail já enviado para as seguintes NFDs:</strong><br>' +
+          linhas.join('<br>') + '<br><br>Deseja enviar novamente mesmo assim?';
+        avisoEl.style.display                              = 'block';
+        document.getElementById('btnEnviar').style.display          = 'none';
+        document.getElementById('btn-confirmar-envio').style.display = 'block';
+      } else {
+        document.getElementById('btnEnviar').style.display           = 'flex';
+        document.getElementById('btn-confirmar-envio').style.display = 'none';
+        document.getElementById('aviso-duplicado').style.display     = 'none';
+      }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spinner').style.display  = 'none';
+      document.getElementById('btnPreview').disabled    = false;
+      mostrar('erro', '❌ ' + e.message);
+    })
+    .buscarDadosNFDs(nfds);
+}
+
+function enviar(forcado) {
+  document.getElementById('btnEnviar').disabled             = true;
+  document.getElementById('btn-confirmar-envio').disabled   = true;
+  document.getElementById('spinner').style.display          = 'block';
+  document.getElementById('msg').style.display              = 'none';
+  document.getElementById('aviso-duplicado').style.display  = 'none';
+  setStep(3);
+
+  var usaComunicado = document.getElementById('chk-comunicado').checked;
+  if (usaComunicado && _comunicados.length === 0) {
+    mostrar('erro', '❌ Adicione ao menos um arquivo de comunicado antes de enviar.');
+    document.getElementById('btnEnviar').disabled           = false;
+    document.getElementById('btn-confirmar-envio').disabled = false;
+    document.getElementById('spinner').style.display        = 'none';
+    setStep(2);
+    return;
+  }
+
+  var params = {
+    nfdsRaw:           document.getElementById('nfds').value.trim(),
+    emailsExtras:      document.getElementById('emailsExtras').value.trim(),
+    assunto:           document.getElementById('assunto').value.trim(),
+    obs:               document.getElementById('obs').value.trim(),
+    assinaturaFileId:  document.getElementById('sel-assinatura').value,
+    comunicados:       usaComunicado ? _comunicados.map(function(c){ return {base64:c.base64,mime:c.mime,nome:c.nome}; }) : [],
+    comObs:            usaComunicado ? document.getElementById('obs-comunicado').value.trim() : ''
+  };
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('spinner').style.display          = 'none';
+      document.getElementById('btnEnviar').disabled             = false;
+      document.getElementById('btn-confirmar-envio').disabled   = false;
+      var r = JSON.parse(resp);
+      if (r.sucesso) {
+        document.getElementById('preview').style.display             = 'none';
+        document.getElementById('btnEnviar').style.display           = 'none';
+        document.getElementById('btn-confirmar-envio').style.display = 'none';
+        // Limpar todos os campos
+        ['nfds','assunto','obs','emailsExtras','obs-comunicado'].forEach(function(id){
+          document.getElementById(id).value = '';
+        });
+        clearNfdChips();
+        document.getElementById('chk-comunicado').checked = false;
+        document.getElementById('comunicado-fields').classList.remove('open');
+        removerComunicado();
+        _jaEnviadas = [];
+        mostrarSucessoEnvio(r.sucesso);
+      } else {
+        mostrar('erro', r.erro || 'Erro desconhecido.');
+        document.getElementById('btnEnviar').style.display = 'flex';
+        setStep(2);
+      }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spinner').style.display          = 'none';
+      document.getElementById('btnEnviar').disabled             = false;
+      document.getElementById('btn-confirmar-envio').disabled   = false;
+      mostrar('erro', '❌ ' + e.message);
+      setStep(2);
+    })
+    .enviarEmailDevolucao(params);
+}
+
+// ── Stepper (indicador visual do progresso do fluxo) ─────────
+function setStep(n) {
+  [1, 2, 3].forEach(function(i) {
+    var s = document.getElementById('st' + i);
+    if (!s) return;
+    s.classList.toggle('active', i === n);
+    s.classList.toggle('done', i < n);
+    var dot = s.querySelector('.dot');
+    if (i < n) {
+      dot.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    } else {
+      dot.textContent = i;
+    }
+  });
+  var ln1 = document.getElementById('ln1');
+  var ln2 = document.getElementById('ln2');
+  if (ln1) ln1.classList.toggle('fill', n > 1);
+  if (ln2) ln2.classList.toggle('fill', n > 2);
+}
+
+// ── Tela de sucesso (substitui #msg no envio final bem-sucedido) ──
+function mostrarSucessoEnvio(txt) {
+  setStep(3);
+  document.getElementById('st3').classList.add('done');
+  document.getElementById('st3').classList.remove('active');
+  document.getElementById('successMsg').textContent = txt;
+  document.getElementById('formArea').style.display = 'none';
+  var card = document.getElementById('successCard');
+  card.classList.add('show');
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Reinicia o formulário para um novo envio (chamado a partir da tela de sucesso)
+function novoEnvio() {
+  document.getElementById('successCard').classList.remove('show');
+  document.getElementById('formArea').style.display = '';
+  document.getElementById('msg').style.display = 'none';
+  setStep(1);
+  document.getElementById('nfdVisible').focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function agendarEnvio() {
+  var dt = document.getElementById('agendar-dt').value;
+  if (!dt) { document.getElementById('msg-agendar').innerHTML = '<span style="color:#DC2626">Selecione data e hora.</span>'; return; }
+  var iso = new Date(dt).toISOString();
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('msg-agendar').innerHTML = p.ok
+        ? '<span style="color:#059669">'+p.ok+'</span>'
+        : '<span style="color:#DC2626">'+p.erro+'</span>';
+    } catch(_){}
+  }).agendarEmailDevolucao(_coletarParams(), iso);
+}
+
+function previewEmail() {
+  var assunto = document.getElementById('assunto').value.trim();
+  var destEl   = document.getElementById('destlist');
+  var dests    = destEl ? destEl.textContent : '—';
+  document.getElementById('preview-para').textContent    = dests;
+  document.getElementById('preview-assunto').textContent = assunto || '(sem assunto)';
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      var iframe = document.getElementById('preview-iframe');
+      iframe.srcdoc = p.html || '<p style="padding:20px;font-family:sans-serif;color:#888">Preview não disponível.</p>';
+      document.getElementById('modal-preview-email').style.display = 'flex';
+    } catch(_){}
+  }).previewEmailDevolucao(_coletarParams());
+}
+
+function _coletarParams() {
+  var nfds = (document.getElementById('nfds').value || '').split(/[\n,;]+/).map(function(s){return s.trim();}).filter(Boolean);
+  return {
+    nfds:             nfds,
+    assunto:          document.getElementById('assunto').value.trim(),
+    obs:              document.getElementById('obs') ? document.getElementById('obs').value.trim() : '',
+    assinaturaFileId: document.getElementById('sel-assinatura').value
+  };
+}
+
+// Carregar assinaturas ao iniciar o formulário
+try { carregarAssinaturas(); } catch(_){}
+setStep(1);
+
+function mostrar(tipo, txt) {
+  var el = document.getElementById('msg');
+  el.className    = 'msg-' + tipo;
+  el.textContent  = txt;
+  el.style.display = 'block';
+}
+
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Pré-preencher NFDs enviadas da seleção em FormNotas
+(function() {
+  try {
+    var nfds = localStorage.getItem('cdv_email_nfds');
+    if (nfds) {
+      addNfdChipsFrom(nfds);
+      localStorage.removeItem('cdv_email_nfds');
+    }
+  } catch(_) {}
+})();
+document.getElementById('nfdVisible').focus();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('email') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) {
+          var banner = document.createElement('div');
+          banner.style.cssText = 'background:#FFF7E0;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:10px;display:flex;align-items:center;gap:8px';
+          banner.innerHTML = '🔒 <strong>Modo somente leitura</strong> — você não tem permissão para realizar alterações.';
+          document.body.insertBefore(banner, document.body.firstChild);
+          document.querySelectorAll('button:not(.btn-cancel):not(.back)').forEach(function(b){ b.disabled = true; });
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

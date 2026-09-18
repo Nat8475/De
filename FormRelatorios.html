@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px}
+    .campo{margin-bottom:var(--gap-field)}
+    .campo:last-child{margin-bottom:0}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opc{font-weight:500;color:var(--text-muted)}
+    /* select/input (borda, foco) vêm de Styles.html §6.2 */
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+    .mono{font-family:var(--mono)}
+    .linha2{display:flex;gap:10px;flex-wrap:wrap}
+    .linha2 .campo{flex:1;min-width:130px}
+    /* switch de e-mail */
+    .op-email{
+      display:flex;align-items:center;gap:12px;background:var(--input-bg);
+      border:1.5px solid var(--border-def);border-radius:var(--r-sm);padding:11px 14px;
+      cursor:pointer;transition:border-color .18s
+    }
+    .op-email:hover{border-color:var(--navy)}
+    .op-email .tx strong{font-size:12.5px;color:var(--text)}
+    .op-email .tx div{font-size:10.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
+    /* "o que sai no PDF" */
+    .pdf-inclui{display:flex;flex-direction:column;gap:6px}
+    .pdf-inclui .li{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-body)}
+    .pdf-inclui .li .ck{color:var(--green);font-weight:800}
+    /* mensagem de resultado */
+    .msg{
+      margin-top:10px;padding:10px 13px;border-radius:var(--r-sm);font-size:12.5px;
+      display:none;line-height:1.6;border:1px solid;animation:fadeUp .25s var(--ease-out) both
+    }
+    .msg-ok  {background:var(--green-bg);color:#166534;border-color:#BBF7D0}
+    .msg-erro{background:var(--red-bg);color:#991B1B;border-color:#FECACA}
+    body.dark .msg-ok{color:#4ADE80;border-color:#14532D}
+    body.dark .msg-erro{color:#FCA5A5;border-color:#7F1D1D}
+    .msg a.link-pdf{
+      display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:var(--grad-accent);color:#fff;
+      padding:7px 16px;border-radius:8px;font-weight:700;text-decoration:none;font-size:12px
+    }
+  </style>
+</head>
+<body data-area="analise">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-bar-chart-3"/></svg> Relatórios de Devoluções</h1>
+      <div class="rd-sub">Escolha o tipo à esquerda, configure e gere — tudo numa tela</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-shell">
+  <!-- NAV LATERAL -->
+  <div class="rd-nav">
+    <div class="grp">Por período</div>
+    <button class="rd-nav-item on" onclick="ir('mensal', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></span>Mensal</button>
+    <button class="rd-nav-item" onclick="ir('semanal', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></span>Semanal</button>
+    <button class="rd-nav-item" onclick="ir('diario', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-list"/></svg></span>Diário</button>
+    <div class="grp">Por recorte</div>
+    <button class="rd-nav-item" onclick="ir('fornecedor', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-truck"/></svg></span>Por Fornecedor</button>
+    <button class="rd-nav-item" onclick="ir('pendentes', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg></span>Pendências</button>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div>
+    <!-- MENSAL -->
+    <div class="rd-pane on" id="pane-mensal">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></span><h2>Relatório Mensal</h2><span class="rd-tag">PDF</span></div>
+        <div class="rd-card-body">
+          <div class="linha2">
+            <div class="campo">
+              <label>Mês</label>
+              <select id="m-mes">
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                <option value="3">Março</option><option value="4">Abril</option>
+                <option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option>
+                <option value="9">Setembro</option><option value="10">Outubro</option>
+                <option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Ano</label>
+              <input type="number" class="mono" id="m-ano" min="2020" max="2099">
+            </div>
+          </div>
+          <label class="op-email">
+            <span class="rd-switch"><input type="checkbox" id="m-email"><span class="track"></span></span>
+            <span class="tx"><strong>Enviar por e-mail após gerar</strong>
+              <div>O PDF será enviado como anexo para os destinatários configurados</div></span>
+          </label>
+        </div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-check"/></svg></span><h2>O que sai no PDF</h2></div>
+        <div class="rd-card-body pdf-inclui">
+          <div class="li"><span class="ck">✓</span>KPIs do período: pendentes, devolvidos, vendas, taxa de resolução</div>
+          <div class="li"><span class="ck">✓</span>Resumo por fornecedor com totais</div>
+          <div class="li"><span class="ck">✓</span>Listagem detalhada de todos os lançamentos</div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="m-btn" onclick="gerarMensal()"><span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-calendar"/></svg> Gerar Relatório Mensal</button>
+      </div>
+      <div class="msg" id="msg-m"></div>
+    </div>
+
+    <!-- SEMANAL -->
+    <div class="rd-pane" id="pane-semanal">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></span><h2>Relatório Semanal</h2><span class="rd-tag">PDF</span></div>
+        <div class="rd-card-body">
+          <div class="campo">
+            <label>Período</label>
+            <select id="s-modo" onchange="atualizarCamposSemanal()">
+              <option value="ultimos7">Últimos 7 dias (até hoje)</option>
+              <option value="semana_corrente">Semana corrente (seg–dom)</option>
+              <option value="semana_anterior">Semana anterior</option>
+              <option value="personalizado">Período personalizado</option>
+            </select>
+          </div>
+          <div class="linha2" id="s-datas" style="display:none">
+            <div class="campo"><label>Data início</label><input type="date" id="s-ini"></div>
+            <div class="campo"><label>Data fim</label><input type="date" id="s-fim"></div>
+          </div>
+          <label class="op-email">
+            <span class="rd-switch"><input type="checkbox" id="s-email"><span class="track"></span></span>
+            <span class="tx"><strong>Enviar por e-mail após gerar</strong>
+              <div>O PDF será enviado como anexo para os destinatários configurados</div></span>
+          </label>
+        </div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-check"/></svg></span><h2>O que sai no PDF</h2></div>
+        <div class="rd-card-body pdf-inclui">
+          <div class="li"><span class="ck">✓</span>KPIs da semana: pendentes, devolvidos, vendas, taxa de resolução</div>
+          <div class="li"><span class="ck">✓</span>Resumo por fornecedor</div>
+          <div class="li"><span class="ck">✓</span>Listagem detalhada da semana</div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="s-btn" onclick="gerarSemanal()"><span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-calendar"/></svg> Gerar Relatório Semanal</button>
+      </div>
+      <div class="msg" id="msg-s"></div>
+    </div>
+
+    <!-- DIÁRIO -->
+    <div class="rd-pane" id="pane-diario">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-list"/></svg></span><h2>Relatório Diário</h2><span class="rd-tag">PDF</span></div>
+        <div class="rd-card-body">
+          <div class="campo"><label>Data</label><input type="date" id="d-data"></div>
+          <label class="op-email">
+            <span class="rd-switch"><input type="checkbox" id="d-email"><span class="track"></span></span>
+            <span class="tx"><strong>Enviar por e-mail após gerar</strong>
+              <div>O PDF será enviado como anexo para os destinatários configurados</div></span>
+          </label>
+        </div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-check"/></svg></span><h2>O que sai no PDF</h2></div>
+        <div class="rd-card-body pdf-inclui">
+          <div class="li"><span class="ck">✓</span>KPIs do dia: pendentes, devolvidos, vendas, taxa de resolução</div>
+          <div class="li"><span class="ck">✓</span>Resumo por fornecedor</div>
+          <div class="li"><span class="ck">✓</span>Listagem detalhada do dia</div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="d-btn" onclick="gerarDiario()"><span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-list"/></svg> Gerar Relatório Diário</button>
+      </div>
+      <div class="msg" id="msg-d"></div>
+    </div>
+
+    <!-- FORNECEDOR -->
+    <div class="rd-pane" id="pane-fornecedor">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-truck"/></svg></span><h2>Relatório por Fornecedor</h2><span class="rd-tag">PDF</span></div>
+        <div class="rd-card-body">
+          <div class="campo">
+            <label>Fornecedor</label>
+            <select id="f-forn">
+              <option value="">⏳ Carregando fornecedores...</option>
+            </select>
+            <div id="f-forn-erro" class="helper" style="color:var(--red);display:none"></div>
+          </div>
+          <div class="linha2">
+            <div class="campo"><label>Data início</label><input type="date" id="f-ini"></div>
+            <div class="campo"><label>Data fim</label><input type="date" id="f-fim"></div>
+          </div>
+          <label class="op-email">
+            <span class="rd-switch"><input type="checkbox" id="f-email"><span class="track"></span></span>
+            <span class="tx"><strong>Enviar por e-mail após gerar</strong>
+              <div>O PDF será enviado como anexo para os destinatários configurados</div></span>
+          </label>
+        </div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-check"/></svg></span><h2>O que sai no PDF</h2></div>
+        <div class="rd-card-body pdf-inclui">
+          <div class="li"><span class="ck">✓</span>KPIs do fornecedor: pendentes, devolvidos, vendas, taxa de resolução</div>
+          <div class="li"><span class="ck">✓</span>Listagem detalhada apenas daquele fornecedor no período</div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="f-btn" onclick="gerarFornecedor()"><span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-truck"/></svg> Gerar Relatório</button>
+      </div>
+      <div class="msg" id="msg-f"></div>
+    </div>
+
+    <!-- PENDÊNCIAS -->
+    <div class="rd-pane" id="pane-pendentes">
+      <div class="rd-stats" id="p-stats">
+        <div class="box"><div class="v ambar" id="p-stat-total">…</div><div class="l">Total Pendentes</div></div>
+        <div class="box"><div class="v verm" id="p-stat-atraso">…</div><div class="l">+30 dias</div></div>
+        <div class="box"><div class="v" id="p-stat-valor">…</div><div class="l">Valor em Aberto</div></div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg></span><h2>Relatório de Pendências</h2><span class="rd-tag">PDF</span></div>
+        <div class="rd-card-body">
+          <div class="helper" style="margin:0 0 11px">Snapshot de <b>todos os itens Pendentes</b> no momento da geração, do mais antigo pro mais recente, com dias em aberto — útil pra reuniões de cobrança com fornecedores.</div>
+          <label class="op-email">
+            <span class="rd-switch"><input type="checkbox" id="p-email"><span class="track"></span></span>
+            <span class="tx"><strong>Enviar por e-mail após gerar</strong>
+              <div>O PDF será enviado como anexo para os destinatários configurados</div></span>
+          </label>
+        </div>
+      </div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-check"/></svg></span><h2>O que sai no PDF</h2></div>
+        <div class="rd-card-body pdf-inclui">
+          <div class="li"><span class="ck">✓</span>Todos os itens Pendentes, ordenados do mais antigo</div>
+          <div class="li"><span class="ck">✓</span>Coluna de dias em aberto por item</div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="p-btn" onclick="gerarPendentes()"><span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-alert-triangle"/></svg> Gerar Relatório</button>
+      </div>
+      <div class="msg" id="msg-p"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Navegação (painel único com nav lateral) ────────────────
+var TELAS = ['mensal','semanal','diario','fornecedor','pendentes'];
+function ir(tela, btn) {
+  TELAS.forEach(function(t) {
+    document.getElementById('pane-' + t).classList.toggle('on', t === tela);
+  });
+  document.querySelectorAll('.rd-nav-item').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  ['m','s','d','f','p'].forEach(function(p) {
+    var el = document.getElementById('msg-' + p);
+    if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  });
+  if (tela === 'fornecedor') carregarFornecedores();
+  if (tela === 'pendentes') carregarStatsPendentes();
+}
+
+// ── Inicialização ──────────────────────────────────────────
+(function() {
+  var hoje = new Date();
+  document.getElementById('m-mes').value = hoje.getMonth() + 1;
+  document.getElementById('m-ano').value = hoje.getFullYear();
+  document.getElementById('d-data').value = hoje.toISOString().slice(0, 10);
+  var seg = new Date(hoje);
+  seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7));
+  var dom = new Date(seg);
+  dom.setDate(seg.getDate() + 6);
+  document.getElementById('s-ini').value = seg.toISOString().slice(0, 10);
+  document.getElementById('s-fim').value = dom.toISOString().slice(0, 10);
+  var iniAno = new Date(hoje.getFullYear(), 0, 1);
+  document.getElementById('f-ini').value = iniAno.toISOString().slice(0, 10);
+  document.getElementById('f-fim').value = hoje.toISOString().slice(0, 10);
+})();
+
+function atualizarCamposSemanal() {
+  var modo = document.getElementById('s-modo').value;
+  document.getElementById('s-datas').style.display = (modo === 'personalizado') ? 'flex' : 'none';
+}
+
+// ── Helpers UI ─────────────────────────────────────────────
+function setLoading(prefixo, sim) {
+  rdLoading(prefixo + '-btn', sim);
+}
+
+function mostrarMsg(prefixo, tipo, html) {
+  var el = document.getElementById('msg-' + prefixo);
+  el.className = 'msg msg-' + tipo;
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function tratarResposta(prefixo, resp) {
+  setLoading(prefixo, false);
+  var r = JSON.parse(resp);
+  if (r.sucesso) {
+    var html = r.sucesso.replace(/\n/g, '<br>');
+    if (r.urlPdf) html += '<br><a class="link-pdf" href="' + r.urlPdf + '" target="_blank"><svg class="ic ic-sm"><use href="#i-external-link"/></svg> Abrir PDF no Drive</a>';
+    mostrarMsg(prefixo, 'ok', html);
+  } else {
+    mostrarMsg(prefixo, 'erro', '❌ ' + (r.erro || 'Erro desconhecido.'));
+  }
+}
+
+function tratarErro(prefixo, e) {
+  setLoading(prefixo, false);
+  mostrarMsg(prefixo, 'erro', '❌ ' + e.message);
+}
+
+// ── Gerar Mensal ───────────────────────────────────────────
+function gerarMensal() {
+  var mes = parseInt(document.getElementById('m-mes').value, 10);
+  var ano = parseInt(document.getElementById('m-ano').value, 10);
+  if (!ano || ano < 2020 || ano > 2099) { mostrarMsg('m', 'erro', '❌ Informe um ano válido (2020–2099).'); return; }
+  setLoading('m', true);
+  document.getElementById('msg-m').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(r) { tratarResposta('m', r); })
+    .withFailureHandler(function(e) { tratarErro('m', e); })
+    .gerarRelatorioMensal({ mes: mes, ano: ano, enviarEmail: document.getElementById('m-email').checked });
+}
+
+// ── Gerar Semanal ──────────────────────────────────────────
+function gerarSemanal() {
+  var modo = document.getElementById('s-modo').value;
+  var params = { modo: modo, enviarEmail: document.getElementById('s-email').checked };
+  if (modo === 'personalizado') {
+    params.dataIni = document.getElementById('s-ini').value;
+    params.dataFim = document.getElementById('s-fim').value;
+    if (!params.dataIni || !params.dataFim) { mostrarMsg('s', 'erro', '❌ Informe data início e fim.'); return; }
+    if (params.dataIni > params.dataFim) { mostrarMsg('s', 'erro', '❌ Data início não pode ser maior que data fim.'); return; }
+  }
+  setLoading('s', true);
+  document.getElementById('msg-s').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(r) { tratarResposta('s', r); })
+    .withFailureHandler(function(e) { tratarErro('s', e); })
+    .gerarRelatorioSemanal(params);
+}
+
+// ── Gerar Diário ───────────────────────────────────────────
+function gerarDiario() {
+  var data = document.getElementById('d-data').value;
+  if (!data) { mostrarMsg('d', 'erro', '❌ Selecione uma data.'); return; }
+  setLoading('d', true);
+  document.getElementById('msg-d').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(r) { tratarResposta('d', r); })
+    .withFailureHandler(function(e) { tratarErro('d', e); })
+    .gerarRelatorioDiario({ data: data, enviarEmail: document.getElementById('d-email').checked });
+}
+
+// ── Carregar fornecedores dinamicamente ────────────────────
+var _fornCarregado = false;
+
+function carregarFornecedores() {
+  if (_fornCarregado) return;
+  var sel = document.getElementById('f-forn');
+  sel.disabled = true;
+  sel.innerHTML = '<option value="">⏳ Carregando...</option>';
+
+  // Duas fontes assíncronas: abas extras (fornecedores com aba própria,
+  // criadas via "Adicionar Novo Fornecedor") + fornecedores variados
+  // (linhas dentro da aba "Fornecedores Variados"). Ambas precisam
+  // responder antes de montar o <select>.
+  var _extras = [];
+  var _variadosResp = null;
+  var _pendentes = 2;
+
+  function _aoResolver() {
+    _pendentes--;
+    if (_pendentes > 0) return;
+    _montarSelectFornecedores(_extras, _variadosResp || {});
+  }
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        _extras = r.extras || [];
+      } catch (_e) { _extras = []; }
+      _aoResolver();
+    })
+    .withFailureHandler(function() {
+      // silencioso — lista padrão (Britania/Unilever/Variados) já cobre o essencial
+      _extras = [];
+      _aoResolver();
+    })
+    .obterAbasExtras();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try { _variadosResp = JSON.parse(resp); } catch (_e) { _variadosResp = {}; }
+      _aoResolver();
+    })
+    .withFailureHandler(function(e) {
+      _variadosResp = { erro: e.message };
+      _aoResolver();
+    })
+    .listarFornecedoresVariados();
+}
+
+function _montarSelectFornecedores(extras, r) {
+  var sel = document.getElementById('f-forn');
+  sel.innerHTML = '';
+
+  ['Britania', 'Unilever'].forEach(function(nome) {
+    var opt = document.createElement('option');
+    opt.value = nome; opt.textContent = nome;
+    sel.appendChild(opt);
+  });
+
+  if (extras && extras.length) {
+    extras.forEach(function(nome) {
+      var opt = document.createElement('option');
+      opt.value = nome; opt.textContent = nome;
+      sel.appendChild(opt);
+    });
+  }
+
+  if (r.variados && r.variados.length) {
+    var sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '── Fornecedores Variados ──';
+    sel.appendChild(sep);
+
+    r.variados.forEach(function(nome) {
+      var opt = document.createElement('option');
+      opt.value = nome; opt.textContent = nome;
+      sel.appendChild(opt);
+    });
+  }
+
+  var sep2 = document.createElement('option');
+  sep2.disabled = true; sep2.textContent = '──────────────────';
+  sel.appendChild(sep2);
+
+  var todos = document.createElement('option');
+  todos.value = 'TODOS'; todos.textContent = '📊 Todos os fornecedores';
+  sel.appendChild(todos);
+
+  sel.disabled = false;
+  _fornCarregado = true;
+
+  if (r.erro) {
+    document.getElementById('f-forn-erro').textContent = '⚠️ ' + r.erro;
+    document.getElementById('f-forn-erro').style.display = 'block';
+  }
+}
+
+// ── Gerar por Fornecedor ───────────────────────────────────
+function gerarFornecedor() {
+  var forn    = document.getElementById('f-forn').value;
+  var dataIni = document.getElementById('f-ini').value;
+  var dataFim = document.getElementById('f-fim').value;
+  if (!dataIni || !dataFim) { mostrarMsg('f', 'erro', '❌ Informe data início e fim.'); return; }
+  if (dataIni > dataFim)    { mostrarMsg('f', 'erro', '❌ Data início não pode ser maior que data fim.'); return; }
+  setLoading('f', true);
+  document.getElementById('msg-f').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(r) { tratarResposta('f', r); })
+    .withFailureHandler(function(e) { tratarErro('f', e); })
+    .gerarRelatorioPorFornecedor({ fornecedor: forn, dataIni: dataIni, dataFim: dataFim, enviarEmail: document.getElementById('f-email').checked });
+}
+
+// ── Mini-dashboard de stats (painel Pendências) ─────────────
+var _statsPendCarregado = false;
+
+function _fmtMoedaStat(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function carregarStatsPendentes() {
+  if (_statsPendCarregado) return;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r;
+      try { r = JSON.parse(resp); } catch (_e) { r = {}; }
+      if (r.erro) return;
+      document.getElementById('p-stat-total').textContent  = (r.counts && r.counts.Pendente) || 0;
+      document.getElementById('p-stat-atraso').textContent = r.atrasos30 || 0;
+      document.getElementById('p-stat-valor').textContent  = _fmtMoedaStat(r.valores && r.valores.Pendente);
+      _statsPendCarregado = true;
+    })
+    .withFailureHandler(function() {
+      // mantém "…" — o card de geração de PDF continua funcional mesmo sem o resumo
+    })
+    .obterDadosDashboard(null, null);
+}
+
+// ── Gerar Pendentes ────────────────────────────────────────
+function gerarPendentes() {
+  setLoading('p', true);
+  document.getElementById('msg-p').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(r) { tratarResposta('p', r); })
+    .withFailureHandler(function(e) { tratarErro('p', e); })
+    .gerarRelatorioPendentes({ enviarEmail: document.getElementById('p-email').checked });
+}
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('relatorios') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px;max-width:1280px;margin:0 auto}
+    .mono{font-family:var(--mono)}
+    /* status do backup */
+    .status-backup{
+      display:flex;align-items:center;gap:14px;border-radius:var(--r);
+      padding:16px 18px;margin-bottom:12px;border:1.5px solid;
+      animation:fadeUp .35s var(--ease-out) both
+    }
+    .status-backup.ok  {background:var(--green-bg);border-color:#BBF7D0}
+    .status-backup.nao {background:var(--amber-bg);border-color:#FDE68A}
+    body.dark .status-backup.ok{border-color:#14532D}
+    body.dark .status-backup.nao{border-color:#78350F}
+    .status-backup .ring{
+      width:48px;height:48px;border-radius:99px;display:grid;place-items:center;
+      font-size:21px;font-weight:800;flex-shrink:0
+    }
+    .status-backup.ok  .ring{background:rgba(5,150,105,.15);color:var(--green)}
+    .status-backup.nao .ring{background:rgba(217,119,6,.15);color:var(--amber)}
+    .status-backup .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint)}
+    .status-backup .data{font-size:13.5px;font-weight:800;color:var(--text);margin:2px 0 4px}
+    .status-backup .linhas{font-size:11px;color:var(--text-muted);line-height:1.6;white-space:pre-line;font-family:var(--mono)}
+    /* contagem por aba com mini-barras (progresso em andamento) */
+    .aba-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .aba-row:last-child{margin-bottom:0}
+    .aba-row .nm{font-size:11.5px;font-weight:700;color:var(--text-body);width:150px;flex-shrink:0}
+    .aba-row .track{flex:1;height:14px;border-radius:6px;background:var(--slate-100);overflow:hidden}
+    .aba-row .fill{height:100%;border-radius:6px;background:var(--rd-grad-btn);width:0;transition:width .8s var(--ease-out)}
+    .aba-row .qt{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);width:70px;text-align:right;flex-shrink:0}
+    /* timeline de backups (trilho lateral) */
+    .tl{position:relative;padding-left:22px}
+    .tl::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border);border-radius:2px}
+    .tl-item{position:relative;padding-bottom:13px;font-size:11.5px}
+    .tl-item:last-child{padding-bottom:0}
+    .tl-item::before{
+      content:'';position:absolute;left:-19px;top:4px;width:9px;height:9px;border-radius:99px;
+      background:var(--surface);border:2.5px solid var(--border-def)
+    }
+    .tl-item.atual::before{border-color:var(--green);background:var(--green)}
+    .tl-item .d{font-family:var(--mono);font-weight:700;color:var(--text)}
+    .tl-item .i{color:var(--text-muted);font-size:10.5px;margin-top:1px}
+    .tl-item.atual .d{color:var(--green)}
+    .tl-vazio{font-size:11px;color:var(--text-faint);padding:2px 0 0}
+    .tl-nota{font-size:10px;color:var(--text-faint);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);line-height:1.5}
+    .tl-legado{color:var(--text-faint);font-weight:600;font-size:9.5px}
+    .tl-restore{
+      margin-top:4px;font-size:9.5px;font-weight:700;color:var(--navy);background:none;
+      border:1px solid var(--border-def);border-radius:6px;padding:2px 8px;cursor:pointer;
+      font-family:var(--font)
+    }
+    .tl-restore:hover:not(:disabled){background:var(--navy-50)}
+    .tl-restore:disabled{opacity:.5;cursor:not-allowed}
+    /* botões grandes */
+    .btn-grande{
+      width:100%;display:flex;align-items:center;gap:13px;text-align:left;
+      background:var(--surface);border:1.5px solid var(--border-def);border-radius:var(--r);
+      padding:14px 16px;cursor:pointer;font-family:var(--font);margin-bottom:10px;
+      transition:border-color .18s,box-shadow .18s,transform .15s;
+      animation:fadeUp .35s var(--ease-out) both
+    }
+    .btn-grande:hover:not(:disabled){border-color:var(--navy);box-shadow:var(--sh-md);transform:translateY(-2px)}
+    .btn-grande:disabled{opacity:.5;cursor:not-allowed}
+    .btn-grande .ic{
+      width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
+      font-size:19px;flex-shrink:0;background:var(--navy-50)
+    }
+    .btn-grande .tt{font-size:13px;font-weight:800;color:var(--text)}
+    .btn-grande .ss{font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.45}
+    .passo-row{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-body);line-height:1.5;margin-bottom:9px}
+    .passo-row:last-child{margin-bottom:0}
+    #prog-card{display:none}
+    #prog-card.on{display:block}
+    .prog-etapa{font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between}
+    .prog-etapa b{font-family:var(--mono);color:var(--navy)}
+    /* backup automático agendado */
+    .auto-toggle-row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-body);margin-bottom:12px;cursor:pointer}
+    .auto-toggle-row input{width:16px;height:16px;cursor:pointer;accent-color:var(--navy)}
+    .auto-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+    .auto-row:last-of-type{margin-bottom:0}
+    .auto-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+    .auto-row select{
+      font-family:var(--font);font-size:12.5px;padding:7px 10px;border-radius:8px;
+      border:1.5px solid var(--border-def);background:var(--surface);color:var(--text);cursor:pointer
+    }
+  </style>
+</head>
+<body data-area="recuperacao">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-database"/></svg> Backup e Restauração</h1>
+      <div class="rd-sub">Proteja os dados antes de reconfigurar o sistema</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-wz">
+  <!-- TRILHO: histórico + cobertura -->
+  <div class="rd-rail">
+    <div class="rd-resumo" style="background:var(--surface);border-color:var(--border)">
+      <div class="rt" id="rd-tl-titulo">Histórico de backups</div>
+      <div class="tl" id="rd-tl">
+        <div class="tl-vazio"><svg class="ic ic-sm"><use href="#i-loader"/></svg> Verificando...</div>
+      </div>
+    </div>
+    <div class="rd-resumo" id="rd-cobertura">
+      <div class="rt">Cobertura atual</div>
+      <div class="ri"><span>Britania</span><b class="pend" data-aba="Britania">—</b></div>
+      <div class="ri"><span>Unilever</span><b class="pend" data-aba="Unilever">—</b></div>
+      <div class="ri"><span>Fornecedores Variados</span><b class="pend" data-aba="Fornecedores Variados">—</b></div>
+      <div class="ri" style="border-top:1px solid rgba(37,99,235,.2);margin-top:5px;padding-top:7px"><span>Total</span><b class="pend" data-aba="__total">—</b></div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div>
+    <!-- Status -->
+    <div class="status-backup nao" id="cardBackup">
+      <div class="ring" id="stRing">🗂</div>
+      <div style="flex:1">
+        <div class="lbl">Último backup salvo</div>
+        <div class="data" id="dataBackup">⏳ Verificando...</div>
+        <div class="linhas" id="linhasBackup"></div>
+      </div>
+    </div>
+
+    <!-- Progresso (durante backup/restauração) -->
+    <div class="rd-card" id="prog-card">
+      <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-loader"/></svg></span><h2 id="prog-titulo">Processando…</h2></div>
+      <div class="rd-card-body">
+        <div class="prog-etapa"><span id="prog-txt">Lendo dados das abas…</span><b id="prog-pct"></b></div>
+        <div class="rd-prog"><div class="p" id="prog-bar" style="width:30%"></div></div>
+        <div class="aba-row"><span class="nm">Britania</span><div class="track"><div class="fill" id="ab1"></div></div><span class="qt" id="aq1">…</span></div>
+        <div class="aba-row"><span class="nm">Unilever</span><div class="track"><div class="fill" id="ab2"></div></div><span class="qt" id="aq2">…</span></div>
+        <div class="aba-row"><span class="nm">Fornecedores Variados</span><div class="track"><div class="fill" id="ab3"></div></div><span class="qt" id="aq3">…</span></div>
+        <div style="font-size:10.5px;color:var(--text-faint);margin-top:2px">Aguarde — não feche esta janela.</div>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <button class="btn-grande" id="btnBackup" onclick="fazerBackup()">
+      <span class="ic"><svg class="ic"><use href="#i-database"/></svg></span>
+      <span><span class="tt">Fazer Backup Agora</span><br>
+        <span class="ss">Salva todos os dados das abas Britania, Unilever e Fornecedores Variados</span></span>
+    </button>
+    <button class="btn-grande" id="btnRestaurar" onclick="restaurar()" disabled>
+      <span class="ic"><svg class="ic"><use href="#i-refresh-cw"/></svg></span>
+      <span><span class="tt">Restaurar Backup Mais Recente</span><br>
+        <span class="ss">Repõe os dados nas abas usando o backup mais recente. Para escolher outro backup, use o histórico ao lado.</span></span>
+    </button>
+
+    <!-- Backup automático agendado -->
+    <div class="rd-card">
+      <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></span><h2>Backup automático agendado</h2></div>
+      <div class="rd-card-body">
+        <label class="auto-toggle-row" for="autoAtivo">
+          <input type="checkbox" id="autoAtivo">
+          <span>Ativar backup automático</span>
+        </label>
+        <div class="auto-row">
+          <span class="auto-lbl">Frequência</span>
+          <select id="autoFrequencia">
+            <option value="diario">Diário</option>
+            <option value="semanal">Semanal (domingo)</option>
+          </select>
+        </div>
+        <div class="auto-row">
+          <span class="auto-lbl">Horário (hora do dia, fuso do sistema)</span>
+          <select id="autoHorario"></select>
+        </div>
+        <button class="rd-btn" id="btnSalvarAuto" onclick="salvarConfigAutomatico()">Salvar</button>
+      </div>
+    </div>
+
+    <!-- Passo a passo -->
+    <div class="rd-card">
+      <div class="rd-card-head"><span class="rd-num">?</span><h2>Como usar ao reconfigurar o sistema</h2></div>
+      <div class="rd-card-body">
+        <div class="passo-row"><span class="rd-num" style="flex-shrink:0">1</span><span>Clique em <b>Fazer Backup Agora</b> para salvar todos os dados</span></div>
+        <div class="passo-row"><span class="rd-num" style="flex-shrink:0">2</span><span>Execute <b>Configurar/Reinstalar Sistema</b> normalmente</span></div>
+        <div class="passo-row"><span class="rd-num" style="flex-shrink:0">3</span><span>Volte aqui e clique em <b>Restaurar do Backup</b> (ou escolha um backup específico no histórico)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sucesso -->
+<div class="rd-sucesso" id="rd-sucesso">
+  <div class="box">
+    <div class="ico"><span>✓</span></div>
+    <h3 id="rd-suc-titulo"></h3>
+    <p id="rd-suc-msg"></p>
+    <button class="rd-btn" onclick="rdFecharSucesso()">OK</button>
+  </div>
+</div>
+
+<script>
+// Carrega info do backup ao abrir
+google.script.run
+  .withSuccessHandler(function(resp) {
+    var r = JSON.parse(resp);
+    atualizarCard(r.existe, r.data, r.contagem);
+  })
+  .withFailureHandler(function(e) {
+    document.getElementById('dataBackup').textContent = 'Erro ao verificar: ' + e.message;
+  })
+  .infoBackupExistente();
+
+// Histórico completo da rotação de backups (até 7) + config de backup automático
+carregarHistorico();
+carregarConfigAutomatico();
+
+// ABAS_OPERACIONAIS (Código.gs) — mesma ordem usada no backend
+var ABAS_UI = [
+  { nome: 'Britania', fill: 'ab1', qt: 'aq1' },
+  { nome: 'Unilever', fill: 'ab2', qt: 'aq2' },
+  { nome: 'Fornecedores Variados', fill: 'ab3', qt: 'aq3' }
+];
+var ultimaContagem = null; // última contagem real conhecida (do backup atual) — usada p/ refletir progresso da restauração
+var historicoAtual = [];  // último resultado de listarHistoricoBackups()
+
+function atualizarCard(existe, data, contagem) {
+  var card = document.getElementById('cardBackup');
+  card.className = 'status-backup ' + (existe ? 'ok' : 'nao');
+  document.getElementById('stRing').textContent = existe ? '✓' : '!';
+  document.getElementById('dataBackup').textContent = existe ? data : 'Nenhum backup encontrado';
+  var txt = '';
+  Object.keys(contagem || {}).forEach(function(aba) {
+    txt += '• ' + aba + ': ' + contagem[aba] + ' linha(s)\n';
+  });
+  document.getElementById('linhasBackup').textContent =
+    existe ? txt.trim() : 'Faça um backup antes de reconfigurar o sistema.';
+  document.getElementById('btnRestaurar').disabled = !existe;
+  ultimaContagem = existe ? (contagem || {}) : null;
+  atualizarCobertura(existe, contagem);
+}
+
+function atualizarCobertura(existe, contagem) {
+  var total = 0;
+  document.querySelectorAll('#rd-cobertura b[data-aba]').forEach(function(el) {
+    var aba = el.getAttribute('data-aba');
+    if (aba === '__total') return;
+    var q = (contagem && contagem[aba]) || 0;
+    total += q;
+    el.textContent = existe ? (q + ' linha(s)') : '—';
+    el.className = existe ? 'ok' : 'pend';
+  });
+  var totalEl = document.querySelector('#rd-cobertura b[data-aba="__total"]');
+  totalEl.textContent = existe ? (total + ' linhas') : '—';
+  totalEl.className = existe ? 'ok' : 'pend';
+}
+
+// Carrega o histórico rotativo (até "mantidos" backups) e desenha a timeline,
+// cada item com seu próprio botão "Restaurar" (não apenas o mais recente).
+function carregarHistorico() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      var r = JSON.parse(resp);
+      if (r.erro) {
+        historicoAtual = [];
+        document.getElementById('rd-tl').innerHTML = '<div class="tl-vazio">' + r.erro + '</div>';
+        return;
+      }
+      historicoAtual = r.historico || [];
+      renderizarHistorico(historicoAtual, r.mantidos);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('rd-tl').innerHTML = '<div class="tl-vazio">Erro ao carregar histórico: ' + e.message + '</div>';
+    })
+    .listarHistoricoBackups();
+}
+
+function renderizarHistorico(historico, mantidos) {
+  mantidos = mantidos || 7;
+  document.getElementById('rd-tl-titulo').textContent = 'Histórico de backups (' + (historico ? historico.length : 0) + '/' + mantidos + ')';
+  var tl = document.getElementById('rd-tl');
+  if (!historico || !historico.length) {
+    tl.innerHTML = '<div class="tl-vazio">Nenhum backup registrado ainda.</div>';
+    return;
+  }
+  var html = '';
+  historico.forEach(function(item, pos) {
+    var resumoStr = Object.keys(item.resumo || {}).map(function(k) {
+      return k + ': ' + item.resumo[k];
+    }).join(', ');
+    html += '<div class="tl-item' + (pos === 0 ? ' atual' : '') + '">'
+      + '<div class="d">' + item.ts + (pos === 0 ? ' · atual' : '') + '</div>'
+      + '<div class="i">' + item.totalLinhas + ' linha(s)' + (resumoStr ? ' · ' + resumoStr : '')
+      + (item.legado ? ' · <span class="tl-legado">pré-rotação</span>' : '') + '</div>'
+      + '<button class="tl-restore" onclick="restaurarIndice(' + pos + ')">Restaurar este</button>'
+      + '</div>';
+  });
+  html += '<div class="tl-nota">Mantendo até ' + mantidos + ' backups em rotação — o mais antigo é descartado a cada novo backup.</div>';
+  tl.innerHTML = html;
+}
+
+function resetAbaRows() {
+  ABAS_UI.forEach(function(a) {
+    document.getElementById(a.fill).style.width = '0';
+    document.getElementById(a.qt).textContent = '…';
+  });
+}
+
+function preencherAbaRows(contagem) {
+  ABAS_UI.forEach(function(a) {
+    var q = (contagem && contagem[a.nome]) || 0;
+    document.getElementById(a.fill).style.width = '100%';
+    document.getElementById(a.qt).textContent = q + (q === 1 ? ' linha' : ' linhas');
+  });
+}
+
+function setBusy(on, titulo, verbo) {
+  var prog = document.getElementById('prog-card');
+  prog.classList.toggle('on', on);
+  if (on) {
+    verbo = verbo || 'Lendo';
+    document.getElementById('prog-titulo').textContent = titulo || 'Processando…';
+    document.getElementById('prog-bar').style.width = '30%';
+    resetAbaRows();
+    // progresso real por aba não é reportado pelo servidor (chamada única e atômica);
+    // anima a barra e revela as linhas em sequência enquanto espera — quantidades reais
+    // só são preenchidas quando a resposta do servidor chega (preencherAbaRows)
+    document.getElementById('prog-txt').textContent = verbo + ' ' + ABAS_UI[0].nome + '…';
+    document.getElementById(ABAS_UI[0].fill).style.width = '55%';
+    setTimeout(function(){
+      if (!prog.classList.contains('on')) return;
+      document.getElementById('prog-bar').style.width = '65%';
+      document.getElementById('prog-txt').textContent = verbo + ' ' + ABAS_UI[1].nome + '…';
+      document.getElementById(ABAS_UI[0].fill).style.width = '100%';
+      document.getElementById(ABAS_UI[1].fill).style.width = '55%';
+    }, 900);
+    setTimeout(function(){
+      if (!prog.classList.contains('on')) return;
+      document.getElementById('prog-bar').style.width = '85%';
+      document.getElementById('prog-txt').textContent = verbo + ' ' + ABAS_UI[2].nome + '…';
+      document.getElementById(ABAS_UI[1].fill).style.width = '100%';
+      document.getElementById(ABAS_UI[2].fill).style.width = '55%';
+    }, 2200);
+  }
+  document.getElementById('btnBackup').disabled = on;
+  document.getElementById('btnRestaurar').disabled = on;
+  document.querySelectorAll('.tl-restore').forEach(function(b) { b.disabled = on; });
+}
+
+function fazerBackup() {
+  if (!confirm('Salvar backup agora?\n\nO backup mais antigo da rotação (se já houver 7) será descartado.')) return;
+  setBusy(true, 'Backup em andamento…', 'Lendo');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('prog-bar').style.width = '100%';
+      document.getElementById('prog-txt').textContent = 'Gravando aba de backup…';
+      var r = JSON.parse(resp);
+      if (r.sucesso) preencherAbaRows(r.contagem);
+      setTimeout(function(){ setBusy(false); }, 300);
+      if (r.sucesso) {
+        atualizarCard(true, r.data, r.contagem);
+        carregarHistorico();
+        rdSucesso('Backup concluído!', String(r.sucesso).replace(/^✅\s*/, ''));
+      } else {
+        showToast(r.erro || 'Erro no backup.', 'err');
+      }
+    })
+    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, 'err'); })
+    .executarBackup();
+}
+
+// Restauração de um backup específico da rotação. `indice` é o índice (0 =
+// mais recente) esperado por executarRestauracao no servidor; `label` e
+// `resumoProgresso` só ajustam a mensagem de confirmação e a barra de
+// progresso exibidas nesta tela.
+function confirmarRestaurar(indice, label, resumoProgresso) {
+  if (!confirm(
+    'Restaurar dados do backup' + (label ? (' de ' + label) : ' mais recente') + ' nas abas?\n\n' +
+    '⚠️ Execute "Configurar/Reinstalar Sistema" ANTES de restaurar.\n\n' +
+    'As linhas do backup serão gravadas nas abas a partir da linha ' +
+    'de dados. Confirma?'
+  )) return;
+  setBusy(true, 'Restauração em andamento…', 'Restaurando');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('prog-bar').style.width = '100%';
+      document.getElementById('prog-txt').textContent = 'Restauração concluída.';
+      // servidor não retorna contagem por aba na restauração — reflete a contagem
+      // real do backup que acabou de ser restaurado (a mesma origem dos dados)
+      preencherAbaRows(resumoProgresso || ultimaContagem);
+      setTimeout(function(){ setBusy(false); }, 300);
+      var r = JSON.parse(resp);
+      if (r.sucesso) {
+        rdSucesso('Restauração concluída!', String(r.sucesso).replace(/^✅\s*/, ''));
+        carregarHistorico();
+      }
+      else showToast(r.erro || 'Erro na restauração.', 'err');
+    })
+    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, 'err'); })
+    .executarRestauracao(indice);
+}
+
+function restaurar() {
+  confirmarRestaurar(0, null, ultimaContagem);
+}
+
+function restaurarIndice(pos) {
+  var item = historicoAtual[pos];
+  if (!item) return;
+  confirmarRestaurar(item.indice, item.ts, item.resumo);
+}
+
+// ── Backup automático agendado ──────────────────────────────
+(function initHorasAuto() {
+  var sel = document.getElementById('autoHorario');
+  for (var h = 0; h < 24; h++) {
+    var opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = (h < 10 ? '0' : '') + h + 'h';
+    sel.appendChild(opt);
+  }
+})();
+
+function carregarConfigAutomatico() {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        document.getElementById('autoAtivo').checked = !!r.ativo;
+        document.getElementById('autoFrequencia').value = r.frequencia || 'diario';
+        document.getElementById('autoHorario').value = (r.horario != null ? r.horario : 3);
+      } catch (_) {}
+    })
+    .withFailureHandler(function(_e) { /* não crítico — mantém os padrões dos controles */ })
+    .obterConfigBackupAutomatico();
+}
+
+function salvarConfigAutomatico() {
+  var ativo = document.getElementById('autoAtivo').checked;
+  var frequencia = document.getElementById('autoFrequencia').value;
+  var horario = parseInt(document.getElementById('autoHorario').value, 10);
+  var btn = document.getElementById('btnSalvarAuto');
+  btn.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      btn.disabled = false;
+      var r = JSON.parse(resp);
+      if (r.ok) rdSucesso('Configuração salva!', String(r.ok).replace(/^✅\s*/, ''));
+      else showToast(r.erro || 'Erro ao salvar configuração.', 'err');
+    })
+    .withFailureHandler(function(e) { btn.disabled = false; showToast(e.message, 'err'); })
+    .configurarBackupAutomatico(ativo, frequencia, horario);
+}
+
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('backup') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

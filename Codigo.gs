@@ -1,0 +1,10206 @@
+// ════════════════════════════════════════════════════════════
+//   VARIÁVEIS GLOBAIS — todas as declarações var/const no topo
+// ════════════════════════════════════════════════════════════
+
+// ── Chaves de PropertiesService ──────────────────────────────
+var _PROP_KEY_CONCLUIDOS  = 'cdv_total_concluidos';
+var _PROP_KEY_PROTECOES   = 'cdv_total_protecoes';
+
+// ── Chaves de CacheService ───────────────────────────────────
+var _CACHE_KEY_DASH       = 'cdv_dash_lock';
+var _CACHE_KEY_CORES      = 'cdv_cores_ok';
+var _CACHE_KEY_SENTINEL   = 'cdv_sentinel_ok';
+var _CACHE_KEY_POPUP_SITE = 'cdv_popup_site_ok'; // por usuário — evita repetir o aviso a cada abertura
+
+// ── Tempos de cache ──────────────────────────────────────────
+var _DASH_DEBOUNCE_SEG    = 8;     // segundos mínimos entre atualizações do dashboard
+var _CORES_TTL_SEG        = 3600;  // 1 hora de cache para reaplicação de cores
+var _POPUP_SITE_TTL_SEG   = 21600; // 6 horas — intervalo mínimo entre avisos "abra pelo site" pro mesmo usuário
+
+// ── Chaves de configuração (e-mails e cores) ─────────────────
+var _KEY_EMAILS_GERAL     = 'cdv_emails_geral';
+var _KEY_EMAILS_ALERTA    = 'cdv_emails_alerta';
+var _KEY_ALERTA_DEST      = 'cdv_alerta_dest';   // 'todos' | 'cc'
+var _KEY_EMAILS_TRANSF    = 'cdv_emails_transf'; // destinatários alertas de transferência vencida
+var _KEY_ADMINS_CONFIG    = 'cdv_admins_config'; // e-mails extras autorizados nas Configurações
+var _KEY_CARGOS           = 'cdv_cargos';    // JSON: CargoItem[]
+var _KEY_USUARIOS         = 'cdv_usuarios';  // JSON: UsuarioItem[]
+var _KEY_CORES            = 'cdv_cores';
+var _KEY_READONLY         = 'cdv_modo_somente_leitura';
+var _KEY_EMAIL_TEMPLATES  = 'cdv_email_templates';   // JSON: { avaria: {assunto, corpo}, vencimento: {...}, ... }
+var _KEY_CC_FORN          = 'cdv_cc_fornecedores';   // JSON: { "Ambev": { cc: "...", bcc: "..." }, ... }
+var _KEY_CC_ALERTA        = 'cdv_cc_alerta';          // JSON: { "atraso": {cc,bcc}, "semanal": {cc,bcc}, "pendencias": {cc,bcc}, "mensal": {cc,bcc}, "transferencia": {cc,bcc} }
+var _KEY_PERMISSOES       = 'cdv_permissoes_modulos'; // JSON: { "notas": ["email1","email2"], "lancamento": [...] }
+var _KEY_PERMISSOES_RO    = 'cdv_permissoes_ro_modulos'; // JSON: { "notas": true, "transferencias": true }
+var _KEY_ASSINATURAS      = 'cdv_assinaturas';        // JSON: { "email@": "driveFileId", ... }
+var _KEY_EMAILS_AGENDADOS = 'cdv_emails_agendados';   // JSON: [{ id, params, dataEnvio, usuario }]
+var _KEY_CONFIG_HISTORICO = 'cdv_config_historico';   // JSON: [{ ts, usuario, snapshot }] (últimos 5)
+var _KEY_WEBHOOK_CONF     = 'cdv_webhook_conf';        // JSON: { ativo, telegram:{token,chatId}, topicos:{aprovacoes,transferencias,vendas,sistema}, webhookSecret }
+var _NOME_ABA_LIXEIRA     = 'Lixeira';
+var _KEY_VERSOES_ANEXO    = 'cdv_versoes_anexo'; // JSON: { "aba_linha": [{ ts, url }] }
+var _KEY_CORES_STATUS     = 'cdv_cores_status';   // JSON: { Pendente:'#...', Devolvido:'#...', ... }
+var _KEY_LOGO_URL         = 'cdv_logo_url';        // URL ou Drive ID da logo customizada
+var _KEY_NOME_SISTEMA     = 'cdv_nome_sistema';    // string
+var _KEY_ERROS_RECENTES   = 'cdv_erros_recentes'; // JSON: [{ ts, func, msg }]
+var _KEY_CHANGELOG        = 'cdv_changelog'; // JSON: [{ versao, data, itens:[] }]
+var _KEY_FEEDBACKS        = 'cdv_feedbacks'; // JSON: [{ ts, usuario, tipo, msg, pagina }]
+var _KEY_RETENCAO_DIAS    = 'cdv_retencao_dias'; // ex: '730'
+var _KEY_APROVACAO_ATIVA  = 'cdv_aprovacao_lancamento'; // '1' | '0'
+var _KEY_MODELOS_DOC      = 'cdv_modelos_documentos';   // JSON: [{ id, nome, corpo }]
+var _KEY_APROVADORES      = 'cdv_aprovadores';           // JSON: ["email1@", ...]
+var _KEY_APROVACOES_PEND  = 'cdv_aprovacoes_pendentes';  // JSON: [{ id, dados, usuario, ts }]
+var _KEY_APROV_AGUARDANDO_MOTIVO = 'cdv_aprov_aguardando_motivo'; // JSON: [{ aprovacaoId, chatId, messageId }]
+var _KEY_LOG_EXPORTACOES  = 'cdv_log_exportacoes'; // JSON: [{ ts, usuario, tipo, qtd }]
+
+// ── Painel Admin (Configurações → Admin) ───────────────────────
+var _KEY_GATILHOS_PAUSADOS = 'cdv_gatilhos_pausados'; // JSON: [{ id, handler, label, params, ts }] — snapshot p/ tentar recriar depois
+var _KEY_AUDITORIA_ADMIN   = 'cdv_auditoria_admin';   // JSON: [{ ts, usuario, acao, detalhes }] (últimos 200)
+var _KEY_MODO_MANUTENCAO   = 'cdv_modo_manutencao';   // 'true' | 'false'
+var _KEY_DEPLOY_INFO       = 'cdv_deploy_info';       // JSON: { publicadoEm, publicadoPor, nota }
+var _KEY_ACESSOS_USUARIOS  = 'cdv_acessos_usuarios';  // JSON: { "email@x.com": { ultimoAcesso, contagem } } (até ~200 e-mails distintos)
+var _KEY_TRILHA_APROVACOES = 'cdv_trilha_aprovacoes'; // JSON: [{ ts, idAprovacao, nf, fornecedor, usuarioSolicitante, decisao, revisor, justificativa }] (últimos 200)
+var _KEY_RESUMO_AUTO       = 'cdv_resumo_auto';       // JSON: { ativo, horario } — resumo diário automático via Telegram
+var _TODOS_MODULOS = ['notas','lancamento','email','frete','configuracoes','auditoria','relatorios','backup'];
+
+// Cada item do menu "📦 Devoluções" tem uma página própria no Web App (WEB APP — doGet).
+// As páginas ("FormX.html") chamam as mesmas funções de servidor que os diálogos do
+// Sheets já chamavam via google.script.run — nenhuma lógica de negócio duplicada.
+var _WEBAPP_PAGINAS = {
+  'Index'          : 'Index',
+  'Dashboard'      : 'FormDashboard',       // NEW — página inicial padrão
+  'Lancamento'     : 'FormLancamento',
+  'Busca'          : 'FormBusca',
+  'Email'          : 'FormEmailDevolucao',
+  'Frete'          : 'FormProgramarFrete',
+  'BaixaDevolucao' : 'FormExportarPDF',     // renomeado para "Gerar PDF Devolução" na UI
+  'BaixaVenda'     : 'FormVenda',
+  'Reabertura'     : 'FormReabertura',
+  'Relatorios'     : 'FormRelatorios',
+  'Backup'         : 'FormBackup',
+  'Auditoria'      : 'FormAuditoria',
+  'Configuracoes'  : 'FormConfiguracoes',
+  'Notas'          : 'FormNotas',
+  'Transferencias' : 'FormTransferencias',
+  'Conferencia'    : 'FormConferencia'
+};
+
+// ── Dashboard: sentinela e células de filtro ─────────────────
+var DASH_SENTINEL_CELL    = 'K1';
+var DASH_SENTINEL_VALUE   = 'v7.0';
+var DASH_DATA_INI_CELL    = 'C4';
+var DASH_DATA_FIM_CELL    = 'C5';
+
+// ── Dashboard: grupos de colunas (qtd + valor) ───────────────
+var DASH_COLS = [
+  { c: 2, label: 'BRITANIA',       cor: '#2563EB' },
+  { c: 4, label: 'UNILEVER',       cor: '#059669' },
+  { c: 6, label: 'FORN. VARIADOS', cor: '#D97706' },
+  { c: 8, label: 'TOTAL GERAL',    cor: '#7C3AED' }
+];
+
+// ── Dashboard: paleta de cores ───────────────────────────────
+var DC = {
+  HEADER  : '#1E3A5F', SUB    : '#243F63',
+  BRANCO  : '#FFFFFF', CINZA  : '#F0F2F5', BORDA : '#E5E7EB',
+  PEND_BG : '#EBF3FF', PEND   : '#2563EB',
+  TR_BG   : '#CFFAFE', TR     : '#0891B2', // Em Transferência — cyan
+  DEV_BG  : '#ECFDF5', DEV    : '#059669',
+  VENDA_BG: '#FFF7ED', VENDA  : '#D97706',
+  TOT_BG  : '#F5F3FF', TOT    : '#7C3AED',
+  TEXTO   : '#111827', TEXTO_L: '#6B7280'
+};
+
+// ── Backup ───────────────────────────────────────────────────
+// [Rotação/histórico de backups] Antes existia uma única aba fixa
+// (BACKUP_ABA_LEGADA), sobrescrita a cada "Fazer Backup" — um backup ruim ou
+// um erro no meio de uma restauração apagava a única cópia de segurança
+// existente. Agora cada execução cria uma aba nova com timestamp no nome, e
+// mantém as últimas BACKUPS_MANTIDOS rotacionando (a mais antiga é apagada).
+// O histórico (nome da aba, data, contagem por fornecedor) fica em
+// _KEY_BACKUP_HISTORICO no PropertiesService.
+var BACKUP_ABA_LEGADA    = '_Backup_Snapshot'; // nome fixo usado antes da rotação (migração)
+var BACKUP_PREFIXO       = '_Backup_Snapshot_';
+var _KEY_BACKUP_HISTORICO = 'cdv_backup_historico';
+var BACKUPS_MANTIDOS     = 7;
+var BACKUP_TOTAL_COL     = 22; // 1(aba) + 20(dados) + 1(timestamp)
+
+
+// ════════════════════════════════════════════════════════════
+//   CONFIGURAÇÕES (constantes)
+// ════════════════════════════════════════════════════════════
+
+const EMAILS_DESTINATARIOS   = ['datandarosabarbosa@gmail.com'];
+const ID_LOGO_TRANSBEN       = '1KxmJpaO61C5bUwqPP5SYqHDDIrCtKDS8';
+const ID_PASTA_DESTINO       = '1Los345XSVx_1R5WgvvqW_IAIryK876jJ';
+const ID_PASTA_DESTINO_VENDA = '1sNSbDEoWnQlUQcqQhqy62MRWQDo9y8uX';
+const ID_PASTA_ANEXOS        = '1zCGh-DE-m1piQoEfzcO6KG9TNICokWwR';
+
+// ── Cores ────────────────────────────────────────────────────
+const COR_AZUL          = '#DDEEFF';
+const COR_VERDE         = '#DDFFDD';
+const COR_LARANJA       = '#FFE5CC';
+const COR_ALERTA_30DIAS = '#FFD5D5';
+const COR_HEADER        = '#1E3A5F';
+const COR_VERMELHO      = '#FFD5D5';
+const COR_TRANSF        = '#CFFAFE'; // Em Transferência — cyan-100
+
+// ── Colunas (1-based) ────────────────────────────────────────
+const COL_NFD         = 1;
+const COL_NF          = 2;
+const COL_DATA        = 3;
+const COL_FORN        = 4;
+const COL_TIPO        = 5;
+const COL_MOTIVO      = 6;
+const COL_DESC        = 7;
+const COL_QTD         = 8;
+const COL_VL_UNIT     = 9;
+const COL_VL_TOT      = 10;
+const COL_STATUS      = 11;
+const COL_PEND_CHK    = 12;
+const COL_DEV_CHK     = 13;
+const COL_VENDA_CHK   = 14;
+const COL_OBS         = 15;
+const COL_RESP        = 16;
+const COL_ANEXO       = 17;
+// v6.1 — colunas adicionadas ao final (não deslocam nenhuma coluna existente)
+const COL_DIAS_ARMAZ  = 18;  // dias em estoque desde a Data de Entrada (fórmula automática)
+const COL_FRETE_TIPO  = 19;  // Tabela | Valor + ICMS | Valor | Cortesia
+const COL_FRETE_VALOR = 20;  // valor do frete (R$), quando aplicável
+const TOTAL_COLUNAS   = 20;
+const LINHA_DADOS     = 4;
+const MAX_LINHAS_ABA  = 200;
+const LIMITE_PROTECOES = 380;
+const ULTIMA_LINHA_DADOS = LINHA_DADOS + MAX_LINHAS_ABA - 1; // última linha de dados possível (203)
+
+// ── Índices de array (0-based) ───────────────────────────────
+const IDX_NFD       = COL_NFD       - 1;
+const IDX_NF        = COL_NF        - 1;
+const IDX_DATA      = COL_DATA      - 1;
+const IDX_FORN      = COL_FORN      - 1;
+const IDX_TIPO      = COL_TIPO      - 1;
+const IDX_MOTIVO    = COL_MOTIVO    - 1;
+const IDX_DESC      = COL_DESC      - 1;
+const IDX_QTD       = COL_QTD       - 1;
+const IDX_VL_UNIT   = COL_VL_UNIT   - 1;
+const IDX_VL_TOT    = COL_VL_TOT    - 1;
+const IDX_STATUS    = COL_STATUS    - 1;
+const IDX_PEND_CHK  = COL_PEND_CHK  - 1;
+const IDX_DEV_CHK   = COL_DEV_CHK   - 1;
+const IDX_VENDA_CHK = COL_VENDA_CHK - 1;
+const IDX_OBS       = COL_OBS       - 1;
+const IDX_RESP      = COL_RESP      - 1;
+const IDX_ANEXO     = COL_ANEXO     - 1;
+const IDX_DIAS_ARMAZ  = COL_DIAS_ARMAZ  - 1;
+const IDX_FRETE_TIPO  = COL_FRETE_TIPO  - 1;
+const IDX_FRETE_VALOR = COL_FRETE_VALOR - 1;
+
+// ── Abas operacionais ────────────────────────────────────────
+const ABAS_OPERACIONAIS = ['Britania', 'Unilever', 'Fornecedores Variados'];
+
+/** Retorna abas extras criadas via criarNovoFornecedor (salvas em PropertiesService). */
+function _getAbasExtras() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty('cdv_abas_extras') || '[]';
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(_) { return []; }
+}
+
+/** Retorna todas as abas operacionais: as padrão + as extras criadas pelo usuário. */
+function _getTodasAbas() {
+  var extras = _getAbasExtras();
+  return ABAS_OPERACIONAIS.concat(extras.filter(function(e) {
+    return ABAS_OPERACIONAIS.indexOf(e) === -1;
+  }));
+}
+
+/** Retorna JSON com a lista de abas extras (para uso nos formulários). */
+function obterAbasExtras() {
+  return JSON.stringify({ extras: _getAbasExtras() });
+}
+
+/** Lê a lista de abas com alerta de +30 dias DESLIGADO (ausente = ligado). */
+function _getAlerta30Off() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty('cdv_alerta30_off') || '[]';
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch(_) { return []; }
+}
+
+/** Grava a lista de abas com alerta de +30 dias desligado. */
+function _setAlerta30Off(arr) {
+  PropertiesService.getScriptProperties().setProperty('cdv_alerta30_off', JSON.stringify(arr || []));
+}
+
+// ── Frete (programação de devolução) ─────────────────────────
+const TIPOS_FRETE = ['Tabela', 'Valor + ICMS', 'Valor', 'Cortesia'];
+
+// ── Tipo de devolução (lançamento) ────────────────────────────
+// Mesma lista já usada na validação de dados da própria planilha
+// (requireValueInList, ver configurarPlanilha) — antes só existia ali, com
+// setAllowInvalid(true) (aviso, não bloqueia), e nenhuma validação
+// correspondente existia no servidor.
+const TIPOS_DEVOLUCAO = ['Falta', 'Avaria', 'Rejeição'];
+
+// ── Transferências ────────────────────────────────────────────
+const ABA_TRANSFERENCIAS         = 'Transferencias';
+// Schema: cols 1-20 = dados originais da nota | cols 21-30 = controle de transferência
+const TRANSF_TOTAL_COL           = 31;
+const TRANSF_COL_LOTE_ID         = 30;
+const TRANSF_COL_CONFERENCIA     = 31;
+const ABA_PRODUTOS               = '_Produtos';
+const ABA_BIPAGENS               = '_Bipagens';
+const TRANSF_COL_ABA_ORIGEM      = 21;
+const TRANSF_COL_TRANSPORTADORA  = 22;
+const TRANSF_COL_DATA_AGEND      = 23;
+const TRANSF_COL_STATUS          = 24; // 'Em Transferência' | 'Concluída' | 'Cancelada'
+const TRANSF_COL_RESP            = 25;
+const TRANSF_COL_DATA_CAD        = 26;
+const TRANSF_COL_DATA_BAIXA      = 27;
+const TRANSF_COL_COMPROVANTE     = 28;
+const TRANSF_COL_OBS             = 29;
+
+// ════════════════════════════════════════════════════════════
+//   v7.0 — WEB APP (mesma planilha, acesso por link/URL)
+// ════════════════════════════════════════════════════════════
+// [P43] ID fixo da planilha — necessário porque, quando o projeto é acessado
+//       como Web App (doGet, fora do Google Sheets), SpreadsheetApp.getActiveSpreadsheet()
+//       retorna null (não existe "planilha ativa" nesse contexto). Substitua o valor
+//       abaixo pelo ID real da sua planilha (está na URL, entre /d/ e /edit):
+//       https://docs.google.com/spreadsheets/d/ESTE_TRECHO_AQUI/edit
+const SPREADSHEET_ID = 'COLOQUE_AQUI_O_ID_DA_SUA_PLANILHA';
+
+/**
+ * [P44] Substituto universal de SpreadsheetApp.getActiveSpreadsheet().
+ * Dentro do Google Sheets (menus/diálogos) continua retornando a planilha ativa,
+ * normalmente. Quando chamado a partir do Web App (sem UI do Sheets em volta),
+ * cai para SpreadsheetApp.openById(SPREADSHEET_ID) — mesma planilha, mesmos dados.
+ * Todas as funções do sistema foram migradas de getActiveSpreadsheet() para getSS()
+ * para funcionar identicamente nos dois contextos.
+ */
+function getSS() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) return ss;
+  } catch (_) {}
+  // Permite sobrescrever o ID via PropertiesService ('SPREADSHEET_ID'), sem alterar o código
+  var id = '';
+  try { id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || ''; } catch(_) {}
+  return SpreadsheetApp.openById(id || SPREADSHEET_ID);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   HELPERS DE CACHE/PROPERTIES
+// ════════════════════════════════════════════════════════════
+
+/** Lê o contador de itens concluídos do PropertiesService. */
+function _lerContadorConcluidos() {
+  return parseInt(PropertiesService.getScriptProperties()
+    .getProperty(_PROP_KEY_CONCLUIDOS) || '0');
+}
+
+/** Incrementa o contador e retorna o novo valor. */
+function _incrementarContadorConcluidos() {
+  var props = PropertiesService.getScriptProperties();
+  var n = parseInt(props.getProperty(_PROP_KEY_CONCLUIDOS) || '0') + 1;
+  props.setProperty(_PROP_KEY_CONCLUIDOS, String(n));
+  return n;
+}
+
+/** Decrementa o contador (usado ao arquivar). */
+function _decrementarContadorConcluidos(qtd) {
+  var props = PropertiesService.getScriptProperties();
+  var n = Math.max(0, parseInt(props.getProperty(_PROP_KEY_CONCLUIDOS) || '0') - (qtd || 1));
+  props.setProperty(_PROP_KEY_CONCLUIDOS, String(n));
+}
+
+/** Zera o contador de concluídos (após arquivamento). */
+function _zerarContadorConcluidos() {
+  PropertiesService.getScriptProperties().setProperty(_PROP_KEY_CONCLUIDOS, '0');
+}
+
+/** Lê o total de proteções ativas (cache em Properties). */
+function _lerTotalProtecoes() {
+  return parseInt(PropertiesService.getScriptProperties()
+    .getProperty(_PROP_KEY_PROTECOES) || '0');
+}
+
+/** Incrementa o contador de proteções. */
+function _incrementarProtecoes() {
+  var props = PropertiesService.getScriptProperties();
+  var n = parseInt(props.getProperty(_PROP_KEY_PROTECOES) || '0') + 1;
+  props.setProperty(_PROP_KEY_PROTECOES, String(n));
+}
+
+/** Decrementa o contador de proteções. */
+function _decrementarProtecoes(qtd) {
+  var props = PropertiesService.getScriptProperties();
+  var n = Math.max(0, parseInt(props.getProperty(_PROP_KEY_PROTECOES) || '0') - (qtd || 1));
+  props.setProperty(_PROP_KEY_PROTECOES, String(n));
+}
+
+/** Reseta apenas os contadores de cache (usado em configurarPlanilha). */
+function _resetarContadores() {
+  var props = PropertiesService.getScriptProperties();
+  props.deleteProperty(_PROP_KEY_CONCLUIDOS);
+  props.deleteProperty(_PROP_KEY_PROTECOES);
+  try { CacheService.getScriptCache().removeAll([_CACHE_KEY_DASH, _CACHE_KEY_CORES, _CACHE_KEY_SENTINEL]); } catch(_) {}
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   HELPERS GENÉRICOS
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Verifica se qualquer termo da lista bate com a NFD ou a NF da linha.
+ * Retorna { bate: bool, termoBateu: string|null }
+ */
+function _baterTermos(termos, nfd, nf) {
+  var nfdStr = String(nfd || '').trim();
+  var nfStr  = String(nf  || '').trim();
+  for (var i = 0; i < termos.length; i++) {
+    var t = termos[i];
+    if ((nfdStr && nfdStr === t) || (nfStr && nfStr === t)) {
+      return { bate: true, termoBateu: t };
+    }
+  }
+  return { bate: false, termoBateu: null };
+}
+
+/** Última linha com NF preenchida (âncora: COL_NF). */
+function obterUltimaLinhaDados(ws) {
+  var lastRow;
+  try { lastRow = ws.getLastRow(); } catch (_) { return LINHA_DADOS - 1; }
+  if (lastRow < LINHA_DADOS) return LINHA_DADOS - 1;
+  var vals = ws.getRange(LINHA_DADOS, COL_NF, lastRow - LINHA_DADOS + 1, 1).getValues();
+  var ultima = LINHA_DADOS - 1;
+  vals.forEach(function(r, i) {
+    if (r[0] !== '' && r[0] != null) ultima = LINHA_DADOS + i;
+  });
+  return ultima;
+}
+
+/** Cor de fundo por status. */
+function corPorStatus(status) {
+  switch (status) {
+    case 'Pendente':        return COR_AZUL;
+    case 'Devolvido':       return COR_VERDE;
+    case 'Venda':           return COR_LARANJA;
+    case 'Em Transferência': return COR_TRANSF;
+    default:                return '#FFFFFF';
+  }
+}
+
+/** Escapa caracteres HTML para uso seguro em templates de e-mail. */
+function _esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Extrai ID de arquivo a partir de URL do Drive. */
+function _extrairIdDriveUrl(url) {
+  if (!url) return null;
+  var m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/[?&]id=([a-zA-Z0-9_-]+)/)     ||
+          url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+/** Tenta apagar arquivo do Drive pela URL; falha silenciosamente. */
+function _apagarAnexoDrive(url) {
+  if (!url || !url.startsWith('http')) return;
+  try {
+    var id = _extrairIdDriveUrl(url);
+    if (id) DriveApp.getFileById(id).setTrashed(true);
+  } catch (_) {}
+}
+
+/** Pasta de anexos: usa ID_PASTA_ANEXOS se configurado, senão ID_PASTA_DESTINO. */
+function _pastaAnexos() {
+  return (ID_PASTA_ANEXOS && !ID_PASTA_ANEXOS.startsWith('INSIRA'))
+    ? DriveApp.getFolderById(ID_PASTA_ANEXOS)
+    : DriveApp.getFolderById(ID_PASTA_DESTINO);
+}
+
+/**
+ * Garante subpasta Drive: AnexosNFs/{aba}/{NF_nf}
+ * Retorna a pasta; silencioso em caso de erro.
+ */
+function _garantirPastaNF(aba, nf) {
+  try {
+    var raiz = _pastaAnexos();
+    // Subpasta por aba/fornecedor
+    var abaIter = raiz.getFoldersByName(aba);
+    var pastaAba = abaIter.hasNext() ? abaIter.next() : raiz.createFolder(aba);
+    // Subpasta por NF
+    var nfNome = 'NF_' + String(nf).replace(/[\/\\:*?"<>|]/g, '_');
+    var nfIter = pastaAba.getFoldersByName(nfNome);
+    return nfIter.hasNext() ? nfIter.next() : pastaAba.createFolder(nfNome);
+  } catch(e) { return null; }
+}
+
+/**
+ * Apaga (move para lixeira do Drive) a pasta e arquivos de uma NF.
+ * Tenta pelos nomes NF_nfd e NF_nf. Silencioso em caso de erro.
+ */
+function _apagarPastaNFDrive(aba, nf, nfd) {
+  try {
+    var raiz = _pastaAnexos();
+    var abaIter = raiz.getFoldersByName(aba);
+    if (!abaIter.hasNext()) return;
+    var pastaAba = abaIter.next();
+    var nomes = [];
+    if (nfd) nomes.push('NF_' + String(nfd).replace(/[\/\\:*?"<>|]/g, '_'));
+    if (nf)  nomes.push('NF_' + String(nf).replace(/[\/\\:*?"<>|]/g, '_'));
+    nomes.forEach(function(nome) {
+      var iter = pastaAba.getFoldersByName(nome);
+      if (iter.hasNext()) iter.next().setTrashed(true);
+    });
+  } catch(e) { console.warn('_apagarPastaNFDrive: ' + e); }
+}
+
+/** Fórmula de valor total para a linha `row` da planilha. */
+function _formulaTotal(row) {
+  return '=IF(OR(H' + row + '="";I' + row + '="");"";H' + row + '*I' + row + ')';
+}
+
+/** Fórmula de "dias armazenado" (hoje − Data de Entrada) para a linha `row`. */
+function _formulaDiasArmazenado(row) {
+  return '=IF(C' + row + '="";"";TODAY()-C' + row + ')';
+}
+
+/** Fórmulas do resumo da linha 2 (somatórios de itens Pendentes). */
+function _formulasResumoPendentes() {
+  var li = LINHA_DADOS, lf = ULTIMA_LINHA_DADOS;
+  return {
+    produtos: '="📦 Produtos Pendentes:  " & TEXT(SUMIFS($H$' + li + ':$H$' + lf + ';$K$' + li + ':$K$' + lf + ';"Pendente");"#.##0") & " un."',
+    nfs:      '="🧾 NFs Pendentes:  " & COUNTIFS($K$' + li + ':$K$' + lf + ';"Pendente")',
+    valor:    '="💰 Valor Pendente:  R$ " & TEXT(SUMIFS($J$' + li + ':$J$' + lf + ';$K$' + li + ':$K$' + lf + ';"Pendente");"#.##0,00")'
+  };
+}
+
+/** Formata número como valor monetário sem símbolo R$. */
+function _fmtVal(n) {
+  return (parseFloat(n) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** Converte 'YYYY-MM-DD' em Date (início do dia). */
+function _parseDateStr(s, fimDia) {
+  if (!s) return null;
+  var p = s.split('-');
+  if (p.length < 3) return null;
+  var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+  if (isNaN(d.getTime())) return null;
+  if (fimDia) d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+/** Formata Date como dd/MM/yyyy usando timezone da planilha. */
+function _fmtDt(dt, tz) {
+  return Utilities.formatDate(dt, tz, 'dd/MM/yyyy');
+}
+
+/** Nome legível da coluna para o log. */
+function obterNomeColuna(col) {
+  var mapa = {
+    1:'NFD', 2:'NF', 3:'Data', 4:'Fornecedor', 5:'Tipo', 6:'Motivo', 7:'Descrição', 8:'Qtd',
+    9:'Vl Unit', 10:'Vl Total', 11:'Status',
+    12:'Pendente✓', 13:'Devolvido✓', 14:'Venda✓', 15:'Obs', 16:'Responsável', 17:'Anexo',
+    18:'Dias Armazenado', 19:'Tipo Frete', 20:'Valor Frete'
+  };
+  return mapa[col] || ('Col' + col);
+}
+
+/** Retorna array de fornecedores únicos dos itens. */
+function _fornecedoresUnicos(itens) {
+  return itens.reduce(function(a, it) {
+    if (a.indexOf(it.forn) === -1) a.push(it.forn);
+    return a;
+  }, []);
+}
+
+/** Monta assunto/título do e-mail com base nos tipos dos itens. */
+function _montarTituloEmail(itens, forn) {
+  var tipos = itens.reduce(function(a, it) {
+    if (it.tipo && a.indexOf(it.tipo) === -1) a.push(it.tipo);
+    return a;
+  }, []);
+  var temFalta    = tipos.indexOf('Falta')    !== -1;
+  var temAvaria   = tipos.indexOf('Avaria')   !== -1;
+  var temRejeicao = tipos.indexOf('Rejeição') !== -1;
+  var tipoStr;
+  if (temRejeicao && !temFalta && !temAvaria) {
+    tipoStr = 'NF REJEITADA';
+  } else if (temRejeicao && (temFalta || temAvaria)) {
+    tipoStr = 'NFD DE DEVOLUÇÃO E REJEIÇÃO';
+  } else if (temFalta && temAvaria) {
+    tipoStr = 'NFD DE AVARIA E FALTA';
+  } else if (tipos.length === 1) {
+    tipoStr = 'NFD DE ' + tipos[0].toUpperCase();
+  } else {
+    tipoStr = 'NFD';
+  }
+  return tipoStr + ' (' + forn.toUpperCase() + ')';
+}
+
+/** Monta lista de destinatários: base + extras do formulário. */
+function _montarDestinatarios(emailsExtras) {
+  // Lê do PropertiesService (configurado via tela de configurações)
+  // Se não houver nada salvo, cai na constante do código
+  var dest = _getEmailsGeral().slice();
+  
+  if (emailsExtras) {
+    emailsExtras.split(/[;,\n]/).forEach(function(e) {
+      var em = e.trim();
+      if (em && dest.indexOf(em) === -1) dest.push(em);
+    });
+  }
+  return dest;
+}
+
+/** Retorna quais pastas serão varridas de acordo com o tipo selecionado.
+ *  IMPORTANTE: ID_PASTA_ANEXOS (fotos/PDFs das NFs originais) NUNCA é incluída. */
+function _pastasParaLimpar(tipo) {
+  var pastas = [];
+  if (tipo === 'relatorios' || tipo === 'tudo' || tipo === 'devolucoes')
+    pastas.push({ id: ID_PASTA_DESTINO, label: 'Relatórios / PDFs de Devolução' });
+  if (tipo === 'vendas' || tipo === 'tudo')
+    pastas.push({ id: ID_PASTA_DESTINO_VENDA, label: 'PDFs de Venda' });
+  var vistos = {};
+  return pastas.filter(function(p) {
+    if (!p.id || p.id.startsWith('INSIRA') || vistos[p.id]) return false;
+    vistos[p.id] = true;
+    return true;
+  });
+}
+
+/** Acumula totais por status em 1 loop. */
+function _acumular(linhas) {
+  var acc = { tP:0, tD:0, tV:0, vP:0, vD:0, vV:0, vTotal:0 };
+  linhas.forEach(function(l) {
+    acc.vTotal += l.val;
+    if      (l.st === 'Pendente')  { acc.tP++; acc.vP += l.val; }
+    else if (l.st === 'Devolvido') { acc.tD++; acc.vD += l.val; }
+    else if (l.st === 'Venda')     { acc.tV++; acc.vV += l.val; }
+  });
+  acc.taxa = linhas.length > 0
+    ? Math.round((acc.tD + acc.tV) / linhas.length * 100)
+    : 0;
+  return acc;
+}
+
+/** Monta array de KPIs para o corpo do e-mail. */
+function _kpisEmail(acc) {
+  return [
+    { label: 'Pendentes',  cor: '#2563EB', valor: acc.tP + ' itens', sub: 'R$ ' + _fmtVal(acc.vP) },
+    { label: 'Devolvidos', cor: '#059669', valor: acc.tD + ' itens', sub: 'R$ ' + _fmtVal(acc.vD) },
+    { label: 'Vendas',     cor: '#D97706', valor: acc.tV + ' itens', sub: 'R$ ' + _fmtVal(acc.vV) },
+    { label: 'Taxa',
+      cor:   acc.taxa >= 70 ? '#059669' : acc.taxa >= 40 ? '#D97706' : '#DC2626',
+      valor: acc.taxa + '%', sub: 'de resolução' }
+  ];
+}
+
+function verificarEmailsJaEnviados(nfdsRaw) {
+  var nfds = nfdsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfds.length) return JSON.stringify({ jaEnviadas: [] });
+
+  var ss = getSS();
+  var ws = ss.getSheetByName('_EmailsEnviados');
+  if (!ws) return JSON.stringify({ jaEnviadas: [] });
+
+  try {
+    var ul = ws.getLastRow();
+    if (ul < 2) return JSON.stringify({ jaEnviadas: [] });
+
+    var dados = ws.getRange(2, 1, ul - 1, 8).getValues();
+    var contagem = {};
+
+    dados.forEach(function(l) {
+      if (!l[0]) return;
+      var nfdsColuna = String(l[4] || '');
+      nfds.forEach(function(nfd) {
+        if (nfdsColuna.indexOf(nfd) !== -1) {
+          if (!contagem[nfd]) contagem[nfd] = { total: 0, data: '' };
+          contagem[nfd].total++;
+          contagem[nfd].data = String(l[0]);
+        }
+      });
+    });
+
+    var jaEnviadas = Object.keys(contagem).map(function(nfd) {
+      return { nfd: nfd, total: contagem[nfd].total, data: contagem[nfd].data };
+    });
+
+    return JSON.stringify({ jaEnviadas: jaEnviadas });
+  } catch(e) {
+    return JSON.stringify({ jaEnviadas: [] });
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//   LOG
+// ════════════════════════════════════════════════════════════
+
+function garantirAbaLog(ss) {
+  var ws = ss.getSheetByName('_Log');
+  if (!ws) {
+    ws = ss.insertSheet('_Log');
+    ws.hideSheet();
+  }
+  var cabecalho = '';
+  try { cabecalho = ws.getRange('A1').getValue(); } catch (_) {}
+  if (cabecalho !== 'Data/Hora') {
+    ws.getRange(1, 1, 1, 8)
+      .setValues([['Data/Hora','Usuário','Aba','Linha','Coluna','Valor Anterior','Novo Valor','Ação']])
+      .setBackground('#444444').setFontColor('#FFFFFF').setFontWeight('bold');
+    ws.setFrozenRows(1);
+    [160, 220, 160, 60, 100, 200, 200, 150].forEach(function(w, i) {
+      ws.setColumnWidth(i + 1, w);
+    });
+  }
+  return ws;
+}
+
+function garantirAbaAcesso(ss) {
+  var ws = ss.getSheetByName('_AcessoLog');
+  if (!ws) {
+    ws = ss.insertSheet('_AcessoLog');
+    ws.hideSheet();
+    ws.getRange(1, 1, 1, 4)
+      .setValues([['Data/Hora','Usuário','Página','Agente']])
+      .setBackground('#25419A').setFontColor('#FFFFFF').setFontWeight('bold');
+    ws.setFrozenRows(1);
+    [160, 230, 140, 200].forEach(function(w, i){ ws.setColumnWidth(i + 1, w); });
+  }
+  return ws;
+}
+
+function registrarAcesso(pagina) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName('_AcessoLog') || garantirAbaAcesso(ss);
+    var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+    var user  = Session.getActiveUser().getEmail() || 'sistema';
+    var next  = ws.getLastRow() + 1;
+    ws.getRange(next, 1, 1, 4).setValues([[agora, user, pagina || '', '']]);
+  } catch(e) { console.error('registrarAcesso: ' + e); }
+}
+
+function obterLogAcesso(limite) {
+  var _chk = _exigirModulo('auditoria', false);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName('_AcessoLog');
+    if (!ws || ws.getLastRow() < 2) return JSON.stringify({ linhas: [] });
+    var n   = Math.min(parseInt(limite, 10) || 200, 500);
+    var ul  = ws.getLastRow();
+    var ini = Math.max(2, ul - n + 1);
+    var vals = ws.getRange(ini, 1, ul - ini + 1, 4).getValues();
+    var linhas = vals.reverse().map(function(r) {
+      return { dt: String(r[0]||''), user: String(r[1]||''), pagina: String(r[2]||''), agente: String(r[3]||'') };
+    });
+    return JSON.stringify({ linhas: linhas });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function registrarLog(ss, nomeAba, row, col, valorAnterior, novoValor, acao) {
+  try {
+    var ws    = ss.getSheetByName('_Log') || garantirAbaLog(ss);
+    var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+    // [P11] getLastRow+setValues é ~30% mais rápido que appendRow
+    var nextRow = ws.getLastRow() + 1;
+    ws.getRange(nextRow, 1, 1, 8).setValues([[
+      agora,
+      Session.getActiveUser().getEmail() || 'sistema',
+      nomeAba, row, obterNomeColuna(col),
+      valorAnterior, novoValor, acao
+    ]]);
+  } catch (e) {
+    console.error('Log: ' + e);
+  }
+}
+
+/**
+ * Helper que lê NF/NFD de uma linha e chama registrarLog com campos padronizados.
+ * [P09] Lê NFD (col1) e NF (col2) em batch: 1 getRange 1×2 → 2 valores de uma vez.
+ */
+function _registrarLogAba(ss, ws, nomeAba, row, col, statusAnterior, novoStatus, prefixoAcao) {
+  var nfLog = '', nfdLog = '';
+  try {
+    var vals = ws.getRange(row, COL_NFD, 1, 2).getValues()[0];
+    nfdLog = String(vals[0] || '').trim();
+    nfLog  = String(vals[1] || '').trim();
+  } catch (_) {}
+  var ref = nfLog || nfdLog || statusAnterior;
+  registrarLog(ss, nomeAba, row, col, ref, novoStatus,
+    prefixoAcao + (nfLog ? ' — NF: ' + nfLog : ''));
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   CONFIGURAÇÃO INICIAL
+// ════════════════════════════════════════════════════════════
+
+function configurarPlanilha() {
+  if (!_usuarioEhAdmin()) { return _negarAcessoConfig('Configurar/Reinstalar Sistema'); }
+  const ss = getSS();
+
+  try {
+    var requests = ss.getSheets().map(function(s) {
+      return { clearBasicFilter: { sheetId: s.getSheetId() } };
+    });
+    if (requests.length) {
+      Sheets.Spreadsheets.batchUpdate({ requests: requests }, ss.getId());
+    }
+  } catch (_) {
+    ss.getSheets().forEach(function(s) {
+      try { var ff = s.getFilter(); if (ff) ff.remove(); } catch (_2) {}
+    });
+  }
+  SpreadsheetApp.flush();
+
+  ss.getSheets().forEach(function(s) {
+    try { s.setConditionalFormatRules([]); } catch (_) {}
+  });
+
+  garantirAba(ss, 'Britania',              'Britania');
+  garantirAba(ss, 'Unilever',              'Unilever');
+  garantirAba(ss, 'Fornecedores Variados', 'Fornecedores Variados');
+  garantirAbaLog(ss);
+
+  _getTodasAbas().forEach(function(nome) {
+    reaplicarCoresAba(ss.getSheetByName(nome));
+  });
+
+  _criarLayoutDashboard(ss);
+  _atualizarMetricasDashboard(ss);
+
+  // [P10] Reseta todos os contadores de cache ao reconfigurar
+  _resetarContadores();
+
+  instalarTriggers();
+  var _msgOk = '✅ Sistema v6.2 configurado!\n\n' +
+    '• Otimizações de performance aplicadas\n' +
+    '• onEdit mais rápido (batch writes + contadores)\n' +
+    '• Dashboard com debounce (evita releituras desnecessárias)\n' +
+    '• onOpen com cache de cores (reabertura mais rápida)\n' +
+    '• Painel de Auditoria unificado (NF + E-mails + Log)\n' +
+    '• Linha 2 com resumo de Pendentes (Produtos, NFs, Valor)\n' +
+    '• Coluna "Dias Armazenado" por NF\n' +
+    '• Novo: 🚚 Programar Frete da Devolução\n' +
+    '• Novo: 🔐 Configurações restritas ao dono + administradores cadastrados';
+  try { SpreadsheetApp.getUi().alert(_msgOk); } catch (_) {}
+  return JSON.stringify({ sucesso: _msgOk });
+}
+
+/**
+ * Manutenção Rápida: reaplica cores, atualiza dashboard e reinstala triggers
+ * sem recriar ou apagar nenhuma aba. Ideal para corrigir pequenos problemas
+ * sem risco de perder dados.
+ */
+function manutencaoSistema() {
+  if (!_usuarioEhAdmin()) { return _negarAcessoConfig('Manutenção do Sistema'); }
+  const ss = getSS();
+
+  // Reaplica cores em todas as abas (incluindo extras)
+  _getTodasAbas().forEach(function(nome) {
+    reaplicarCoresAba(ss.getSheetByName(nome));
+  });
+
+  // Força atualização do dashboard (remove cache de debounce antes)
+  try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+  _atualizarMetricasDashboard(ss);
+
+  // Reinstala triggers
+  instalarTriggers();
+
+  var msg = '✅ Manutenção rápida concluída!\n\n' +
+    '• Cores reaplicadas em todas as abas\n' +
+    '• Dashboard atualizado\n' +
+    '• Triggers verificados e reinstalados\n' +
+    '• Nenhuma aba foi recriada ou limpa';
+  try { SpreadsheetApp.getUi().alert(msg); } catch (_) {}
+  return JSON.stringify({ sucesso: msg });
+}
+
+function instalarTriggers() {
+  var handlers = [
+    'onEditInstalado',
+    'enviarResumoSemanal',
+    'verificarAtrasosEEnviarAlerta',
+    'verificarTransferenciasVencidas',
+    'reaplicarCoresTodas'
+  ];
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (handlers.indexOf(t.getHandlerFunction()) !== -1) {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger('onEditInstalado')
+    .forSpreadsheet(getSS())
+    .onEdit().create();
+
+  ScriptApp.newTrigger('enviarResumoSemanal')
+    .timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
+
+  ScriptApp.newTrigger('verificarAtrasosEEnviarAlerta')
+    .timeBased().everyDays(1).atHour(9).create();
+
+  // Alerta diário de transferências com agendamento vencido
+  ScriptApp.newTrigger('verificarTransferenciasVencidas')
+    .timeBased().everyDays(1).atHour(8).create();
+
+  ScriptApp.newTrigger('reaplicarCoresTodas')
+    .timeBased().everyDays(1).atHour(2).create();
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   FORMATAÇÃO DE ABAS
+// ════════════════════════════════════════════════════════════
+
+function garantirAba(ss, nomeAba, nomeFornecedor) {
+  var ws = ss.getSheetByName(nomeAba);
+  if (ws) {
+    try {
+      if (ss.getSheets().filter(function(s) { return !s.isSheetHidden(); }).length === 1) {
+        ss.insertSheet('_tmp_del_');
+      }
+      ss.deleteSheet(ws);
+    } catch (_) {}
+  }
+
+  ws = ss.insertSheet(nomeAba);
+  formatarAba(ws, nomeFornecedor, nomeAba !== 'Fornecedores Variados');
+
+  var tmp = ss.getSheetByName('_tmp_del_');
+  if (tmp) try { ss.deleteSheet(tmp); } catch (_) {}
+
+  return ws;
+}
+
+function formatarAba(ws, nomeFornecedor, fixarFornecedor) {
+  try {
+    Sheets.Spreadsheets.batchUpdate(
+      { requests: [{ clearBasicFilter: { sheetId: ws.getSheetId() } }] },
+      ws.getParent().getId()
+    );
+  } catch (_) {
+    try { var f = ws.getFilter(); if (f) f.remove(); } catch (_2) {}
+  }
+
+  try { ws.setConditionalFormatRules([]); } catch (_) {}
+  ws.clear();
+  ws.setFrozenRows(0);
+  ws.setFrozenColumns(0);
+
+  ws.setRowHeight(1, 40);
+  ws.getRange(1, 1, 1, TOTAL_COLUNAS).setBackground(COR_HEADER);
+  ws.getRange(1, 2, 1, TOTAL_COLUNAS - 1).merge()
+    .setValue('CONTROLE DE DEVOLUÇÕES – ' + nomeFornecedor.toUpperCase())
+    .setBackground(COR_HEADER).setFontColor('#FFFFFF')
+    .setFontWeight('bold').setFontSize(14)
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+  ws.setFrozenRows(3);
+  ws.setFrozenColumns(1);
+
+  // ── Linha 2: resumo ao vivo dos itens Pendentes (produtos, NFs, valor) ──
+  ws.setRowHeight(2, 24);
+  ws.getRange(2, 1, 1, TOTAL_COLUNAS).setBackground('#E8F0F8');
+  var resumo = _formulasResumoPendentes();
+  var blocosResumo = [
+    { c1: 2,  c2: 4,  formula: resumo.produtos },
+    { c1: 5,  c2: 6,  formula: resumo.nfs },
+    { c1: 7,  c2: 11, formula: resumo.valor }
+  ];
+  blocosResumo.forEach(function(b) {
+    ws.getRange(2, b.c1, 1, b.c2 - b.c1 + 1).merge()
+      .setFormula(b.formula)
+      .setFontWeight('bold').setFontSize(10.5).setFontColor(COR_HEADER)
+      .setHorizontalAlignment('left').setVerticalAlignment('middle');
+  });
+
+  ws.setRowHeight(3, 32);
+  var headers  = ['NFD','Nº NF','Data Entrada','Fornecedor','Tipo','Motivo','Descrição do Produto',
+                  'Qtd','Valor Unit (R$)','Valor Total (R$)','Status',
+                  'Pendente ✓','Devolvido ✓','Venda ✓','Obs / Hora','Responsável','📎 Anexo NF',
+                  'Dias Armazenado','Tipo de Frete','Valor Frete (R$)'];
+  var larguras = [100,100,120,180,90,200,320,60,120,130,120,95,100,85,280,200,160,110,140,120];
+  headers.forEach(function(h, i) {
+    ws.setColumnWidth(i + 1, larguras[i]);
+    ws.getRange(3, i + 1).setValue(h)
+      .setBackground(COR_HEADER).setFontColor('#FFFFFF')
+      .setFontWeight('bold').setFontSize(10)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle').setWrap(true);
+  });
+
+  var fmt = 'R$ #,##0.00;;"";""';
+  var formulasTotal = [], fmtUnit = [], fmtTot = [], fmtData = [], valForn = [], valStatus = [];
+  var formulasDias = [], fmtDias = [], fmtFreteValor = [];
+  var ultimaLinha = LINHA_DADOS + MAX_LINHAS_ABA - 1;
+
+  for (var row = LINHA_DADOS; row <= ultimaLinha; row++) {
+    formulasTotal.push([_formulaTotal(row)]);
+    fmtUnit.push([fmt]);
+    fmtTot.push([fmt]);
+    fmtData.push(['dd/mm/yyyy']);
+    valForn.push([fixarFornecedor ? nomeFornecedor : '']);
+    valStatus.push(['']);
+    formulasDias.push([_formulaDiasArmazenado(row)]);
+    fmtDias.push(['0" dias"']);
+    fmtFreteValor.push([fmt]);
+  }
+
+  ws.setRowHeights(LINHA_DADOS, MAX_LINHAS_ABA, 22);
+  ws.getRange(LINHA_DADOS, COL_VL_TOT,  MAX_LINHAS_ABA, 1).setFormulas(formulasTotal);
+  ws.getRange(LINHA_DADOS, COL_VL_UNIT, MAX_LINHAS_ABA, 1).setNumberFormats(fmtUnit);
+  ws.getRange(LINHA_DADOS, COL_VL_TOT,  MAX_LINHAS_ABA, 1).setNumberFormats(fmtTot);
+  ws.getRange(LINHA_DADOS, COL_DATA,    MAX_LINHAS_ABA, 1).setNumberFormats(fmtData);
+  ws.getRange(LINHA_DADOS, COL_STATUS,  MAX_LINHAS_ABA, 1).setValues(valStatus);
+  ws.getRange(LINHA_DADOS, COL_DIAS_ARMAZ,  MAX_LINHAS_ABA, 1).setFormulas(formulasDias);
+  ws.getRange(LINHA_DADOS, COL_DIAS_ARMAZ,  MAX_LINHAS_ABA, 1).setNumberFormats(fmtDias);
+  ws.getRange(LINHA_DADOS, COL_FRETE_VALOR, MAX_LINHAS_ABA, 1).setNumberFormats(fmtFreteValor);
+
+  ws.getRange(LINHA_DADOS, COL_PEND_CHK,  MAX_LINHAS_ABA, 1).insertCheckboxes();
+  ws.getRange(LINHA_DADOS, COL_DEV_CHK,   MAX_LINHAS_ABA, 1).insertCheckboxes();
+  ws.getRange(LINHA_DADOS, COL_VENDA_CHK, MAX_LINHAS_ABA, 1).insertCheckboxes();
+
+  if (fixarFornecedor) {
+    ws.getRange(LINHA_DADOS, COL_FORN, MAX_LINHAS_ABA, 1)
+      .setValues(valForn).setFontColor('#555555').setFontStyle('italic');
+  }
+
+  ws.getRange(LINHA_DADOS, 1, MAX_LINHAS_ABA, TOTAL_COLUNAS)
+    .setBackground('#FFFFFF').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  ws.getRange(LINHA_DADOS, COL_DESC, MAX_LINHAS_ABA, 1).setHorizontalAlignment('left').setWrap(true);
+  ws.getRange(LINHA_DADOS, COL_OBS,  MAX_LINHAS_ABA, 1).setHorizontalAlignment('left').setWrap(true);
+
+  ws.getRange(LINHA_DADOS, COL_TIPO, MAX_LINHAS_ABA, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Falta', 'Avaria', 'Rejeição'], true).setAllowInvalid(true).build());
+
+  // Devolvido e Em Transferência são gerenciados pelo sistema — não aparecem no dropdown manual
+  ws.getRange(LINHA_DADOS, COL_STATUS, MAX_LINHAS_ABA, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Pendente', 'Venda'], true).setAllowInvalid(true).build());
+
+  ws.getRange(LINHA_DADOS, COL_FRETE_TIPO, MAX_LINHAS_ABA, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(TIPOS_FRETE, true).setAllowInvalid(true).build());
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   ON EDIT
+// ════════════════════════════════════════════════════════════
+
+function onEditInstalado(e) {
+  if (!e) return;
+  var ws     = e.range.getSheet();
+  var nomAba = ws.getName();
+  var col    = e.range.getColumn();
+  var row    = e.range.getRow();
+  var ss     = getSS();
+
+  if (nomAba === 'Dashboard' && (row === 4 || row === 5) && col === 3) {
+    _atualizarMetricasDashboard(ss);
+    return;
+  }
+
+  if (_getTodasAbas().indexOf(nomAba) === -1 || row < LINHA_DADOS) return;
+
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(8000)) {
+    ss.toast('Sistema ocupado. Tente novamente em instantes.', '⏳ Aguarde', 4);
+    return;
+  }
+
+  try {
+    var novoValor     = e.range.getValue();
+    var valorAnterior = e.oldValue != null ? e.oldValue : '';
+
+    if (col === COL_DATA) {
+      // [P05] Passa a data nova diretamente
+      var stAtualData = ws.getRange(row, COL_STATUS).getValue();
+      if (stAtualData === 'Pendente') aplicarCorLinha(ws, row, 'Pendente', novoValor instanceof Date ? novoValor : null);
+    }
+
+    // [P12] valoresNF só é lido quando a coluna editada é COL_NF
+    if (col === COL_NF && novoValor !== '') {
+      var ultimaLinha = obterUltimaLinhaDados(ws);
+      var valoresNF   = ultimaLinha >= LINHA_DADOS
+        ? ws.getRange(LINHA_DADOS, COL_NF, ultimaLinha - LINHA_DADOS + 1, 1).getValues()
+        : [];
+      if (_nfDuplicada(valoresNF, row, novoValor)) {
+        SpreadsheetApp.getUi().alert('⚠️ NF "' + novoValor + '" já lançada nesta aba. Verifique duplicidade.');
+      }
+      if (!ws.getRange(row, COL_RESP).getValue()) {
+        ws.getRange(row, COL_RESP).setValue(Session.getActiveUser().getEmail() || 'Não identificado');
+      }
+    }
+
+    if (col === COL_STATUS) {
+      _aplicarStatus(ss, ws, nomAba, row, novoValor, valorAnterior);
+    }
+
+    // [P13] 3 blocos if separados → 1 bloco com 1 único getValue compartilhado
+    if ((col === COL_PEND_CHK || col === COL_DEV_CHK || col === COL_VENDA_CHK) && novoValor === true) {
+      var stAtualChk = ws.getRange(row, COL_STATUS).getValue();
+      var novoStChk  = col === COL_PEND_CHK ? 'Pendente'
+                     : col === COL_DEV_CHK   ? 'Devolvido' : 'Venda';
+      _aplicarStatus(ss, ws, nomAba, row, novoStChk, stAtualChk);
+    }
+
+    if (_lerContadorConcluidos() >= 40) {
+      _zerarContadorConcluidos();
+      arquivarItensConcluidos();
+    }
+
+  } catch (erro) {
+    console.error('onEdit: ' + erro);
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+/** Aplica status, checkboxes, cor, obs, proteção, log e atualiza métricas. */
+function _aplicarStatus(ss, ws, nomAba, row, novoStatus, statusAnterior, _sistemaFlag) {
+  // Bloqueia definição manual de "Devolvido" e "Em Transferência" (exclusivos do sistema)
+  if ((novoStatus === 'Devolvido' || novoStatus === 'Em Transferência') && !_sistemaFlag) {
+    try {
+      SpreadsheetApp.getUi().alert(
+        '⚠️ Status "' + novoStatus + '" não pode ser definido manualmente.\n\n' +
+        (novoStatus === 'Devolvido'
+          ? 'Use "Gerar PDF Devolução" ou confirme a baixa em Transferências.'
+          : 'Programar uma devolução via "Programar Devolução" define este status automaticamente.')
+      );
+    } catch (_) {}
+    // Reverte para o status anterior
+    ws.getRange(row, COL_STATUS).setValue(statusAnterior || 'Pendente');
+    return;
+  }
+
+  var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+  var obsVal = novoStatus === 'Devolvido' ? 'Devolvido em: ' + agora
+             : novoStatus === 'Venda'     ? 'Enviado para o Fábio em: ' + agora
+             : '';
+  // [P14] status + 3 checkboxes + obs em 1 setValues (cols 11-15 são adjacentes)
+  ws.getRange(row, COL_STATUS, 1, 5).setValues([[
+    novoStatus,
+    novoStatus === 'Pendente',
+    novoStatus === 'Devolvido',
+    novoStatus === 'Venda',
+    obsVal
+  ]]);
+
+  aplicarCorLinha(ws, row, novoStatus);
+
+  if (novoStatus === 'Devolvido' || novoStatus === 'Venda') {
+    protegerLinhaConcluida(ss, ws, row, novoStatus);
+    if (statusAnterior !== 'Devolvido' && statusAnterior !== 'Venda') {
+      _incrementarContadorConcluidos();
+    }
+  }
+  _atualizarMetricasDashboard(ss);
+  _registrarLogAba(ss, ws, nomAba, row, COL_STATUS, statusAnterior, novoStatus, 'Status alterado');
+}
+
+function _nfDuplicada(valoresNF, rowAtual, valorNF) {
+  return valoresNF.some(function(r, idx) {
+    return (LINHA_DADOS + idx) !== rowAtual &&
+           String(r[0]).trim() === String(valorNF).trim();
+  });
+}
+
+
+// ── Helpers de visual ─────────────────────────────────────────
+
+// [P01] Mantida para compatibilidade externa (restauração, reabertura, exportarPDF)
+function syncCheckboxesComStatus(ws, row, status) {
+  ws.getRange(row, COL_PEND_CHK, 1, 3).setValues([[
+    status === 'Pendente',
+    status === 'Devolvido',
+    status === 'Venda'
+  ]]);
+}
+
+// [P08] Mantida para compatibilidade externa
+function registrarObs(ws, row, status) {
+  var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+  var obsVal = status === 'Devolvido' ? 'Devolvido em: ' + agora
+             : status === 'Venda'     ? 'Enviado para o Fábio em: ' + agora
+             : '';
+  ws.getRange(row, COL_OBS).setValue(obsVal);
+}
+
+// [P05] Aceita dtOpcional para evitar getValue extra quando a data já é conhecida
+function aplicarCorLinha(ws, row, status, dtOpcional) {
+  var cor = corPorStatus(status);
+  if (status === 'Pendente') {
+    try {
+      var dt = (dtOpcional instanceof Date) ? dtOpcional : ws.getRange(row, COL_DATA).getValue();
+      if (dt instanceof Date && !isNaN(dt)) {
+        if (Math.floor((new Date() - dt) / 864e5) > 30) cor = COR_ALERTA_30DIAS;
+      }
+    } catch (_) {}
+  }
+  ws.getRange(row, 1, 1, TOTAL_COLUNAS).setBackground(cor);
+}
+
+function reaplicarCoresAba(ws) {
+  if (!ws) return;
+  var ul = obterUltimaLinhaDados(ws);
+  if (ul < LINHA_DADOS) return;
+
+  var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+  var hoje  = new Date();
+  var cores = dados.map(function(l) {
+    var cor = '#FFFFFF';
+    if (l[IDX_NF]) {
+      cor = corPorStatus(l[IDX_STATUS]);
+      if (l[IDX_STATUS] === 'Pendente' && l[IDX_DATA] instanceof Date && !isNaN(l[IDX_DATA])) {
+        if (Math.floor((hoje - l[IDX_DATA]) / 864e5) > 30) cor = COR_ALERTA_30DIAS;
+      }
+    }
+    return Array(TOTAL_COLUNAS).fill(cor);
+  });
+  ws.getRange(LINHA_DADOS, 1, dados.length, TOTAL_COLUNAS).setBackgrounds(cores);
+}
+
+function reaplicarCoresTodas() {
+  var ss = getSS();
+  _getTodasAbas().forEach(function(nome) {
+    reaplicarCoresAba(ss.getSheetByName(nome));
+  });
+  // Backup automático diário executado junto com a reaplicação de cores (trigger 2h)
+  try {
+    executarBackup();
+    var props = PropertiesService.getScriptProperties();
+    props.setProperty('cdv_ultimo_backup',
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'));
+  } catch (eBkp) {
+    console.error('reaplicarCoresTodas — backup: ' + eBkp);
+  }
+}
+
+function protegerLinhaConcluida(ss, ws, row, status) {
+  if (status !== 'Devolvido' && status !== 'Venda') return;
+
+  var protAtivas = ws.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+  if (protAtivas.some(function(p) {
+    return p.getRange().getRow() === row && p.getRange().getNumRows() === 1;
+  })) return;
+
+  // [P04] Usa contador em PropertiesService em vez de iterar todas as abas
+  var total = _lerTotalProtecoes();
+  if (total >= LIMITE_PROTECOES) {
+    registrarLog(ss, ws.getName(), row, COL_STATUS, '', status, '⚠️ Limite de proteções atingido.');
+    _alertarLimiteProtecoes(total);
+    return;
+  }
+
+  try {
+    var p     = ws.getRange(row, 1, 1, TOTAL_COLUNAS).protect()
+                  .setDescription('Linha ' + row + ' – ' + status);
+    var owner = ss.getOwner() ? ss.getOwner().getEmail() : '';
+    try {
+      p.getEditors().forEach(function(u) {
+        if (u.getEmail() !== owner) p.removeEditor(u);
+      });
+    } catch (_) {}
+    if (p.canDomainEdit()) p.setDomainEdit(false);
+    _incrementarProtecoes();
+  } catch (e) {
+    console.error('protegerLinhaConcluida: ' + e);
+  }
+}
+
+/**
+ * [Fase 4, item 4f] Antes disso, ao atingir LIMITE_PROTECOES o sistema
+ * simplesmente parava de proteger novas linhas concluídas (só uma linha de
+ * log, que ninguém olha em tempo real) — deixando linhas "Devolvido"/"Venda"
+ * editáveis sem ninguém perceber. Agora registra em obterErrosRecentes()
+ * (painel de erros do admin) e manda um alerta no Telegram (se configurado),
+ * com um cache de 12h pra não repetir o aviso a cada linha concluída
+ * enquanto o limite continuar batido.
+ */
+function _alertarLimiteProtecoes(total) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var key   = 'alerta_limite_protecoes';
+    if (cache.get(key)) return; // já avisado nas últimas horas
+    cache.put(key, '1', 12 * 3600);
+    var msg = 'Limite de proteções de linha atingido (' + total + '/' + LIMITE_PROTECOES + '). ' +
+      'Novas linhas concluídas (Devolvido/Venda) não estão mais sendo protegidas contra edição.';
+    registrarErroSistema('protegerLinhaConcluida', msg);
+    notificarEvento('sistema', '⚠️ <b>Limite de proteções atingido</b>\n' + msg +
+      '\nRevise o arquivamento de itens concluídos em Configurações → Sistema.');
+  } catch (_) {}
+}
+
+// [P02] Mantida para uso em diagnóstico manual ou chamadas externas.
+function contarTotalConcluidos(ss) {
+  return _getTodasAbas().reduce(function(tot, nome) {
+    var ws = ss.getSheetByName(nome);
+    if (!ws) return tot;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return tot;
+    return tot + ws.getRange(LINHA_DADOS, COL_STATUS, ul - LINHA_DADOS + 1, 1).getValues()
+      .filter(function(r) { return r[0] === 'Devolvido' || r[0] === 'Venda'; }).length;
+  }, 0);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   ARQUIVAMENTO
+// ════════════════════════════════════════════════════════════
+
+function _garantirHistorico(ss) {
+  var hist = ss.getSheetByName('Historico_Arquivo');
+  if (!hist) hist = ss.insertSheet('Historico_Arquivo');
+
+  if (hist.getRange('A1').getValue() !== 'NFD') {
+    hist.getRange(1, 1, 1, TOTAL_COLUNAS + 1).setValues([[
+      'NFD','Nº NF','Data Entrada','Fornecedor','Tipo','Motivo','Descrição do Produto',
+      'Qtd','Valor Unit (R$)','Valor Total (R$)','Status',
+      'Pendente ✓','Devolvido ✓','Venda ✓','Obs / Hora','Responsável','📎 Anexo NF',
+      'Dias Armazenado','Tipo de Frete','Valor Frete (R$)',
+      'Arquivado em'
+    ]]).setBackground('#444444').setFontColor('#FFFFFF').setFontWeight('bold');
+    hist.setFrozenRows(1);
+    [100,100,120,180,90,200,320,60,120,130,120,95,100,85,280,200,160,110,140,120,160]
+      .forEach(function(w, i) { hist.setColumnWidth(i + 1, w); });
+  }
+  return hist;
+}
+
+function _reconstruirAba(ss, ws, nomeAba, restantes) {
+  var ul = obterUltimaLinhaDados(ws);
+  var linhasLimpar = Math.max(ul - LINHA_DADOS + 1, 0);
+  if (linhasLimpar > 0) {
+    ws.getRange(LINHA_DADOS, 1, linhasLimpar, TOTAL_COLUNAS).clearContent().setBackground('#FFFFFF');
+  }
+
+  var fmt    = 'R$ #,##0.00;;"";""';
+  var bloco  = [], cores = [], fmulas = [], fu = [], ft = [], fd = [], fdias = [];
+
+  for (var i = 0; i < MAX_LINHAS_ABA; i++) {
+    var l  = i < restantes.length ? restantes[i] : null;
+    var lv = l ? l.slice() : Array(TOTAL_COLUNAS).fill('');
+    if (!l) {
+      lv[IDX_PEND_CHK]  = false;
+      lv[IDX_DEV_CHK]   = false;
+      lv[IDX_VENDA_CHK] = false;
+      if (nomeAba !== 'Fornecedores Variados') lv[IDX_FORN] = nomeAba;
+    }
+    bloco.push(lv);
+    cores.push(Array(TOTAL_COLUNAS).fill(corPorStatus(lv[IDX_STATUS])));
+    var row = LINHA_DADOS + i;
+    fmulas.push([_formulaTotal(row)]);
+    fu.push([fmt]); ft.push([fmt]); fd.push(['dd/mm/yyyy']);
+    fdias.push([_formulaDiasArmazenado(row)]);
+  }
+
+  var rng = ws.getRange(LINHA_DADOS, 1, MAX_LINHAS_ABA, TOTAL_COLUNAS);
+  rng.setValues(bloco).setBackgrounds(cores);
+  ws.getRange(LINHA_DADOS, COL_VL_TOT,  MAX_LINHAS_ABA, 1).setFormulas(fmulas);
+  ws.getRange(LINHA_DADOS, COL_VL_UNIT, MAX_LINHAS_ABA, 1).setNumberFormats(fu);
+  ws.getRange(LINHA_DADOS, COL_VL_TOT,  MAX_LINHAS_ABA, 1).setNumberFormats(ft);
+  ws.getRange(LINHA_DADOS, COL_DATA,    MAX_LINHAS_ABA, 1).setNumberFormats(fd);
+  ws.getRange(LINHA_DADOS, COL_DIAS_ARMAZ, MAX_LINHAS_ABA, 1).setFormulas(fdias);
+  if (nomeAba !== 'Fornecedores Variados') {
+    ws.getRange(LINHA_DADOS, COL_FORN, MAX_LINHAS_ABA, 1)
+      .setFontColor('#555555').setFontStyle('italic');
+  }
+  rng.setHorizontalAlignment('center').setVerticalAlignment('middle');
+  ws.getRange(LINHA_DADOS, COL_DESC, MAX_LINHAS_ABA, 1).setHorizontalAlignment('left').setWrap(true);
+  ws.getRange(LINHA_DADOS, COL_OBS,  MAX_LINHAS_ABA, 1).setHorizontalAlignment('left').setWrap(true);
+
+  restantes.forEach(function(l, idx) {
+    var st = l[IDX_STATUS];
+    if (st === 'Devolvido' || st === 'Venda') {
+      protegerLinhaConcluida(ss, ws, LINHA_DADOS + idx, st);
+    }
+  });
+}
+
+/**
+ * Move linhas de `dados` cujos índices estão em `linhasAlvoSet` para o histórico.
+ * [P15] N appendRow individuais → 1 setValues batch por chamada.
+ */
+function _moverParaHistorico(hist, dados, linhasAlvoSet) {
+  var restantes        = [];
+  var linhasHistorico  = [];
+  var total            = 0;
+  var agora            = new Date();
+
+  dados.forEach(function(l, idx) {
+    var linhaAtual = LINHA_DADOS + idx;
+    if (linhasAlvoSet.has(linhaAtual)) {
+      linhasHistorico.push(l.concat([agora]));
+      total++;
+      _apagarAnexoDrive(String(l[IDX_ANEXO] || '').trim());
+    } else if (l[IDX_NF]) {
+      restantes.push(l);
+    }
+  });
+
+  if (linhasHistorico.length) {
+    var nextRow = hist.getLastRow() + 1;
+    hist.getRange(nextRow, 1, linhasHistorico.length, TOTAL_COLUNAS + 1)
+        .setValues(linhasHistorico);
+  }
+
+  return { restantes: restantes, total: total };
+}
+
+function arquivarItensConcluidos() {
+  var ss   = getSS();
+  var hist = _garantirHistorico(ss);
+  var total = 0;
+  var totalProtRemovidas = 0;
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+
+    var linhasConcluidas = new Set();
+    dados.forEach(function(l, idx) {
+      if (l[IDX_NF] && (l[IDX_STATUS] === 'Devolvido' || l[IDX_STATUS] === 'Venda')) {
+        linhasConcluidas.add(LINHA_DADOS + idx);
+      }
+    });
+    ws.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function(p) {
+      if (linhasConcluidas.has(p.getRange().getRow())) {
+        p.remove();
+        totalProtRemovidas++;
+      }
+    });
+
+    var resultado = _moverParaHistorico(hist, dados, linhasConcluidas);
+    total += resultado.total;
+    _reconstruirAba(ss, ws, nomeAba, resultado.restantes);
+  });
+
+  _zerarContadorConcluidos();
+  _decrementarProtecoes(totalProtRemovidas);
+
+  SpreadsheetApp.flush();
+  _atualizarMetricasDashboard(ss);
+  if (total > 0) {
+    try { SpreadsheetApp.getUi().alert('📦 ' + total + ' itens arquivados.'); } catch (_) {}
+  }
+  return JSON.stringify({ sucesso: total > 0 ? ('📦 ' + total + ' itens arquivados.') : '✅ Nenhum item pendente de arquivamento (nada com status Devolvido/Venda fora do histórico).', total: total });
+}
+
+function _arquivarLinhasEspecificas(ss, linhasParaArquivar) {
+  if (!linhasParaArquivar || !linhasParaArquivar.length) return 0;
+
+  var hist = _garantirHistorico(ss);
+  var porAba = {};
+  linhasParaArquivar.forEach(function(ref) {
+    if (!porAba[ref.nomeAba]) porAba[ref.nomeAba] = new Set();
+    porAba[ref.nomeAba].add(ref.linha);
+  });
+
+  var total = 0;
+
+  Object.keys(porAba).forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var linhasAlvo = porAba[nomeAba];
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+
+    ws.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function(p) {
+      if (linhasAlvo.has(p.getRange().getRow())) p.remove();
+    });
+
+    var resultado = _moverParaHistorico(hist, dados, linhasAlvo);
+    total += resultado.total;
+    _reconstruirAba(ss, ws, nomeAba, resultado.restantes);
+  });
+
+  SpreadsheetApp.flush();
+  return total;
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   DASHBOARD
+//
+//  Estrutura:
+//  Linha  1    : Título
+//  Linha  2    : Subtítulo
+//  Linhas 3–5  : Filtro de datas (col B–D) | Taxa (col F–I)
+//  Linha  6    : Separador
+//  Linhas 7–8  : Cabeçalhos de coluna (fornecedores)
+//  Linhas 9–17 : Blocos PENDENTE / DEVOLVIDO / VENDA
+//  Linhas 18–21: KPIs globais
+//  Linha  23+  : Gráficos
+// ════════════════════════════════════════════════════════════
+
+function garantirDashboard(ss) {
+  var ws = ss.getSheetByName('Dashboard');
+  if (!ws) ws = ss.insertSheet('Dashboard');
+  var sentinel = '';
+  try { sentinel = ws.getRange(DASH_SENTINEL_CELL).getValue(); } catch(_) {}
+  if (sentinel !== DASH_SENTINEL_VALUE) _criarLayoutDashboard(ss);
+  _atualizarMetricasDashboard(ss);
+}
+
+function _criarLayoutDashboard(ss) {
+  var ws = ss.getSheetByName('Dashboard');
+  if (!ws) ws = ss.insertSheet('Dashboard');
+
+  try { var f = ws.getFilter(); if (f) f.remove(); } catch(_) {}
+  try { ws.setConditionalFormatRules([]); } catch(_) {}
+  ws.clear();
+  ws.setHiddenGridlines(true);
+  ws.setFrozenRows(2);
+
+  ws.getRange(1, 1, 55, 11).setBackground(DC.CINZA);
+
+  ws.setColumnWidth(1, 12);
+  for (var ci = 2; ci <= 9; ci++) ws.setColumnWidth(ci, 130);
+  ws.setColumnWidth(10, 12);
+  try { ws.hideColumns(11, 20); } catch(_) {}
+
+  // Row map (25 rows visible):
+  // 1:title 2:sub 3:sep 4:ini 5:fim 6:sep 7:header 8:sep
+  // 9:PEND_label 10:PEND_vals 11:sep
+  // 12:TR_label  13:TR_vals   14:sep  ← NEW Em Transferência
+  // 15:DEV_label 16:DEV_vals  17:sep
+  // 18:VENDA_label 19:VENDA_vals 20:sep
+  // 21:KPI_hdr 22:KPI_num 23:KPI_val 24:KPI_sub 25:sep
+  [48,24,8,30,30,8,22,6, 22,38,8, 22,38,8, 22,38,8, 22,38,10, 22,42,24,18,10]
+    .forEach(function(h, i) { ws.setRowHeight(i + 1, h); });
+  ws.setRowHeights(26, 20, 22);
+
+  // ── Título ────────────────────────────────────────────────
+  ws.getRange(1, 1, 1, 10).setBackground(DC.HEADER);
+  ws.getRange(1, 2, 1, 8).merge()
+    .setValue('CONTROLE DE DEVOLUÇÕES  ·  PAINEL DE GESTÃO')
+    .setFontColor(DC.BRANCO).setFontWeight('bold').setFontSize(15)
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
+  ws.getRange(DASH_SENTINEL_CELL).setValue(DASH_SENTINEL_VALUE)
+    .setFontColor(DC.CINZA).setBackground(DC.CINZA);
+
+  // ── Subtítulo ─────────────────────────────────────────────
+  ws.getRange(2, 1, 1, 10).setBackground(DC.SUB);
+  ws.getRange(2, 2, 1, 8).merge()
+    .setValue('Atualizado automaticamente  ·  Edite as datas abaixo para filtrar o período')
+    .setFontColor('#93B4D4').setFontSize(9).setFontStyle('italic')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
+
+  // ── Filtro de datas ───────────────────────────────────────
+  ws.getRange(4, 2).setValue('Início:').setFontSize(9).setFontColor(DC.TEXTO_L)
+    .setFontWeight('bold').setHorizontalAlignment('right').setVerticalAlignment('middle');
+  ws.getRange(5, 2).setValue('Fim:').setFontSize(9).setFontColor(DC.TEXTO_L)
+    .setFontWeight('bold').setHorizontalAlignment('right').setVerticalAlignment('middle');
+
+  var ano = new Date().getFullYear();
+  ws.getRange(4, 3).setValue(new Date(ano, 0, 1)).setNumberFormat('dd/mm/yyyy')
+    .setBackground('#F0F7FF').setFontColor(DC.PEND).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  ws.getRange(5, 3).setValue(new Date(ano, 11, 31)).setNumberFormat('dd/mm/yyyy')
+    .setBackground('#F0F7FF').setFontColor(DC.PEND).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+  // ── Taxa de resolução ─────────────────────────────────────
+  ws.getRange(3, 6, 3, 4).setBackground(DC.BRANCO)
+    .setBorder(true, true, true, true, false, false, DC.BORDA, SpreadsheetApp.BorderStyle.SOLID);
+  ws.getRange(3, 6, 1, 4).merge()
+    .setValue('🏆 TAXA DE RESOLUÇÃO')
+    .setFontWeight('bold').setFontSize(9).setFontColor(DC.TEXTO_L)
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  ws.getRange(4, 6, 2, 2).merge()
+    .setValue('—').setFontWeight('bold').setFontSize(26).setFontColor(DC.DEV)
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setNumberFormat('0%');
+  ws.getRange(4, 8, 2, 2).merge()
+    .setValue('itens resolvidos\nsobre o total').setFontSize(8).setWrap(true)
+    .setFontColor(DC.TEXTO_L).setHorizontalAlignment('left').setVerticalAlignment('middle');
+
+  // ── Cabeçalhos fornecedores ───────────────────────────────
+  ws.getRange(7, 1, 1, 10).setBackground(DC.CINZA);
+  DASH_COLS.forEach(function(g) {
+    ws.getRange(7, g.c, 1, 2).merge()
+      .setValue(g.label).setBackground(g.cor).setFontColor(DC.BRANCO)
+      .setFontWeight('bold').setFontSize(9)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  });
+
+  // ── Blocos de status ──────────────────────────────────────
+  var blocks = [
+    { label: '⏳ PENDENTE',           acc: DC.PEND,  bg: DC.PEND_BG,  rL: 9,  rV: 10 },
+    { label: '🚚 EM TRANSFERÊNCIA',   acc: DC.TR,    bg: DC.TR_BG,    rL: 12, rV: 13 }, // NEW
+    { label: '✅ DEVOLVIDO',          acc: DC.DEV,   bg: DC.DEV_BG,   rL: 15, rV: 16 },
+    { label: '🛒 VENDA',             acc: DC.VENDA, bg: DC.VENDA_BG, rL: 18, rV: 19 }
+  ];
+  blocks.forEach(function(b) {
+    ws.getRange(b.rL, 1, 1, 10).setBackground(b.acc);
+    ws.getRange(b.rL, 2, 1, 8).merge()
+      .setValue(b.label).setFontColor(DC.BRANCO).setFontWeight('bold').setFontSize(9)
+      .setHorizontalAlignment('left').setVerticalAlignment('middle');
+    DASH_COLS.forEach(function(g, gi) {
+      var acc = gi === 3 ? DC.TOT : b.acc;
+      var bg  = gi === 3 ? DC.TOT_BG : b.bg;
+      ws.getRange(b.rV, g.c).setBackground(bg).setFontColor(acc)
+        .setFontWeight('bold').setFontSize(18)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle').setValue('—');
+      ws.getRange(b.rV, g.c + 1).setBackground(bg).setFontColor(DC.TEXTO_L)
+        .setFontSize(9).setFontWeight('bold')
+        .setHorizontalAlignment('right').setVerticalAlignment('middle')
+        .setNumberFormat('R$ #,##0.00').setValue(0);
+    });
+  });
+
+  // ── KPIs globais (rows 21-24) ─────────────────────────────
+  var kpis = [
+    { label: 'TOTAL PENDENTE',       sub: 'aguardando resolução',  acc: DC.PEND,  bg: DC.PEND_BG,  col: 2 },
+    { label: 'EM TRANSFERÊNCIA',     sub: 'em trânsito',           acc: DC.TR,    bg: DC.TR_BG,    col: 4 }, // NEW
+    { label: 'TOTAL DEVOLVIDO',      sub: 'devoluções OK',         acc: DC.DEV,   bg: DC.DEV_BG,   col: 6 },
+    { label: 'TOTAL RESOLVIDO',      sub: 'devolvidos + vendas',   acc: DC.TOT,   bg: DC.TOT_BG,   col: 8 }
+  ];
+  kpis.forEach(function(k) {
+    ws.getRange(21, k.col, 4, 2).setBackground(k.bg)
+      .setBorder(true, true, true, true, false, false, k.acc, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    ws.getRange(21, k.col, 1, 2).merge()
+      .setValue(k.label).setBackground(k.acc).setFontColor(DC.BRANCO)
+      .setFontWeight('bold').setFontSize(8)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    ws.getRange(22, k.col, 1, 2).merge().setValue('—')
+      .setFontColor(k.acc).setFontWeight('bold').setFontSize(22)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    ws.getRange(23, k.col, 1, 2).merge().setValue(0)
+      .setFontColor(DC.TEXTO_L).setFontWeight('bold').setFontSize(10)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setNumberFormat('R$ #,##0.00');
+    ws.getRange(24, k.col, 1, 2).merge().setValue(k.sub)
+      .setFontColor(DC.TEXTO_L).setFontSize(8).setFontStyle('italic')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  });
+
+  // ── Dados auxiliares gráficos (col 11+, hidden) ───────────
+  ws.getRange(1, 11, 5, 2).setValues([
+    ['Status','Qtd'],['Pendente',0],['Em Transferência',0],['Devolvido',0],['Venda',0]
+  ]);
+  ws.getRange(1, 14, 13, 4).setValues(
+    [['Mês','Pendente','Devolvido','Venda']].concat(
+      ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+        .map(function(m) { return [m, 0, 0, 0]; })
+    )
+  );
+
+  // ── Gráficos (a partir da row 27) ────────────────────────
+  ws.getCharts().forEach(function(ch) { ws.removeChart(ch); });
+  ws.insertChart(ws.newChart().setChartType(Charts.ChartType.PIE)
+    .addRange(ws.getRange(1, 11, 5, 2)).setPosition(27, 2, 0, 0)
+    .setOption('title', 'Distribuição por Status')
+    .setOption('width', 320).setOption('height', 200)
+    .setOption('colors', [DC.PEND, DC.TR, DC.DEV, DC.VENDA])
+    .setOption('pieHole', 0.4).setOption('pieSliceText', 'percentage')
+    .setOption('legend', { position: 'bottom', textStyle: { fontSize: 9 } })
+    .setOption('backgroundColor', DC.CINZA).build());
+  ws.insertChart(ws.newChart().setChartType(Charts.ChartType.COLUMN)
+    .addRange(ws.getRange(1, 14, 13, 4)).setPosition(27, 5, 0, 0)
+    .setOption('title', 'Lançamentos por Mês — ' + new Date().getFullYear())
+    .setOption('width', 480).setOption('height', 200)
+    .setOption('colors', [DC.PEND, DC.DEV, DC.VENDA])
+    .setOption('legend', { position: 'bottom', textStyle: { fontSize: 9 } })
+    .setOption('backgroundColor', DC.CINZA)
+    .setOption('vAxis', { textStyle: { fontSize: 8 } })
+    .setOption('hAxis', { textStyle: { fontSize: 8 } }).build());
+
+  SpreadsheetApp.flush();
+}
+
+// [P03] Debounce de _DASH_DEBOUNCE_SEG segundos para evitar releituras desnecessárias
+function _atualizarMetricasDashboard(ss) {
+  var cache = CacheService.getScriptCache();
+  if (cache.get(_CACHE_KEY_DASH)) return;
+  cache.put(_CACHE_KEY_DASH, '1', _DASH_DEBOUNCE_SEG);
+
+  var ws = ss.getSheetByName('Dashboard');
+  if (!ws) { _criarLayoutDashboard(ss); return; }
+
+  if (!cache.get(_CACHE_KEY_SENTINEL)) {
+    var sentinel = '';
+    try { sentinel = ws.getRange(DASH_SENTINEL_CELL).getValue(); } catch(_) {}
+    if (sentinel !== DASH_SENTINEL_VALUE) {
+      _criarLayoutDashboard(ss);
+      ws = ss.getSheetByName('Dashboard');
+    }
+    cache.put(_CACHE_KEY_SENTINEL, '1', 1800);
+  }
+
+  var rawIni = ws.getRange(DASH_DATA_INI_CELL).getValue();
+  var rawFim = ws.getRange(DASH_DATA_FIM_CELL).getValue();
+  var ano    = new Date().getFullYear();
+  var dataIni = (rawIni instanceof Date && !isNaN(rawIni)) ? rawIni : new Date(ano, 0, 1);
+  var dataFim = (rawFim instanceof Date && !isNaN(rawFim)) ? rawFim : new Date(ano, 11, 31);
+
+  var b = _processarAba(ss.getSheetByName('Britania'),              dataIni, dataFim);
+  var u = _processarAba(ss.getSheetByName('Unilever'),              dataIni, dataFim);
+  var v = _processarAba(ss.getSheetByName('Fornecedores Variados'), dataIni, dataFim);
+
+  // Abas extras (criadas via "Adicionar Novo Fornecedor") somadas em Fornecedores Variados
+  _getAbasExtras().forEach(function(nome) {
+    var ex = _processarAba(ss.getSheetByName(nome), dataIni, dataFim);
+    v.pQtd += ex.pQtd; v.pValor += ex.pValor;
+    v.dQtd += ex.dQtd; v.dValor += ex.dValor;
+    v.vQtd += ex.vQtd; v.vValor += ex.vValor;
+    v.tQtd += ex.tQtd; v.tValor += ex.tValor;
+  });
+
+  // Contagem de "Em Transferência" por aba de origem (Transferências tab)
+  var trTot = { bQtd:0,bVal:0, uQtd:0,uVal:0, vQtd:0,vVal:0, totQtd:0,totVal:0 };
+  var wsTrDash = ss.getSheetByName(ABA_TRANSFERENCIAS);
+  if (wsTrDash && wsTrDash.getLastRow() >= 2) {
+    wsTrDash.getRange(2, 1, wsTrDash.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
+      .forEach(function(l) {
+        var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+        if (stTr !== 'Em Transferência') return;
+        var val  = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+        var dtNF = l[IDX_DATA];
+        if (dtNF instanceof Date && (dtNF < dataIni || dtNF > dataFim)) return;
+        var aba  = String(l[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+        trTot.totQtd++; trTot.totVal += val;
+        if      (aba === 'Britania')              { trTot.bQtd++; trTot.bVal += val; }
+        else if (aba === 'Unilever')              { trTot.uQtd++; trTot.uVal += val; }
+        else                                      { trTot.vQtd++; trTot.vVal += val; }
+      });
+  }
+
+  var tP  = b.pQtd + u.pQtd + v.pQtd;   var tPv = b.pValor + u.pValor + v.pValor;
+  var tTR = trTot.totQtd;                 var tTRv= trTot.totVal;
+  var tD  = b.dQtd + u.dQtd + v.dQtd;   var tDv = b.dValor + u.dValor + v.dValor;
+  var tV  = b.vQtd + u.vQtd + v.vQtd;   var tVv = b.vValor + u.vValor + v.vValor;
+  var tR  = tD + tV;                     var tRv = tDv + tVv;
+  var taxa = (tP + tTR + tR) > 0 ? tR / (tP + tTR + tR) : 0;
+
+  ws.getRange(4, 6, 2, 2).merge().setValue(taxa).setNumberFormat('0%')
+    .setFontWeight('bold').setFontSize(26)
+    .setFontColor(taxa >= 0.7 ? DC.DEV : taxa >= 0.4 ? DC.VENDA : '#DC2626')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+  // Rows: PEND=10, EM TRANSFERÊNCIA=13, DEV=16, VENDA=19
+  var sd = [
+    { rV: 10, qtds: [b.pQtd, u.pQtd, v.pQtd, tP], vals: [b.pValor, u.pValor, v.pValor, tPv], acc: DC.PEND  },
+    { rV: 13, qtds: [trTot.bQtd, trTot.uQtd, trTot.vQtd, tTR], vals: [trTot.bVal, trTot.uVal, trTot.vVal, tTRv], acc: DC.TR },
+    { rV: 16, qtds: [b.dQtd, u.dQtd, v.dQtd, tD], vals: [b.dValor, u.dValor, v.dValor, tDv], acc: DC.DEV   },
+    { rV: 19, qtds: [b.vQtd, u.vQtd, v.vQtd, tV], vals: [b.vValor, u.vValor, v.vValor, tVv], acc: DC.VENDA }
+  ];
+  sd.forEach(function(s) {
+    DASH_COLS.forEach(function(g, gi) {
+      var acc = gi === 3 ? DC.TOT : s.acc;
+      ws.getRange(s.rV, g.c).setValue(s.qtds[gi]).setFontColor(acc)
+        .setFontWeight('bold').setFontSize(18)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+      ws.getRange(s.rV, g.c + 1).setValue(s.vals[gi]).setNumberFormat('R$ #,##0.00')
+        .setFontColor(DC.TEXTO_L).setFontWeight('bold').setFontSize(9)
+        .setHorizontalAlignment('right').setVerticalAlignment('middle');
+    });
+  });
+
+  // KPIs: PEND=col2, EM TRANSF=col4, DEV=col6, RESOLVIDO=col8 — rows 22-23
+  var kd = [[tP, tPv], [tTR, tTRv], [tD, tDv], [tR, tRv]];
+  var ka = [DC.PEND, DC.TR, DC.DEV, DC.TOT];
+  [2, 4, 6, 8].forEach(function(col, i) {
+    ws.getRange(22, col, 1, 2).merge().setValue(kd[i][0])
+      .setFontColor(ka[i]).setFontWeight('bold').setFontSize(22)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    ws.getRange(23, col, 1, 2).merge().setValue(kd[i][1]).setNumberFormat('R$ #,##0.00')
+      .setFontColor(DC.TEXTO_L).setFontWeight('bold').setFontSize(10)
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  });
+
+  // Pie chart data (col 11)
+  ws.getRange(2, 12).setValue(tP);
+  ws.getRange(3, 12).setValue(tTR);
+  ws.getRange(4, 12).setValue(tD);
+  ws.getRange(5, 12).setValue(tV);
+
+  _atualizarGraficoMensal(ss);
+}
+
+function _processarAba(ws, dataIni, dataFim) {
+  var r = { pQtd:0, pValor:0, dQtd:0, dValor:0, vQtd:0, vValor:0, tQtd:0, tValor:0 };
+  if (!ws) return r;
+  var ul = obterUltimaLinhaDados(ws);
+  if (ul < LINHA_DADOS) return r;
+  ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+    .forEach(function(l) {
+      var nf = l[IDX_NF], dt = l[IDX_DATA], val = parseFloat(l[IDX_VL_TOT]) || 0, st = l[IDX_STATUS];
+      if (!nf || !(dt instanceof Date) || dt < dataIni || dt > dataFim) return;
+      r.tQtd++; r.tValor += val;
+      if      (st === 'Pendente')  { r.pQtd++; r.pValor += val; }
+      else if (st === 'Devolvido') { r.dQtd++; r.dValor += val; }
+      else if (st === 'Venda')     { r.vQtd++; r.vValor += val; }
+    });
+  return r;
+}
+
+function _atualizarGraficoMensal(ss) {
+  var ws = ss.getSheetByName('Dashboard');
+  if (!ws) return;
+  var ano  = new Date().getFullYear();
+  var meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var cnt  = { Pendente: new Array(12).fill(0), Devolvido: new Array(12).fill(0), Venda: new Array(12).fill(0) };
+  _getTodasAbas().forEach(function(nome) {
+    var wsA = ss.getSheetByName(nome);
+    if (!wsA) return;
+    var ul = obterUltimaLinhaDados(wsA);
+    if (ul < LINHA_DADOS) return;
+    wsA.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l) {
+        var nf = l[IDX_NF], dt = l[IDX_DATA], st = l[IDX_STATUS];
+        if (!nf || !(dt instanceof Date) || dt.getFullYear() !== ano) return;
+        if (cnt[st] !== undefined) cnt[st][dt.getMonth()]++;
+      });
+  });
+  var tab = [['Mês','Pendente','Devolvido','Venda']];
+  for (var m = 0; m < 12; m++) tab.push([meses[m], cnt['Pendente'][m], cnt['Devolvido'][m], cnt['Venda'][m]]);
+  ws.getRange(1, 14, 13, 4).setValues(tab);
+}
+
+// Stubs mantidos por compatibilidade com chamadas legadas
+function _renderQuadro() {}
+function _criarGraficoMensal() {}
+
+
+// ════════════════════════════════════════════════════════════
+//   EXPORTAR PDF
+// ════════════════════════════════════════════════════════════
+
+function abrirFormularioExportarPDF() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormExportarPDF').setWidth(460).setHeight(370),
+    '📄 Gerar PDF Devolução'
+  );
+}
+
+/**
+ * Valida as NFs informadas e devolve os dados pro Comunicado de Retorno de Produtos.
+ * v8: NÃO gera PDF no servidor (HtmlService→PDF não renderiza background/imagem) —
+ * o HTML é montado e impresso no cliente, igual gerarDocCargaTransf (FormTransferencias.html).
+ * NÃO altera status — o status "Devolvido" é definido exclusivamente via darBaixaTransferencia.
+ */
+function executarExportarPDF(txtNfsRaw) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  var nfsDigitadas = txtNfsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF válida identificada.' });
+
+  var ss             = getSS();
+  var itens          = [];
+  var naoLocalizadas = nfsDigitadas.slice();
+
+  // Busca em abas operacionais (Pendente) e em Transferências (Em Transferência)
+  var fontes = _getTodasAbas().map(function(nome) { return { aba: nome, cols: TOTAL_COLUNAS, isTransf: false }; });
+  var wsTrCheck = ss.getSheetByName(ABA_TRANSFERENCIAS);
+  if (wsTrCheck) fontes.push({ aba: ABA_TRANSFERENCIAS, cols: TRANSF_TOTAL_COL, isTransf: true });
+
+  fontes.forEach(function(fonte) {
+    var ws = ss.getSheetByName(fonte.aba);
+    if (!ws) return;
+    var ul = fonte.isTransf ? ws.getLastRow() : obterUltimaLinhaDados(ws);
+    if (ul < (fonte.isTransf ? 2 : LINHA_DADOS)) return;
+    var startRow = fonte.isTransf ? 2 : LINHA_DADOS;
+    var dados = ws.getRange(startRow, 1, ul - startRow + 1, fonte.cols).getValues();
+    dados.forEach(function(l) {
+      var nfd = String(l[IDX_NFD]).trim();
+      var nf  = String(l[IDX_NF]).trim();
+      var st  = fonte.isTransf
+        ? String(l[TRANSF_COL_STATUS - 1] || '').trim()
+        : String(l[IDX_STATUS]).trim();
+      var bat = _baterTermos(nfsDigitadas, nfd, nf);
+      if (bat.bate && (st === 'Pendente' || st === 'Em Transferência')) {
+        var forn = fonte.isTransf
+          ? String(l[IDX_FORN] || '').trim()
+          : String(l[IDX_FORN]).trim();
+        itens.push({ nf: nf, nfd: nfd, fornecedor: forn });
+        var idx = naoLocalizadas.indexOf(bat.termoBateu);
+        if (idx > -1) naoLocalizadas.splice(idx, 1);
+      }
+    });
+  });
+
+  if (!itens.length) return JSON.stringify({ erro: "Nenhuma NF com status 'Pendente' ou 'Em Transferência' localizada." });
+
+  var forns = itens.reduce(function(acc, it) {
+    if (acc.indexOf(it.fornecedor) === -1) acc.push(it.fornecedor);
+    return acc;
+  }, []);
+  if (forns.length > 1)
+    return JSON.stringify({ erro: 'NFs de fornecedores diferentes (' + forns.join(', ') + '). Use apenas NFs do mesmo fornecedor.' });
+
+  var listaNfs = itens.map(function(it) { return it.nfd || it.nf; });
+  var dataExp  = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'dd/MM/yyyy');
+
+  registrarLog(ss, 'SISTEMA', 0, 0, '', listaNfs.join(', '),
+    '📄 Comunicado de devolução gerado (sem alterar status) — NFs: ' + listaNfs.join(', ') + ' · ' + forns[0]);
+
+  var aviso = naoLocalizadas.length
+    ? '\n⚠️ Não localizadas: ' + naoLocalizadas.join(', ') : '';
+  return JSON.stringify({
+    sucesso: '✅ Comunicado pronto para impressão — ' + listaNfs.length + ' NF(s) — ' + forns[0] + '.\nStatus não alterado.' + aviso,
+    listaNfs: listaNfs,
+    forn: forns[0],
+    dataExp: dataExp
+  });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   PROGRAMAR FRETE DA DEVOLUÇÃO
+// ════════════════════════════════════════════════════════════
+
+function abrirProgramarFrete() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormProgramarFrete').setWidth(480).setHeight(640),
+    '🚚 Programar Frete da Devolução'
+  );
+}
+
+/**
+ * Busca NF(s)/NFD Pendente(s) que correspondam ao termo, para programar o frete.
+ * Retorna { itens: [...] } com todos os itens Pendentes encontrados, ou { erro }.
+ */
+function buscarNFParaProgramar(termo) {
+  termo = String(termo || '').trim();
+  if (!termo) return JSON.stringify({ erro: 'Informe a NF ou NFD.' });
+
+  var ss  = getSS();
+  var tz  = ss.getSpreadsheetTimeZone();
+  var itens = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    dados.forEach(function(l, i) {
+      var nfd = String(l[IDX_NFD] || '').trim();
+      var nf  = String(l[IDX_NF]  || '').trim();
+      if (nf !== termo && nfd !== termo) return;
+
+      var st = String(l[IDX_STATUS] || '').trim();
+      if (st !== 'Pendente') return;
+
+      var dt = l[IDX_DATA];
+      itens.push({
+        nf:         nf,
+        nfd:        nfd,
+        forn:       String(l[IDX_FORN] || nomeAba).trim(),
+        desc:       String(l[IDX_DESC] || '').trim().substring(0, 80),
+        data:       dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+        freteTipo:  String(l[IDX_FRETE_TIPO]  || '').trim(),
+        freteValor: parseFloat(l[IDX_FRETE_VALOR]) || 0,
+        aba:        nomeAba,
+        linha:      LINHA_DADOS + i
+      });
+    });
+  });
+
+  if (!itens.length)
+    return JSON.stringify({ erro: 'NF/NFD "' + termo + '" não encontrada como Pendente em nenhuma aba.' });
+
+  return JSON.stringify({ itens: itens });
+}
+
+/**
+ * Busca NFs/NFDs Pendentes para prévia — sem alterar dados.
+ * Retorna { itens: [{nfd,nf,forn,tipo,motivo,qtd,vlTot,data}] } ou { erro }.
+ */
+function buscarPreviewNFs(txtNfsRaw) {
+  var nfsDigitadas = String(txtNfsRaw || '').split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF válida identificada.' });
+
+  var ss    = getSS();
+  var tz    = ss.getSpreadsheetTimeZone();
+  var itens = [];
+  var naoLocalizadas = nfsDigitadas.slice();
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    dados.forEach(function(l) {
+      var nfd = String(l[IDX_NFD] || '').trim();
+      var nf  = String(l[IDX_NF]  || '').trim();
+      var st  = String(l[IDX_STATUS] || '').trim();
+      var bat = _baterTermos(nfsDigitadas, nfd, nf);
+      if (!bat.bate || st !== 'Pendente') return;
+
+      var dt = l[IDX_DATA];
+      itens.push({
+        nfd:    nfd,
+        nf:     nf,
+        forn:   String(l[IDX_FORN]   || '').trim(),
+        tipo:   String(l[IDX_TIPO]   || '').trim(),
+        motivo: String(l[IDX_MOTIVO] || '').trim(),
+        qtd:    parseFloat(l[IDX_QTD]    || 0) || 0,
+        vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        data:   dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : ''
+      });
+      var idx = naoLocalizadas.indexOf(bat.termoBateu);
+      if (idx > -1) naoLocalizadas.splice(idx, 1);
+    });
+  });
+
+  if (!itens.length) return JSON.stringify({ erro: "Nenhuma NF com status 'Pendente' localizada." });
+  return JSON.stringify({ itens: itens, naoLocalizadas: naoLocalizadas });
+}
+
+/**
+ * Salva o tipo e o valor de frete de um item Pendente.
+ * params: { aba, linha, freteTipo, freteValor }
+ */
+function salvarProgramacaoFrete(params) {
+  var _chk = _exigirModulo('frete', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!params || !params.aba || !params.linha)
+    return JSON.stringify({ erro: 'Dados incompletos para salvar a programação de frete.' });
+
+  var freteTipo = String(params.freteTipo || '').trim();
+  if (TIPOS_FRETE.indexOf(freteTipo) === -1)
+    return JSON.stringify({ erro: 'Tipo de frete inválido. Selecione uma das opções disponíveis.' });
+
+  var precisaValor = (freteTipo === 'Valor + ICMS' || freteTipo === 'Valor');
+  var freteValor = '';
+  if (precisaValor) {
+    freteValor = Number(String(params.freteValor || '').replace(',', '.'));
+    if (isNaN(freteValor) || freteValor < 0)
+      return JSON.stringify({ erro: 'Informe um valor de frete válido.' });
+  } else if (freteTipo === 'Cortesia') {
+    freteValor = 0; // Cortesia = frete sem custo
+  }
+  // Tabela: valor calculado externamente pelo TMS/CTe — fica em branco aqui de propósito.
+
+  var ss = getSS();
+  var ws = ss.getSheetByName(params.aba);
+  if (!ws) return JSON.stringify({ erro: 'Aba "' + params.aba + '" não encontrada.' });
+
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+
+  try {
+    var linha = Number(params.linha);
+    var statusAtual = ws.getRange(linha, COL_STATUS).getValue();
+    if (statusAtual !== 'Pendente')
+      return JSON.stringify({ erro: 'O item não está mais Pendente (status atual: "' + statusAtual +
+        '"). A programação de frete só é permitida antes da baixa final.' });
+
+    var nf  = ws.getRange(linha, COL_NF).getValue();
+    var nfd = ws.getRange(linha, COL_NFD).getValue();
+    var freteAnterior = String(ws.getRange(linha, COL_FRETE_TIPO).getValue() || '').trim();
+
+    ws.getRange(linha, COL_FRETE_TIPO, 1, 2).setValues([[freteTipo, freteValor]]);
+
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+    registrarLog(ss, params.aba, linha, COL_FRETE_TIPO, freteAnterior || '(não programado)',
+      freteTipo + (precisaValor ? ' — R$ ' + _fmtVal(freteValor) : ''),
+      '🚚 Frete programado — ' + nfLabel);
+
+    return JSON.stringify({
+      ok: '✅ Frete programado para ' + nfLabel + ': ' + freteTipo +
+          (precisaValor ? ' — R$ ' + _fmtVal(freteValor) : '') + '.'
+    });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   TRANSFERÊNCIAS — Programação de Devoluções com Agendamento
+//   v7: linha move fisicamente origin → Transferências e vice-versa
+// ════════════════════════════════════════════════════════════
+
+function _garantirAbaTransferencias(ss) {
+  var ws = ss.getSheetByName(ABA_TRANSFERENCIAS);
+  if (ws) {
+    // Verifica se o schema já é o v7 (29 colunas com 'Aba Origem' na col 21)
+    try {
+      var cabVal  = String(ws.getRange(1, TRANSF_COL_ABA_ORIGEM).getValue()).trim();
+      var cabLote = String(ws.getRange(1, TRANSF_COL_LOTE_ID).getValue()).trim();
+      var cabConf = String(ws.getRange(1, TRANSF_COL_CONFERENCIA).getValue()).trim();
+      if (cabVal === 'Aba Origem' && cabLote === 'Lote ID' && cabConf === 'Conferência') return ws;
+      if (cabVal === 'Aba Origem' && cabLote !== 'Lote ID') {
+        ws.getRange(1, TRANSF_COL_LOTE_ID).setValue('Lote ID')
+          .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+        ws.setColumnWidth(TRANSF_COL_LOTE_ID, 280);
+      }
+      if (cabVal === 'Aba Origem' && cabConf !== 'Conferência') {
+        ws.getRange(1, TRANSF_COL_CONFERENCIA).setValue('Conferência')
+          .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+        ws.setColumnWidth(TRANSF_COL_CONFERENCIA, 260);
+      }
+      if (cabVal === 'Aba Origem') return ws;
+    } catch(_) {}
+  } else {
+    ws = ss.insertSheet(ABA_TRANSFERENCIAS);
+  }
+  ws.clearContents();
+  // Colunas 1-20: espelham as 20 colunas da aba de origem
+  var cabOrig = [
+    'NFD','Nº NF','Data Entrada','Fornecedor','Tipo','Motivo','Descrição',
+    'Qtd','Vl Unit','Vl Total','Status','Pend✓','Dev✓','Venda✓',
+    'Obs','Responsável','Anexo','Dias Armaz.','Tipo Frete','Valor Frete'
+  ];
+  // Colunas 21-29: controle da transferência
+  var cabCtrl = [
+    'Aba Origem','Nº Pedido','Agendamento','Status Transf.',
+    'Resp. Transf.','Cadastrado em','Data Baixa','Comprovante','Obs Cancelamento',
+    'Lote ID','Conferência'
+  ];
+  var header = cabOrig.concat(cabCtrl);
+  ws.getRange(1, 1, 1, TRANSF_TOTAL_COL).setValues([header])
+    .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+  ws.setFrozenRows(1);
+  // Larguras para as 29 colunas
+  [80,100,110,160,80,120,220,60,90,100,
+   110,60,60,60,160,160,60,80,100,100,
+   160,160,120,120,160,140,120,200,200,280,260].forEach(function(w,i){
+    ws.setColumnWidth(i+1, w);
+  });
+  return ws;
+}
+
+function _garantirAbaProdutos(ss) {
+  var ws = ss.getSheetByName(ABA_PRODUTOS);
+  if (ws) {
+    try {
+      var cab = String(ws.getRange(1, 1).getValue()).trim();
+      if (cab === 'Codigo Barra') return ws;
+    } catch(_) {}
+  } else {
+    ws = ss.insertSheet(ABA_PRODUTOS);
+  }
+  ws.clearContents();
+  var header = ['Codigo Barra', 'Nome Produto', 'Data Cadastro', 'Cadastrado Por'];
+  ws.getRange(1, 1, 1, header.length).setValues([header])
+    .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+  ws.setFrozenRows(1);
+  [200, 300, 140, 200].forEach(function(w, i) { ws.setColumnWidth(i + 1, w); });
+  return ws;
+}
+
+function _garantirAbaBipagens(ss) {
+  var ws = ss.getSheetByName(ABA_BIPAGENS);
+  if (ws) {
+    try {
+      var cab = String(ws.getRange(1, 1).getValue()).trim();
+      if (cab === 'Lote Id') return ws;
+    } catch(_) {}
+  } else {
+    ws = ss.insertSheet(ABA_BIPAGENS);
+  }
+  ws.clearContents();
+  var header = ['Lote Id', 'Codigo Barra', 'Nome Produto', 'Timestamp', 'Responsavel', 'Desfeito'];
+  ws.getRange(1, 1, 1, header.length).setValues([header])
+    .setBackground('#0891B2').setFontColor('#fff').setFontWeight('bold');
+  ws.setFrozenRows(1);
+  [280, 200, 300, 140, 200, 80].forEach(function(w, i) { ws.setColumnWidth(i + 1, w); });
+  return ws;
+}
+
+function _buscarProdutoPorCodigo(wsP, codigo) {
+  var ul = wsP.getLastRow();
+  if (ul < 2) return null;
+  var dados = wsP.getRange(2, 1, ul - 1, 2).getValues();
+  for (var i = 0; i < dados.length; i++) {
+    if (String(dados[i][0] || '').trim() === codigo) return String(dados[i][1] || '').trim();
+  }
+  return null;
+}
+
+function _agregarBipagensPorProduto(wsB, loteId) {
+  var ul = wsB.getLastRow();
+  if (ul < 2) return { totais: [], totalBipado: 0 };
+  var dados = wsB.getRange(2, 1, ul - 1, 6).getValues();
+  var mapa = {};
+  var ordem = [];
+  var totalBipado = 0;
+  for (var i = 0; i < dados.length; i++) {
+    var row = dados[i];
+    if (String(row[0] || '').trim() !== loteId) continue;
+    if (row[5] === true) continue;
+    var produto = String(row[2] || '').trim();
+    if (!mapa.hasOwnProperty(produto)) { mapa[produto] = 0; ordem.push(produto); }
+    mapa[produto]++;
+    totalBipado++;
+  }
+  var totais = [];
+  for (var j = 0; j < ordem.length; j++) totais.push({ produto: ordem[j], qtd: mapa[ordem[j]] });
+  return { totais: totais, totalBipado: totalBipado };
+}
+
+function bipar(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var codigo = String(params.codigo || '').trim();
+    var loteId = String(params.loteId || '').trim();
+    if (!codigo) return JSON.stringify({ erro: 'Código vazio.' });
+    if (!loteId) return JSON.stringify({ erro: 'Lote inválido.' });
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      var wsP = _garantirAbaProdutos(ss);
+      var produto = _buscarProdutoPorCodigo(wsP, codigo);
+      if (!produto) return JSON.stringify({ precisaCadastro: true, codigo: codigo });
+
+      var wsB = _garantirAbaBipagens(ss);
+      var usuario = Session.getActiveUser().getEmail() || 'sistema';
+      var agora = new Date();
+      var linha = wsB.getLastRow() + 1;
+      wsB.getRange(linha, 1, 1, 6).setValues([[loteId, codigo, produto, agora, usuario, false]]);
+      registrarLog(ss, ABA_BIPAGENS, linha, 2, '', codigo, '📦 Bipagem: ' + produto);
+
+      var totais = _agregarBipagensPorProduto(wsB, loteId);
+      return JSON.stringify({ ok: true, produto: produto, totais: totais });
+    } finally {
+      trava.releaseLock();
+    }
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function cadastrarProdutoEBipar(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var codigo = String(params.codigo || '').trim();
+    var nome   = String(params.nome || '').trim();
+    var loteId = String(params.loteId || '').trim();
+    if (!codigo || !nome) return JSON.stringify({ erro: 'Código e nome são obrigatórios.' });
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      var wsP = _garantirAbaProdutos(ss);
+      if (!_buscarProdutoPorCodigo(wsP, codigo)) {
+        var usuario = Session.getActiveUser().getEmail() || 'sistema';
+        var agora = new Date();
+        var linha = wsP.getLastRow() + 1;
+        wsP.getRange(linha, 1, 1, 4).setValues([[codigo, nome, agora, usuario]]);
+        registrarLog(ss, ABA_PRODUTOS, linha, 2, '', nome, '🆕 Produto cadastrado');
+      }
+    } finally {
+      trava.releaseLock();
+    }
+    return bipar({ loteId: loteId, codigo: codigo });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function desfazerUltimaBipagem(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var loteId = String(params.loteId || '').trim();
+    if (!loteId) return JSON.stringify({ erro: 'Lote inválido.' });
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      var wsB = _garantirAbaBipagens(ss);
+      var ul = wsB.getLastRow();
+      if (ul < 2) return JSON.stringify({ erro: 'Nenhuma bipagem encontrada.' });
+
+      var dados = wsB.getRange(2, 1, ul - 1, 6).getValues();
+      var linhaAlvo = -1;
+      for (var i = dados.length - 1; i >= 0; i--) {
+        if (String(dados[i][0] || '').trim() === loteId && dados[i][5] !== true) {
+          linhaAlvo = i + 2;
+          break;
+        }
+      }
+      if (linhaAlvo === -1) return JSON.stringify({ erro: 'Nada para desfazer.' });
+
+      wsB.getRange(linhaAlvo, 6).setValue(true);
+      registrarLog(ss, ABA_BIPAGENS, linhaAlvo, 6, false, true, '↩️ Bipagem desfeita');
+
+      var totais = _agregarBipagensPorProduto(wsB, loteId);
+      return JSON.stringify({ ok: true, totais: totais });
+    } finally {
+      trava.releaseLock();
+    }
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function obterNFsDoLote(params) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var loteId = String(params.loteId || '').trim();
+    if (!loteId) return JSON.stringify({ erro: 'Lote inválido.' });
+
+    var wsTr = _garantirAbaTransferencias(ss);
+    var ul = wsTr.getLastRow();
+    if (ul < 2) return JSON.stringify({ erro: 'Nenhuma transferência encontrada.' });
+
+    var dados = wsTr.getRange(2, 1, ul - 1, TRANSF_TOTAL_COL).getValues();
+    var nfs = [];
+    var totalEsperado = 0;
+    var transportadora = '', dataAgend = '', forn = '';
+    for (var i = 0; i < dados.length; i++) {
+      var row = dados[i];
+      if (String(row[TRANSF_COL_LOTE_ID - 1] || '').trim() !== loteId) continue;
+      var qtd = Number(row[COL_QTD - 1]) || 0;
+      totalEsperado += qtd;
+      nfs.push({ nf: row[COL_NF - 1], nfd: row[COL_NFD - 1], desc: row[COL_DESC - 1], qtd: qtd });
+      transportadora = row[TRANSF_COL_TRANSPORTADORA - 1];
+      dataAgend = row[TRANSF_COL_DATA_AGEND - 1];
+      forn = row[COL_FORN - 1];
+    }
+    if (!nfs.length) return JSON.stringify({ erro: 'Lote não encontrado.' });
+
+    return JSON.stringify({
+      nfs: nfs, totalEsperado: totalEsperado,
+      transportadora: transportadora, dataAgend: dataAgend, forn: forn
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function obterBipagensDoLote(params) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var loteId = String(params.loteId || '').trim();
+    if (!loteId) return JSON.stringify({ erro: 'Lote inválido.' });
+
+    var wsB = _garantirAbaBipagens(ss);
+    var totais = _agregarBipagensPorProduto(wsB, loteId);
+    return JSON.stringify(totais);
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function concluirConferencia(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var loteId = String(params.loteId || '').trim();
+    if (!loteId) return JSON.stringify({ erro: 'Lote inválido.' });
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      var wsTr = _garantirAbaTransferencias(ss);
+      var ul = wsTr.getLastRow();
+      if (ul < 2) return JSON.stringify({ erro: 'Nenhuma transferência encontrada.' });
+
+      var dados = wsTr.getRange(2, 1, ul - 1, TRANSF_TOTAL_COL).getValues();
+      var usuario = Session.getActiveUser().getEmail() || 'sistema';
+      var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+      var marcado = 0;
+      for (var i = 0; i < dados.length; i++) {
+        if (String(dados[i][TRANSF_COL_LOTE_ID - 1] || '').trim() !== loteId) continue;
+        var linha = i + 2;
+        wsTr.getRange(linha, TRANSF_COL_CONFERENCIA).setValue('Conferida em ' + agora + ' por ' + usuario);
+        marcado++;
+      }
+      if (!marcado) return JSON.stringify({ erro: 'Lote não encontrado.' });
+
+      registrarLog(ss, ABA_TRANSFERENCIAS, 0, TRANSF_COL_CONFERENCIA, '', loteId, '📦 Conferência de separação concluída');
+      return JSON.stringify({ ok: true });
+    } finally {
+      trava.releaseLock();
+    }
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/**
+ * Programa uma devolução: move a linha fisicamente da aba de origem
+ * para a aba Transferências, marcando o status como "Em Transferência".
+ */
+function salvarProgramacaoDevolucao(params) {
+  var _chk = _exigirModulo('frete', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!params || !params.aba || !params.linha)
+    return JSON.stringify({ erro: 'Dados incompletos.' });
+  var freteTipo = String(params.freteTipo || '').trim();
+  if (TIPOS_FRETE.indexOf(freteTipo) === -1)
+    return JSON.stringify({ erro: 'Tipo de frete inválido.' });
+  var precisaValor = (freteTipo === 'Valor + ICMS' || freteTipo === 'Valor');
+  var freteValor = '';
+  if (precisaValor) {
+    freteValor = Number(String(params.freteValor || '').replace(',', '.'));
+    if (isNaN(freteValor) || freteValor < 0)
+      return JSON.stringify({ erro: 'Informe um valor de frete válido.' });
+  } else if (freteTipo === 'Cortesia') {
+    freteValor = 0;
+  }
+  var dataAgend = null;
+  if (params.dataAgendamento) {
+    try { dataAgend = new Date(params.dataAgendamento); if (isNaN(dataAgend.getTime())) dataAgend = null; } catch(_){}
+  }
+  var transportadora = String(params.numeroPedido || params.transportadora || '').trim();
+
+  var ss = getSS();
+  var ws = ss.getSheetByName(params.aba);
+  if (!ws) return JSON.stringify({ erro: 'Aba "' + params.aba + '" não encontrada.' });
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+  try {
+    var linha = Number(params.linha);
+    var dadosLinha = ws.getRange(linha, 1, 1, TOTAL_COLUNAS).getValues()[0];
+    var statusAtual = String(dadosLinha[IDX_STATUS] || '').trim();
+    if (statusAtual !== 'Pendente')
+      return JSON.stringify({ erro: 'Item não está Pendente (status atual: "' + statusAtual + '").' });
+
+    var nf   = String(dadosLinha[IDX_NF]  || '').trim();
+    var nfd  = String(dadosLinha[IDX_NFD] || '').trim();
+    var tz   = Session.getScriptTimeZone();
+    var agora  = new Date();
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+
+    // Atualiza dados da linha com frete e status Em Transferência (antes de mover)
+    var rowData = dadosLinha.slice();
+    rowData[IDX_STATUS]       = 'Em Transferência';
+    rowData[IDX_PEND_CHK]     = false;
+    rowData[IDX_DEV_CHK]      = false;
+    rowData[IDX_VENDA_CHK]    = false;
+    rowData[IDX_FRETE_TIPO]   = freteTipo;
+    rowData[IDX_FRETE_VALOR]  = freteValor !== '' ? freteValor : '';
+
+    // Monta linha completa em Transferências (29 colunas)
+    var rowTransf = rowData.concat([
+      params.aba,                       // col 21: Aba Origem
+      transportadora,                   // col 22: Transportadora
+      dataAgend || '',                  // col 23: Data Agendamento
+      'Em Transferência',               // col 24: Status Transf
+      usuario,                          // col 25: Resp. Transf
+      agora,                            // col 26: Cadastrado em
+      '',                               // col 27: Data Baixa
+      '',                               // col 28: Comprovante
+      String(params.obs || ''),         // col 29: Obs
+      String(params.loteId || '')       // col 30: Lote ID
+    ]);
+
+    // Adiciona na aba Transferências
+    var wsTr = _garantirAbaTransferencias(ss);
+    wsTr.appendRow(rowTransf);
+
+    // Limpa a linha de origem (mantém fórmulas e estrutura mas apaga dados)
+    ws.getRange(linha, 1, 1, TOTAL_COLUNAS).clearContent();
+    ws.getRange(linha, COL_PEND_CHK).setValue(false);
+    ws.getRange(linha, COL_DEV_CHK).setValue(false);
+    ws.getRange(linha, COL_VENDA_CHK).setValue(false);
+    ws.getRange(linha, 1, 1, TOTAL_COLUNAS).setBackground('#FFFFFF');
+    // Reaplica fórmulas para manter a estrutura da linha
+    ws.getRange(linha, COL_VL_TOT).setFormula(_formulaTotal(linha));
+    ws.getRange(linha, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(linha));
+
+    var nfLabel  = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+    var agendStr = dataAgend ? ' · Agendado: ' + Utilities.formatDate(dataAgend, tz, 'dd/MM/yyyy') : '';
+    registrarLog(ss, params.aba, linha, COL_STATUS,
+      'Pendente', 'Em Transferência',
+      '🚚 Devolução programada — ' + nfLabel + agendStr +
+      (transportadora ? ' · Transportadora: ' + transportadora : '') +
+      ' — ' + usuario);
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    return JSON.stringify({ ok: '✅ Devolução programada!\n' + nfLabel + ' · ' + freteTipo +
+      (precisaValor ? ' — R$ ' + _fmtVal(freteValor) : '') + agendStr +
+      '\n\n📋 Item movido para Transferências.' });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+/**
+ * [Redesign] Busca VÁRIAS NFs/NFDs Pendentes para programação em lote.
+ * txtRaw: termos separados por vírgula/quebra de linha.
+ * Retorna { itens:[{nf,nfd,forn,desc,data,qtd,vlTot,freteTipo,freteValor,aba,linha}], naoLocalizadas:[...] }.
+ */
+function buscarNFsParaProgramar(txtRaw) {
+  var termos = String(txtRaw || '').split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if (!termos.length) return JSON.stringify({ erro: 'Informe ao menos uma NF ou NFD.' });
+
+  var ss  = getSS();
+  var tz  = ss.getSpreadsheetTimeZone();
+  var itens = [];
+  var achados = {};
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    dados.forEach(function(l, i) {
+      var nfd = String(l[IDX_NFD] || '').trim();
+      var nf  = String(l[IDX_NF]  || '').trim();
+      var termoBateu = null;
+      for (var t = 0; t < termos.length; t++) {
+        if (termos[t] === nf || termos[t] === nfd) { termoBateu = termos[t]; break; }
+      }
+      if (!termoBateu || achados[termoBateu]) return;
+      var st = String(l[IDX_STATUS] || '').trim();
+      if (st !== 'Pendente') return;
+
+      achados[termoBateu] = true;
+      var dt = l[IDX_DATA];
+      itens.push({
+        nf:         nf,
+        nfd:        nfd,
+        forn:       String(l[IDX_FORN] || nomeAba).trim(),
+        desc:       String(l[IDX_DESC] || '').trim().substring(0, 80),
+        data:       dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+        qtd:        parseFloat(l[IDX_QTD]) || 0,
+        vlTot:      parseFloat(l[IDX_VL_TOT]) || 0,
+        freteTipo:  String(l[IDX_FRETE_TIPO]  || '').trim(),
+        freteValor: parseFloat(l[IDX_FRETE_VALOR]) || 0,
+        aba:        nomeAba,
+        linha:      LINHA_DADOS + i
+      });
+    });
+  });
+
+  var naoLocalizadas = termos.filter(function(t){ return !achados[t]; });
+  if (!itens.length)
+    return JSON.stringify({ erro: 'Nenhuma NF/NFD encontrada como Pendente.', naoLocalizadas: naoLocalizadas });
+
+  return JSON.stringify({ itens: itens, naoLocalizadas: naoLocalizadas });
+}
+
+/**
+ * [Redesign] Programa VÁRIAS devoluções com o mesmo frete/agendamento/pedido.
+ * itens: [{aba, linha, forn, data}] · dados: {freteTipo, freteValor, numeroPedido, dataAgendamento, obs}
+ * Reusa salvarProgramacaoDevolucao por item; agrupa via loteId quando >1.
+ * Loop é seguro: a linha de origem é LIMPA (não deletada), então os índices não deslocam.
+ */
+function salvarProgramacaoDevolucaoLote(itens, dados) {
+  var _chk = _exigirModulo('frete', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item selecionado.' });
+  if (!dados) return JSON.stringify({ erro: 'Dados do frete não informados.' });
+
+  var loteId = itens.length > 1 ? 'lote_' + new Date().getTime() : '';
+  var oks = [], erros = [];
+
+  itens.forEach(function(it) {
+    try {
+      var resp = JSON.parse(salvarProgramacaoDevolucao({
+        aba:             it.aba,
+        linha:           it.linha,
+        freteTipo:       dados.freteTipo,
+        freteValor:      dados.freteValor,
+        numeroPedido:    dados.numeroPedido,
+        dataAgendamento: dados.dataAgendamento,
+        obs:             dados.obs,
+        forn:            it.forn,
+        dataNF:          it.data,
+        loteId:          loteId
+      }));
+      if (resp.ok) oks.push(it.nfd || it.nf);
+      else erros.push((it.nfd || it.nf) + ': ' + (resp.erro || 'erro'));
+    } catch (e) {
+      erros.push((it.nfd || it.nf) + ': ' + (e.message || e));
+    }
+  });
+
+  if (!oks.length)
+    return JSON.stringify({ erro: 'Nenhum item programado.\n' + erros.join('\n') });
+
+  var msg = '✅ ' + oks.length + ' devolução(ões) programada(s) — ' + dados.freteTipo +
+    (loteId ? ' · lote agrupado' : '') + '\n' + oks.join(', ') +
+    '\n\n📋 Itens movidos para Transferências.';
+  if (erros.length) msg += '\n\n⚠️ Falhas (' + erros.length + '): ' + erros.join(' | ');
+  return JSON.stringify({ ok: msg, oks: oks, erros: erros });
+}
+
+/**
+ * Confirma a baixa de uma transferência: move a linha de volta para a aba de origem
+ * com status "Devolvido". O registro em Transferências é marcado como "Concluída".
+ * params: { linha, obs, base64, mimeType, nomeArquivo }
+ */
+function darBaixaTransferencia(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr) return JSON.stringify({ erro: 'Aba Transferências não encontrada.' });
+
+    var linhaTransf = Number(params.linha);
+    if (!linhaTransf || linhaTransf < 2)
+      return JSON.stringify({ erro: 'Linha de transferência inválida.' });
+
+    var rowData = wsTr.getRange(linhaTransf, 1, 1, TRANSF_TOTAL_COL).getValues()[0];
+    var stTransf = String(rowData[TRANSF_COL_STATUS - 1] || '').trim();
+    if (stTransf !== 'Em Transferência')
+      return JSON.stringify({ erro: 'Transferência não está "Em Transferência" (status atual: "' + stTransf + '").' });
+
+    var abaOrigem = String(rowData[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+    var wsOrig    = ss.getSheetByName(abaOrigem);
+    if (!wsOrig) return JSON.stringify({ erro: 'Aba de origem "' + abaOrigem + '" não encontrada.' });
+
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    var agora   = new Date();
+    var tz      = Session.getScriptTimeZone();
+
+    // Upload do comprovante (CTe / protocolo) se fornecido
+    var urlComprovante = '';
+    if (params.base64 && params.mimeType && params.nomeArquivo) {
+      try {
+        var blob = Utilities.newBlob(
+          Utilities.base64Decode(params.base64), params.mimeType, params.nomeArquivo
+        );
+        var arqComp = _pastaAnexos().createFile(blob);
+        var nfRef   = String(rowData[IDX_NF] || rowData[IDX_NFD] || 'TR');
+        arqComp.setName('Comprovante_' + nfRef + '_' + params.nomeArquivo);
+        urlComprovante = arqComp.getUrl();
+      } catch (eComp) {
+        console.error('darBaixaTransferencia — comprovante: ' + eComp);
+      }
+    }
+
+    // Monta os 20 cols de dados originais com status "Devolvido"
+    var dadosOrig = rowData.slice(0, TOTAL_COLUNAS);
+    dadosOrig[IDX_STATUS]    = 'Devolvido';
+    dadosOrig[IDX_PEND_CHK]  = false;
+    dadosOrig[IDX_DEV_CHK]   = true;
+    dadosOrig[IDX_VENDA_CHK] = false;
+    var obsDevol = 'Devolvido em: ' + Utilities.formatDate(agora, tz, 'dd/MM/yyyy HH:mm:ss');
+    dadosOrig[IDX_OBS]       = obsDevol + (params.obs ? ' | ' + params.obs : '');
+
+    // Encontra próxima linha disponível na aba de origem
+    var ulOrig = obterUltimaLinhaDados(wsOrig);
+    var destOrig = (ulOrig >= LINHA_DADOS ? ulOrig : LINHA_DADOS - 1) + 1;
+    if (destOrig > ULTIMA_LINHA_DADOS)
+      return JSON.stringify({ erro: 'Aba "' + abaOrigem + '" está cheia. Faça o arquivamento primeiro.' });
+
+    // Grava na aba de origem
+    wsOrig.getRange(destOrig, 1, 1, TOTAL_COLUNAS).setValues([dadosOrig]);
+    wsOrig.getRange(destOrig, COL_VL_TOT).setFormula(_formulaTotal(destOrig));
+    wsOrig.getRange(destOrig, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(destOrig));
+    wsOrig.getRange(destOrig, 1, 1, TOTAL_COLUNAS).setBackground(COR_VERDE);
+
+    // Protege a linha devolvida na aba de origem
+    protegerLinhaConcluida(ss, wsOrig, destOrig, 'Devolvido');
+    _incrementarContadorConcluidos();
+
+    // Marca transferência como Concluída (mantém para auditoria)
+    wsTr.getRange(linhaTransf, TRANSF_COL_STATUS).setValue('Concluída');
+    wsTr.getRange(linhaTransf, TRANSF_COL_DATA_BAIXA).setValue(agora);
+    if (urlComprovante) wsTr.getRange(linhaTransf, TRANSF_COL_COMPROVANTE).setValue(urlComprovante);
+    if (params.obs) wsTr.getRange(linhaTransf, TRANSF_COL_OBS).setValue(params.obs);
+
+    // Baixa em todas as linhas irmãs do mesmo lote
+    var loteId = String(rowData[TRANSF_COL_LOTE_ID - 1] || '').trim();
+    if (loteId) {
+      var ulTr = wsTr.getLastRow();
+      if (ulTr >= 2) {
+        var todosDados = wsTr.getRange(2, 1, ulTr - 1, TRANSF_TOTAL_COL).getValues();
+        for (var ti = 0; ti < todosDados.length; ti++) {
+          var lRow  = todosDados[ti];
+          var linha2 = ti + 2;
+          if (linha2 === linhaTransf) continue;
+          var loteId2 = String(lRow[TRANSF_COL_LOTE_ID - 1] || '').trim();
+          var st2     = String(lRow[TRANSF_COL_STATUS   - 1] || '').trim();
+          if (loteId2 !== loteId || st2 !== 'Em Transferência') continue;
+
+          var abaOrig2 = String(lRow[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+          var wsOrig2  = ss.getSheetByName(abaOrig2);
+          if (!wsOrig2) continue;
+
+          var dadosOrig2 = lRow.slice(0, TOTAL_COLUNAS);
+          dadosOrig2[IDX_STATUS]    = 'Devolvido';
+          dadosOrig2[IDX_PEND_CHK]  = false;
+          dadosOrig2[IDX_DEV_CHK]   = true;
+          dadosOrig2[IDX_VENDA_CHK] = false;
+          dadosOrig2[IDX_OBS]       = obsDevol + (params.obs ? ' | ' + params.obs : '');
+
+          var ulOrig2 = obterUltimaLinhaDados(wsOrig2);
+          var dest2   = (ulOrig2 >= LINHA_DADOS ? ulOrig2 : LINHA_DADOS - 1) + 1;
+          if (dest2 > ULTIMA_LINHA_DADOS) continue;
+
+          wsOrig2.getRange(dest2, 1, 1, TOTAL_COLUNAS).setValues([dadosOrig2]);
+          wsOrig2.getRange(dest2, COL_VL_TOT).setFormula(_formulaTotal(dest2));
+          wsOrig2.getRange(dest2, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(dest2));
+          wsOrig2.getRange(dest2, 1, 1, TOTAL_COLUNAS).setBackground(COR_VERDE);
+          protegerLinhaConcluida(ss, wsOrig2, dest2, 'Devolvido');
+          _incrementarContadorConcluidos();
+
+          wsTr.getRange(linha2, TRANSF_COL_STATUS).setValue('Concluída');
+          wsTr.getRange(linha2, TRANSF_COL_DATA_BAIXA).setValue(agora);
+          if (urlComprovante) wsTr.getRange(linha2, TRANSF_COL_COMPROVANTE).setValue(urlComprovante);
+          if (params.obs) wsTr.getRange(linha2, TRANSF_COL_OBS).setValue(params.obs);
+        }
+      }
+    }
+
+    var nf  = String(rowData[IDX_NF]  || '').trim();
+    var nfd = String(rowData[IDX_NFD] || '').trim();
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+
+    registrarLog(ss, ABA_TRANSFERENCIAS, linhaTransf, TRANSF_COL_STATUS,
+      'Em Transferência', 'Concluída',
+      '✅ Baixa confirmada — ' + nfLabel + ' → ' + abaOrigem + ' linha ' + destOrig +
+      (urlComprovante ? ' + comprovante' : '') + ' — ' + usuario);
+    registrarLog(ss, abaOrigem, destOrig, COL_STATUS, 'Em Transferência', 'Devolvido',
+      '✅ Item devolvido via Transferências — ' + nfLabel);
+
+    notificarEvento('transferencias', '✅ <b>Baixa de transferência confirmada</b>\n' +
+      nfLabel + ' → ' + _esc(abaOrigem) + (urlComprovante ? '\n📎 Comprovante anexado' : ''));
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    return JSON.stringify({ ok: '✅ Baixa confirmada! ' + nfLabel + ' devolvido para ' + abaOrigem + '.' +
+      (urlComprovante ? '\n📎 Comprovante salvo.' : '') });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Cancela uma transferência: move a linha de volta para a aba de origem como "Pendente".
+ * O registro em Transferências é mantido como "Cancelada" para auditoria.
+ * params: { linha, obs } — obs é obrigatório
+ */
+function cancelarTransferencia(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    if (!params || !params.linha) return JSON.stringify({ erro: 'Linha não informada.' });
+    var obs = String(params.obs || '').trim();
+    if (!obs) return JSON.stringify({ erro: 'Informe o motivo do cancelamento.' });
+
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr) return JSON.stringify({ erro: 'Aba Transferências não encontrada.' });
+
+    var linhaTransf = Number(params.linha);
+    var rowData = wsTr.getRange(linhaTransf, 1, 1, TRANSF_TOTAL_COL).getValues()[0];
+    var stTransf = String(rowData[TRANSF_COL_STATUS - 1] || '').trim();
+    if (stTransf !== 'Em Transferência')
+      return JSON.stringify({ erro: 'Transferência não está "Em Transferência" (status: "' + stTransf + '").' });
+
+    var abaOrigem = String(rowData[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+    var wsOrig    = ss.getSheetByName(abaOrigem);
+    if (!wsOrig) return JSON.stringify({ erro: 'Aba de origem "' + abaOrigem + '" não encontrada.' });
+
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    var agora   = new Date();
+    var tz      = Session.getScriptTimeZone();
+
+    // Monta linha original com status "Pendente"
+    var dadosOrig = rowData.slice(0, TOTAL_COLUNAS);
+    dadosOrig[IDX_STATUS]    = 'Pendente';
+    dadosOrig[IDX_PEND_CHK]  = true;
+    dadosOrig[IDX_DEV_CHK]   = false;
+    dadosOrig[IDX_VENDA_CHK] = false;
+    var obsCancel = 'Cancelado em: ' + Utilities.formatDate(agora, tz, 'dd/MM/yyyy HH:mm:ss') + ' | ' + obs;
+    dadosOrig[IDX_OBS] = obsCancel;
+
+    // Encontra próxima linha disponível na aba de origem
+    var ulOrig = obterUltimaLinhaDados(wsOrig);
+    var destOrig = (ulOrig >= LINHA_DADOS ? ulOrig : LINHA_DADOS - 1) + 1;
+    if (destOrig > ULTIMA_LINHA_DADOS)
+      return JSON.stringify({ erro: 'Aba "' + abaOrigem + '" está cheia. Faça o arquivamento primeiro.' });
+
+    // Grava na aba de origem como Pendente
+    wsOrig.getRange(destOrig, 1, 1, TOTAL_COLUNAS).setValues([dadosOrig]);
+    wsOrig.getRange(destOrig, COL_VL_TOT).setFormula(_formulaTotal(destOrig));
+    wsOrig.getRange(destOrig, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(destOrig));
+    aplicarCorLinha(wsOrig, destOrig, 'Pendente', dadosOrig[IDX_DATA] instanceof Date ? dadosOrig[IDX_DATA] : null);
+
+    // Mantém o registro em Transferências como Cancelada (auditoria)
+    wsTr.getRange(linhaTransf, TRANSF_COL_STATUS).setValue('Cancelada');
+    wsTr.getRange(linhaTransf, TRANSF_COL_DATA_BAIXA).setValue(agora);
+    wsTr.getRange(linhaTransf, TRANSF_COL_OBS).setValue(obs);
+
+    var nf  = String(rowData[IDX_NF]  || '').trim();
+    var nfd = String(rowData[IDX_NFD] || '').trim();
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+
+    registrarLog(ss, ABA_TRANSFERENCIAS, linhaTransf, TRANSF_COL_STATUS,
+      'Em Transferência', 'Cancelada',
+      '❌ Cancelamento — ' + nfLabel + ' | Motivo: ' + obs + ' — ' + usuario);
+    registrarLog(ss, abaOrigem, destOrig, COL_STATUS, 'Em Transferência', 'Pendente',
+      '↩️ Item retornou após cancelamento de transferência — ' + nfLabel);
+
+    notificarEvento('transferencias', '❌ <b>Transferência cancelada</b>\n' +
+      nfLabel + ' — Motivo: ' + _esc(obs));
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    return JSON.stringify({ ok: '✅ Transferência cancelada. ' + nfLabel + ' retornou como Pendente em ' + abaOrigem + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Reagenda a data de agendamento de uma transferência sem cancelar.
+ * params: { linha, dataAgendamento, obs }
+ */
+function reagendarTransferencia(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    if (!params || !params.linha) return JSON.stringify({ erro: 'Linha não informada.' });
+    var novaData = null;
+    try { novaData = new Date(params.dataAgendamento); if (isNaN(novaData.getTime())) novaData = null; } catch(_){}
+    if (!novaData) return JSON.stringify({ erro: 'Data de reagendamento inválida.' });
+
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr) return JSON.stringify({ erro: 'Aba Transferências não encontrada.' });
+
+    var linhaTransf = Number(params.linha);
+    var rowData = wsTr.getRange(linhaTransf, 1, 1, TRANSF_TOTAL_COL).getValues()[0];
+    var stTransf = String(rowData[TRANSF_COL_STATUS - 1] || '').trim();
+    if (stTransf !== 'Em Transferência')
+      return JSON.stringify({ erro: 'Só é possível reagendar transferências "Em Transferência".' });
+
+    var tz = Session.getScriptTimeZone();
+    var dataAnterior = rowData[TRANSF_COL_DATA_AGEND - 1];
+    var dataAntStr   = dataAnterior instanceof Date
+      ? Utilities.formatDate(dataAnterior, tz, 'dd/MM/yyyy') : String(dataAnterior || 'não definida');
+    var novaDataStr  = Utilities.formatDate(novaData, tz, 'dd/MM/yyyy');
+
+    wsTr.getRange(linhaTransf, TRANSF_COL_DATA_AGEND).setValue(novaData);
+    var obsAtual = String(rowData[TRANSF_COL_OBS - 1] || '');
+    var obsNova  = (obsAtual ? obsAtual + '\n' : '') +
+      'Reagendado em ' + Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm') +
+      ': ' + dataAntStr + ' → ' + novaDataStr +
+      (params.obs ? ' (' + params.obs + ')' : '');
+    wsTr.getRange(linhaTransf, TRANSF_COL_OBS).setValue(obsNova);
+
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    var nf  = String(rowData[IDX_NF]  || '').trim();
+    var nfd = String(rowData[IDX_NFD] || '').trim();
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+    registrarLog(ss, ABA_TRANSFERENCIAS, linhaTransf, TRANSF_COL_DATA_AGEND,
+      dataAntStr, novaDataStr,
+      '📅 Reagendamento — ' + nfLabel + ': ' + dataAntStr + ' → ' + novaDataStr + ' — ' + usuario);
+
+    notificarEvento('transferencias', '📅 <b>Transferência reagendada</b>\n' +
+      nfLabel + ': ' + dataAntStr + ' → ' + novaDataStr);
+
+    return JSON.stringify({ ok: '✅ Reagendado! ' + nfLabel + ' · Nova data: ' + novaDataStr });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterTransferencias(filtros) {
+  try {
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr) return JSON.stringify({ itens: [] });
+    var ul = wsTr.getLastRow();
+    if (ul < 2) return JSON.stringify({ itens: [] });
+    var dados = wsTr.getRange(2, 1, ul - 1, TRANSF_TOTAL_COL).getValues();
+    var filtStatus = (filtros && filtros.status) || '';
+    var tz   = Session.getScriptTimeZone();
+    var hoje = new Date();
+    var itens = dados.map(function(l, i) {
+      var nf  = String(l[IDX_NF]  || '').trim();
+      if (!nf) return null;
+      var abaOrigem      = String(l[TRANSF_COL_ABA_ORIGEM     - 1] || '').trim();
+      var numeroPedido   = String(l[TRANSF_COL_TRANSPORTADORA  - 1] || '').trim();
+      var dataAgend      = l[TRANSF_COL_DATA_AGEND    - 1];
+      var stTransf       = String(l[TRANSF_COL_STATUS          - 1] || '').trim();
+      var respTransf     = String(l[TRANSF_COL_RESP             - 1] || '').trim();
+      var dataCad        = l[TRANSF_COL_DATA_CAD      - 1];
+      var dataBaixa      = l[TRANSF_COL_DATA_BAIXA    - 1];
+      var comprovante    = String(l[TRANSF_COL_COMPROVANTE      - 1] || '').trim();
+      var obsCancel      = String(l[TRANSF_COL_OBS              - 1] || '').trim();
+      var diasAteFrete   = (dataAgend instanceof Date && !isNaN(dataAgend))
+        ? Math.ceil((dataAgend - hoje) / 864e5) : null;
+      var diasEmTransf   = (dataCad instanceof Date && !isNaN(dataCad))
+        ? Math.floor((hoje - dataCad) / 864e5) : 0;
+      return {
+        linha:          i + 2,
+        nfd:            String(l[IDX_NFD]  || '').trim(),
+        nf:             nf,
+        data:           l[IDX_DATA] instanceof Date ? Utilities.formatDate(l[IDX_DATA], tz, 'dd/MM/yyyy') : '',
+        forn:           String(l[IDX_FORN] || '').trim(),
+        tipo:           String(l[IDX_TIPO] || '').trim(),
+        desc:           String(l[IDX_DESC] || '').trim().substring(0, 60),
+        qtd:            parseFloat(l[IDX_QTD] || 0) || 0,
+        vlTot:          parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        freteTipo:      String(l[IDX_FRETE_TIPO]   || '').trim(),
+        freteValor:     parseFloat(l[IDX_FRETE_VALOR] || 0) || 0,
+        abaOrigem:      abaOrigem,
+        numeroPedido:   numeroPedido,
+        dataAgend:      dataAgend instanceof Date ? Utilities.formatDate(dataAgend, tz, 'dd/MM/yyyy') : String(dataAgend || ''),
+        diasAteFrete:   diasAteFrete,
+        stTransf:       stTransf,
+        respTransf:     respTransf,
+        dataCad:        dataCad instanceof Date ? Utilities.formatDate(dataCad, tz, 'dd/MM/yyyy HH:mm') : '',
+        dataBaixa:      dataBaixa instanceof Date ? Utilities.formatDate(dataBaixa, tz, 'dd/MM/yyyy') : '',
+        comprovante:    comprovante,
+        obsCancel:      obsCancel,
+        diasEmTransf:   diasEmTransf,
+        atrasado:       dataAgend instanceof Date && dataAgend < hoje && stTransf === 'Em Transferência',
+        loteId:         String(l[TRANSF_COL_LOTE_ID - 1] || '').trim()
+      };
+    }).filter(function(it) {
+      return it && it.nf && (!filtStatus || it.stTransf === filtStatus);
+    });
+    itens.sort(function(a, b) {
+      if (a.stTransf !== b.stTransf) return a.stTransf === 'Em Transferência' ? -1 : 1;
+      return 0;
+    });
+    return JSON.stringify({ itens: itens });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ════════════════════════════════════════════════════════════
+//   NOTAS LANÇADAS — Tabela do WebApp
+// ════════════════════════════════════════════════════════════
+
+function obterNotasParaTabela(filtros) {
+  try {
+    var ss           = getSS();
+    var filtStatus   = (filtros && filtros.status)   || '';
+    var filtAba      = (filtros && filtros.aba)      || '';
+    var filtDtIni    = _parseDateStr(filtros && filtros.dataIni);
+    var filtDtFim    = _parseDateStr(filtros && filtros.dataFim, true);
+    var filtSemFrete = !!(filtros && filtros.semFrete);
+    var nfsComEmail  = {};
+    var wsEmail = ss.getSheetByName('_EmailsEnviados');
+    if (wsEmail) {
+      var ulE = wsEmail.getLastRow();
+      if (ulE >= 2) wsEmail.getRange(2,1,ulE-1,5).getValues().forEach(function(r){
+        var d = r[0];
+        String(r[4]||'').split(/[,\n;]/).forEach(function(n){
+          n = n.trim();
+          if (n) nfsComEmail[n] = d instanceof Date ? d.toISOString() : String(d);
+        });
+      });
+    }
+    var hoje = new Date(), tz = Session.getScriptTimeZone(), resultado = [];
+    var abas = filtAba ? [filtAba] : _getTodasAbas();
+    abas.forEach(function(nomeAba) {
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS,1,ul-LINHA_DADOS+1,TOTAL_COLUNAS).getValues().forEach(function(l,i){
+        var nf = String(l[IDX_NF]||'').trim();
+        if (!nf) return;
+        var nfd=String(l[IDX_NFD]||'').trim(), dt=l[IDX_DATA];
+        var forn=String(l[IDX_FORN]||'').trim(), tipo=String(l[IDX_TIPO]||'').trim();
+        var motivo=String(l[IDX_MOTIVO]||'').trim(), desc=String(l[IDX_DESC]||'').trim();
+        var qtd=parseFloat(l[IDX_QTD]||0)||0, vlUnit=parseFloat(l[IDX_VL_UNIT]||0)||0;
+        var vlTot=parseFloat(l[IDX_VL_TOT]||0)||0, status=String(l[IDX_STATUS]||'').trim();
+        var obs=String(l[IDX_OBS]||'').trim(), resp=String(l[IDX_RESP]||'').trim();
+        var anexo=String(l[IDX_ANEXO]||'').trim();
+        var freteTipo=String(l[IDX_FRETE_TIPO]||'').trim();
+        var freteValor=parseFloat(l[IDX_FRETE_VALOR]||0)||0;
+        var diasArm=0;
+        if (dt instanceof Date && !isNaN(dt)) diasArm=Math.floor((hoje-dt)/864e5);
+        if (filtStatus && status !== filtStatus) return;
+        if (filtDtIni && (!(dt instanceof Date)||dt<filtDtIni)) return;
+        if (filtDtFim && (!(dt instanceof Date)||dt>filtDtFim)) return;
+        if (filtSemFrete && freteTipo) return;
+        var emailData = nfsComEmail[nfd] || nfsComEmail[nf] || '';
+        resultado.push({
+          nfd:nfd, nf:nf,
+          data:dt instanceof Date ? Utilities.formatDate(dt,tz,'dd/MM/yyyy') : '',
+          forn:forn, tipo:tipo, motivo:motivo, desc:desc.substring(0,80),
+          qtd:qtd, vlUnit:vlUnit, vlTot:vlTot, status:status,
+          obs:obs, resp:resp, temAnexo:!!anexo, freteTipo:freteTipo, freteValor:freteValor,
+          diasArm:diasArm, aba:nomeAba, linha:LINHA_DADOS+i,
+          emailEnviado:!!emailData, emailData:emailData,
+          alerta:status==='Pendente'&&diasArm>30
+        });
+      });
+    });
+
+    // Inclui itens da aba Transferências como "Em Transferência" (quando não filtrar por aba específica)
+    if (!filtAba || filtAba === ABA_TRANSFERENCIAS) {
+      var wsTrN = ss.getSheetByName(ABA_TRANSFERENCIAS);
+      if (wsTrN && wsTrN.getLastRow() >= 2) {
+        wsTrN.getRange(2, 1, wsTrN.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
+          .forEach(function(l, i) {
+            var nf  = String(l[IDX_NF]  || '').trim();
+            if (!nf) return;
+            var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+            if (stTr !== 'Em Transferência') return;
+            if (filtStatus && filtStatus !== 'Em Transferência') return;
+            var nfd  = String(l[IDX_NFD]  || '').trim();
+            var dt   = l[IDX_DATA];
+            var diasArm = dt instanceof Date ? Math.floor((hoje - dt) / 864e5) : 0;
+            if (filtDtIni && (!(dt instanceof Date) || dt < filtDtIni)) return;
+            if (filtDtFim && (!(dt instanceof Date) || dt > filtDtFim)) return;
+            var emailData = nfsComEmail[nfd] || nfsComEmail[nf] || '';
+            resultado.push({
+              nfd:    nfd,
+              nf:     nf,
+              data:   dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+              forn:   String(l[IDX_FORN]  || '').trim(),
+              tipo:   String(l[IDX_TIPO]  || '').trim(),
+              motivo: String(l[IDX_MOTIVO]|| '').trim(),
+              desc:   String(l[IDX_DESC]  || '').trim().substring(0, 80),
+              qtd:    parseFloat(l[IDX_QTD] || 0) || 0,
+              vlUnit: parseFloat(l[IDX_VL_UNIT] || 0) || 0,
+              vlTot:  parseFloat(l[IDX_VL_TOT]  || 0) || 0,
+              status: 'Em Transferência',
+              obs:    String(l[IDX_OBS]   || '').trim(),
+              resp:   String(l[TRANSF_COL_RESP - 1] || '').trim(),
+              temAnexo: false,
+              freteTipo:  String(l[IDX_FRETE_TIPO]   || '').trim(),
+              freteValor: parseFloat(l[IDX_FRETE_VALOR] || 0) || 0,
+              diasArm:    diasArm,
+              aba:    ABA_TRANSFERENCIAS,
+              linha:  i + 2,
+              emailEnviado: !!emailData, emailData: emailData,
+              alerta: false,
+              transportadora: String(l[TRANSF_COL_TRANSPORTADORA - 1] || '').trim(),
+              dataAgend: (function(da) {
+                return da instanceof Date ? Utilities.formatDate(da, tz, 'dd/MM/yyyy') : '';
+              })(l[TRANSF_COL_DATA_AGEND - 1])
+            });
+          });
+      }
+    }
+
+    resultado.sort(function(a,b){return b.diasArm-a.diasArm;});
+    var limite = (filtros && filtros.limite) ? parseInt(filtros.limite) : 0;
+    var temMais = limite > 0 && resultado.length > limite;
+    var itens = temMais ? resultado.slice(0, limite) : resultado;
+    return JSON.stringify({ itens: itens, abas: _getTodasAbas(), temMais: temMais });
+  } catch(e){ return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Retorna métricas consolidadas para o dashboard da web app.
+ * Inclui contagens por status, alertas e itens recentes.
+ */
+function verificarSaudeSistema() {
+  try {
+    var ss    = getSS();
+    var tz    = Session.getScriptTimeZone();
+    var abas  = _getTodasAbas();
+    var checks = [];
+    var status = 'ok';
+
+    // Abas de dados
+    var abasOk = abas.filter(function(n){ return !!ss.getSheetByName(n); }).length;
+    checks.push({ label: 'Abas de dados', ok: abasOk === abas.length,
+                  valor: abasOk + '/' + abas.length });
+
+    // Total de NFs ativas
+    var totalNFs = 0;
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul >= LINHA_DADOS) totalNFs += ul - LINHA_DADOS + 1;
+    });
+    checks.push({ label: 'NFs ativas', ok: true, valor: totalNFs + ' registros' });
+
+    // Aba _Log
+    var wsLog  = ss.getSheetByName('_Log');
+    var logOk  = !!wsLog;
+    checks.push({ label: 'Log', ok: logOk, valor: logOk ? 'OK' : 'Ausente' });
+
+    // Anexos expirados (Pendente + anexo + > 90 dias)
+    var expirados = 0;
+    var hoje = new Date(); hoje.setHours(0,0,0,0);
+    var limiteMs = 90 * 24 * 3600000;
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues().forEach(function(r) {
+        if (String(r[IDX_STATUS]||'') !== 'Pendente') return;
+        if (!r[IDX_ANEXO]) return;
+        var dt = r[IDX_DATA]; if (!(dt instanceof Date)) return;
+        if ((hoje - dt) > limiteMs) expirados++;
+      });
+    });
+    if (expirados > 0) {
+      checks.push({ label: 'Anexos sem resolução +90d', ok: false, valor: expirados + ' NF(s)' });
+      if (status === 'ok') status = 'warn';
+    }
+
+    // Ocupação das abas (alerta quando ≥ 80% de MAX_LINHAS_ABA)
+    var abasAlerta = [];
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      var usadas = Math.max(0, ul - LINHA_DADOS + 1);
+      var pct = Math.round((usadas / MAX_LINHAS_ABA) * 100);
+      if (pct >= 80) abasAlerta.push(nome + ' ' + pct + '%');
+    });
+    if (abasAlerta.length > 0) {
+      checks.push({ label: 'Capacidade das abas', ok: false,
+                    valor: abasAlerta.join(', ') + ' — faça arquivamento' });
+      if (status === 'ok') status = 'warn';
+    } else {
+      checks.push({ label: 'Capacidade das abas', ok: true, valor: '< 80%' });
+    }
+
+    // Status geral
+    if (checks.some(function(c){ return !c.ok; })) status = 'warn';
+
+    var agora = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm');
+    return JSON.stringify({ status: status, checks: checks, ts: agora });
+  } catch(e) {
+    return JSON.stringify({ status: 'err', checks: [], ts: '', erro: e.toString() });
+  }
+}
+
+function _moverParaLixeira(ss, ws, item, motivo) {
+  try {
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira) {
+      lixeira = ss.insertSheet(_NOME_ABA_LIXEIRA);
+      lixeira.appendRow(['DataExclusão','Motivo','AbaOrigem','LinhaOrigem',
+        'Data','NFD','NF','Fornecedor','Status','Tipo','Motivo','Desc','Qtd','VlUnit','Obs','Resp','UrlAnexo']);
+    }
+    var rowData = ws.getRange(item.linha, 1, 1, Math.max(TOTAL_COLUNAS,17)).getValues()[0];
+    var novaLinha = [new Date(), motivo, item.aba, item.linha].concat(rowData);
+    lixeira.appendRow(novaLinha);
+  } catch(e) { console.warn('_moverParaLixeira: ' + e); }
+}
+
+function obterLixeira() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira || lixeira.getLastRow() < 2) return JSON.stringify({ itens: [] });
+    var ult = lixeira.getLastRow();
+    var dados = lixeira.getRange(2, 1, ult - 1, 5).getValues();
+    var itens = dados.map(function(row, i) {
+      return {
+        lixRow: i + 2,
+        dataExclusao: row[0] ? new Date(row[0]).toLocaleString('pt-BR') : '',
+        motivo: String(row[1]||''),
+        abaOrigem: String(row[2]||''),
+        linhaOrigem: row[3],
+        nf: String(row[6]||''),
+        nfd: String(row[5]||'')
+      };
+    });
+    return JSON.stringify({ itens: itens });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function restaurarDaLixeira(lixRow) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var lixeira = ss.getSheetByName(_NOME_ABA_LIXEIRA);
+    if (!lixeira) return JSON.stringify({ erro: 'Lixeira não encontrada.' });
+    var rowData = lixeira.getRange(lixRow, 1, 1, 4).getValues()[0];
+    var abaOrigem = String(rowData[2]||'');
+    var ws = ss.getSheetByName(abaOrigem);
+    if (!ws) return JSON.stringify({ erro: 'Aba "' + abaOrigem + '" não encontrada.' });
+    var dadosNF = lixeira.getRange(lixRow, 5, 1, Math.max(TOTAL_COLUNAS,17)).getValues()[0];
+    // Encontrar uma linha vazia na aba
+    var ult = obterUltimaLinhaDados(ws);
+    var novaLinha = ult + 1;
+    ws.getRange(novaLinha, 1, 1, dadosNF.length).setValues([dadosNF]);
+    lixeira.deleteRow(lixRow);
+    registrarLog(ss, abaOrigem, novaLinha, 3, '', dadosNF[2] || '', '♻️ Restaurado da lixeira.');
+    return JSON.stringify({ ok: '✅ Item restaurado para aba "' + abaOrigem + '".' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function _registrarVersaoAnexo(aba, linha, url) {
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_VERSOES_ANEXO) || '{}';
+    var map  = JSON.parse(raw);
+    var chave = aba + '_' + linha;
+    if (!map[chave]) map[chave] = [];
+    map[chave].push({ ts: new Date().toISOString(), url: url });
+    map[chave] = map[chave].slice(-5); // manter últimas 5 versões
+    PropertiesService.getScriptProperties().setProperty(_KEY_VERSOES_ANEXO, JSON.stringify(map));
+  } catch(_){}
+}
+
+function obterVersoesAnexo(aba, linha) {
+  var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_VERSOES_ANEXO) || '{}';
+  try {
+    var map   = JSON.parse(raw);
+    var chave = aba + '_' + linha;
+    return JSON.stringify({ versoes: map[chave] || [] });
+  } catch(_) { return JSON.stringify({ versoes: [] }); }
+}
+
+function salvarAnexoAdicionalNF(params) {
+  if (!params || !params.aba || !params.linha || !params.urlAnexo)
+    return JSON.stringify({ erro: 'Dados insuficientes.' });
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ws = ss.getSheetByName(params.aba);
+    if (!ws) return JSON.stringify({ erro: 'Aba não encontrada.' });
+    _registrarVersaoAnexo(params.aba, params.linha, params.urlAnexo);
+    ws.getRange(params.linha, COL_ANEXO).setValue(params.urlAnexo);
+    return JSON.stringify({ ok: '✅ Anexo(s) atualizados.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Retorna todos os arquivos (fotos + documentos) da pasta Drive associada a uma NF.
+ * Inclui o anexo principal (COL_ANEXO) e todos os uploads de avaria na subpasta.
+ * params: { aba, linha, nf }
+ */
+function obterGaleriaFotos(params) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName(params.aba);
+    if (!ws) return JSON.stringify({ fotos: [] });
+    var l = ws.getRange(Number(params.linha), 1, 1, TOTAL_COLUNAS).getValues()[0];
+    var nf  = String(l[IDX_NF]  || params.nf || '').trim();
+    var nfd = String(l[IDX_NFD] || '').trim();
+    var anexoPrincipal = String(l[IDX_ANEXO] || '').trim();
+    var fotos = [];
+    if (anexoPrincipal) {
+      var idMatch = anexoPrincipal.match(/\/d\/([^\/\?]+)/);
+      var fileId = idMatch ? idMatch[1] : null;
+      fotos.push({
+        nome: 'Anexo da NF (' + (nfd||nf) + ')',
+        url:  anexoPrincipal,
+        id:   fileId || '',
+        tipo: 'principal'
+      });
+    }
+    try {
+      var pasta = _garantirPastaNF(params.aba, nf);
+      if (pasta) {
+        var iter = pasta.getFiles();
+        while (iter.hasNext()) {
+          var f = iter.next();
+          fotos.push({
+            nome: f.getName(),
+            url:  f.getUrl(),
+            id:   f.getId(),
+            mime: f.getMimeType(),
+            tipo: 'avaria'
+          });
+        }
+      }
+    } catch(_) {}
+    return JSON.stringify({ fotos: fotos });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function uploadFotoAvaria(params) {
+  try {
+    var pasta = _garantirPastaNF(params.aba || 'Avaria', params.nf || 'NF');
+    var dados = Utilities.base64Decode(params.base64);
+    var nomeArq = (params.nome || 'avaria.jpg');
+    // Prefixo FOTO_ garante que o filtro do enviarEmailDevolucao inclua estas fotos
+    if (nomeArq.indexOf('FOTO_') !== 0) nomeArq = 'FOTO_' + nomeArq;
+    var blob  = Utilities.newBlob(dados, params.mimeType || 'image/jpeg', nomeArq);
+    var file  = (pasta || DriveApp.getRootFolder()).createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return JSON.stringify({ url: file.getUrl(), id: file.getId() });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterComparativoPeriodos(aDe, aAte, bDe, bAte) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    function parseDt(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+    var aI=parseDt(aDe), aF=parseDt(aAte), bI=parseDt(bDe), bF=parseDt(bAte);
+    aF.setHours(23,59,59); bF.setHours(23,59,59);
+    function _agreg(de, ate) {
+      var qtd=0, valor=0, pendentes=0, devolvidos=0, forns={}, motivos={};
+      _getTodasAbas().forEach(function(nome) {
+        var aba = ss.getSheetByName(nome);
+        if (!aba) return;
+        var ult = obterUltimaLinhaDados(aba);
+        if (ult < LINHA_DADOS) return;
+        var vals = aba.getRange(LINHA_DADOS,1,ult-LINHA_DADOS+1,TOTAL_COLUNAS).getValues();
+        vals.forEach(function(row) {
+          var dt = row[IDX_DATA] ? new Date(row[IDX_DATA]) : null;
+          if (!dt || dt < de || dt > ate) return;
+          qtd++;
+          valor += Number(row[IDX_VL_TOT]||0);
+          var status = String(row[IDX_STATUS]||'');
+          if (status === 'Pendente') pendentes++;
+          if (status === 'Devolvido') devolvidos++;
+          var forn = String(row[IDX_FORN]||'').trim();
+          if (forn) forns[forn] = true;
+          var m = String(row[IDX_MOTIVO]||'').trim();
+          if (m) motivos[m] = (motivos[m]||0)+1;
+        });
+      });
+      return { qtd:qtd, valor:valor, pendentes:pendentes, devolvidos:devolvidos,
+               fornecedores:Object.keys(forns).length, motivos:motivos };
+    }
+    var a = _agreg(aI,aF), b = _agreg(bI,bF);
+    var todasMotivos = {};
+    Object.keys(a.motivos).forEach(function(k){ todasMotivos[k]=true; });
+    Object.keys(b.motivos).forEach(function(k){ todasMotivos[k]=true; });
+    var topMotivos = Object.keys(todasMotivos).map(function(m){
+      return { motivo:m, qtdA:a.motivos[m]||0, qtdB:b.motivos[m]||0 };
+    }).sort(function(x,y){ return (y.qtdA+y.qtdB)-(x.qtdA+x.qtdB); }).slice(0,10);
+    return JSON.stringify({ a:a, b:b, topMotivos:topMotivos });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterMotivosFrequentes() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var contagem = {};
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < LINHA_DADOS) return;
+      var vals = aba.getRange(LINHA_DADOS, COL_MOTIVO, ult - LINHA_DADOS + 1, 1).getValues();
+      vals.forEach(function(row) {
+        var m = String(row[0]||'').trim().toUpperCase();
+        if (m) contagem[m] = (contagem[m]||0) + 1;
+      });
+    });
+    var sorted = Object.keys(contagem).sort(function(a,b){ return contagem[b]-contagem[a]; }).slice(0,20);
+    return JSON.stringify(sorted);
+  } catch(e) { return JSON.stringify([]); }
+}
+
+function obterScorecardFornecedores(filtroStatus) {
+  try {
+    var ss = getSS();
+    var abas = _getTodasAbas();
+    var mapa = {}; // { forn: { qtd, valor, motivos:{} } }
+    abas.forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues().forEach(function(r) {
+        var status = String(r[IDX_STATUS]||'');
+        if (filtroStatus && status !== filtroStatus) return;
+        var forn   = String(r[IDX_FORN]||nome).trim();
+        var valor  = parseFloat(r[IDX_VL_TOT]||0)||0;
+        var motivo = String(r[IDX_MOTIVO]||'').trim();
+        if (!mapa[forn]) mapa[forn] = { forn:forn, qtd:0, valor:0, motivosMap:{} };
+        mapa[forn].qtd++;
+        mapa[forn].valor += valor;
+        if (motivo) mapa[forn].motivosMap[motivo] = (mapa[forn].motivosMap[motivo]||0)+1;
+      });
+    });
+    var lista = Object.keys(mapa).map(function(k) {
+      var e = mapa[k];
+      var motivos = Object.keys(e.motivosMap).sort(function(a,b){ return e.motivosMap[b]-e.motivosMap[a]; });
+      return { forn:e.forn, qtd:e.qtd, valor:e.valor, motivos:motivos };
+    }).sort(function(a,b){ return b.qtd - a.qtd; }).slice(0,30);
+    return JSON.stringify({ fornecedores: lista });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * [P57] SLA por fornecedor — tempo médio (dias) entre entrada e resolução (Devolvido/Venda).
+ * Cruza as datas de entrada das abas operacionais com os eventos do _Log.
+ */
+function obterSLAFornecedores() {
+  try {
+    var ss  = getSS();
+    var tz  = Session.getScriptTimeZone();
+    // Monta mapa { aba: { rowNum: { dt, forn } } }
+    var entryMap = {};
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      entryMap[nome] = {};
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(r, i) {
+          var nf   = String(r[IDX_NF]  || '').trim();
+          var forn = String(r[IDX_FORN] || '').trim();
+          var dt   = r[IDX_DATA];
+          if (nf && forn && dt instanceof Date) {
+            entryMap[nome][LINHA_DADOS + i] = { dt: dt, forn: forn, nf: nf };
+          }
+        });
+    });
+    // Lê _Log: colunas [0]=Data/Hora [2]=Aba [3]=Linha [6]=Novo Valor [7]=Ação
+    var wsLog = ss.getSheetByName('_Log');
+    var sla = {}; // { forn: { totalDias, count } }
+    // Extrai "NF <valor>" / "NF: <valor>" do texto livre da coluna Ação
+    // (\bNF\b não casa "NFD" por não haver borda de palavra entre F e D).
+    var RE_NF_ACAO = /\bNF:?\s+(\S+)/;
+    if (wsLog && wsLog.getLastRow() >= 2) {
+      wsLog.getRange(2, 1, wsLog.getLastRow() - 1, 8).getValues()
+        .forEach(function(r) {
+          var dtRes   = r[0];
+          var aba     = String(r[2] || '').trim();
+          var rowNum  = parseInt(r[3]) || 0;
+          var novoVal = String(r[6] || '').trim();
+          var acao    = String(r[7] || '');
+          if (novoVal !== 'Devolvido' && novoVal !== 'Venda') return;
+          if (!(dtRes instanceof Date) || !rowNum) return;
+          var entry = entryMap[aba] && entryMap[aba][rowNum];
+          if (!entry) return;
+          // Como o arquivamento reaproveita linhas físicas, (aba,linha) sozinho
+          // não garante que o evento de log é do MESMO lançamento que ocupa
+          // hoje essa linha. Duas checagens de segurança:
+          // 1) a resolução não pode ser anterior à entrada do item atual —
+          //    isso só aconteceria se o evento for de um lançamento antigo
+          //    que já saiu dessa linha;
+          if (dtRes < entry.dt) return;
+          // 2) quando dá pra extrair a NF do texto da Ação, ela precisa bater
+          //    com a NF do lançamento que ocupa a linha hoje. Quando não dá
+          //    pra extrair (formatos antigos de log), mantém o comportamento
+          //    anterior (conta mesmo assim) para não zerar o SLA de dados
+          //    históricos.
+          var m = acao.match(RE_NF_ACAO);
+          if (m && m[1].trim() !== entry.nf) return;
+          var dias = Math.max(0, Math.round((dtRes - entry.dt) / 864e5));
+          if (!sla[entry.forn]) sla[entry.forn] = { totalDias: 0, count: 0 };
+          sla[entry.forn].totalDias += dias;
+          sla[entry.forn].count++;
+        });
+    }
+    var lista = Object.keys(sla).map(function(f) {
+      var e = sla[f];
+      return { forn: f, mediaDias: Math.round(e.totalDias / e.count), totalResolvidos: e.count };
+    }).sort(function(a, b) { return a.mediaDias - b.mediaDias; });
+    return JSON.stringify({ sla: lista });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * [P58] Exporta trilha de auditoria do _Log como CSV (retorna string para o cliente fazer download).
+ */
+function exportarLogAuditoriaCSV(limite) {
+  var _chk = _exigirModulo('auditoria', false);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss    = getSS();
+    var wsLog = ss.getSheetByName('_Log');
+    if (!wsLog || wsLog.getLastRow() < 2) return JSON.stringify({ erro: 'Log de auditoria vazio.' });
+    var n   = Math.min(parseInt(limite, 10) || 1000, 5000);
+    var ul  = wsLog.getLastRow();
+    var ini = Math.max(2, ul - n + 1);
+    var rows = wsLog.getRange(ini, 1, ul - ini + 1, 8).getValues();
+    var tz  = Session.getScriptTimeZone();
+    var cabecalho = 'Data/Hora;Usuário;Aba;Linha;Coluna;Valor Anterior;Novo Valor;Ação';
+    var linhas = rows.map(function(r) {
+      return r.map(function(c) {
+        var s = c instanceof Date
+          ? Utilities.formatDate(c, tz, 'dd/MM/yyyy HH:mm:ss')
+          : String(c == null ? '' : c).replace(/"/g, '""');
+        return /[;\n"']/.test(s) ? '"' + s + '"' : s;
+      }).join(';');
+    });
+    var csv = '﻿' + cabecalho + '\r\n' + linhas.join('\r\n');
+    return JSON.stringify({ csv: csv, total: rows.length });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterDadosDashboard(deStr, ateStr) {
+  try {
+    var de  = deStr  ? new Date(deStr  + 'T00:00:00') : null;
+    var ate = ateStr ? new Date(ateStr + 'T23:59:59') : null;
+    if (de && isNaN(de.getTime()))  de  = null;
+    if (ate && isNaN(ate.getTime())) ate = null;
+    var temFiltro = !!(de || ate);
+    function dentroPeriodo(dt) {
+      if (!temFiltro) return true;
+      if (!(dt instanceof Date)) return false;
+      if (de  && dt < de)  return false;
+      if (ate && dt > ate) return false;
+      return true;
+    }
+    var cache = CacheService.getScriptCache();
+    if (!temFiltro) { try { var hit = cache.get('cdv_dash_payload'); if (hit) return hit; } catch(_) {} }
+    var ss  = getSS();
+    var tz  = Session.getScriptTimeZone();
+    var hoje = new Date();
+    var counts = { Pendente: 0, EmTransferencia: 0, Devolvido: 0, Venda: 0 };
+    var valores = { Pendente: 0, EmTransferencia: 0, Devolvido: 0, Venda: 0 };
+    var atrasos30 = 0;
+    var porFornecedor = {};
+    var motivosMap = {};   // { motivo: {qtd, valor} }
+    var topNFsCand = [];   // candidatos a Top NFs por valor
+
+    // Contagem nas abas operacionais
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l) {
+          var nf = String(l[IDX_NF] || '').trim();
+          if (!nf) return;
+          var st   = String(l[IDX_STATUS] || '').trim();
+          var val  = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+          var forn = String(l[IDX_FORN] || '').trim();
+          var dt   = l[IDX_DATA];
+          if (!dentroPeriodo(dt)) return;
+          var motivo = String(l[IDX_MOTIVO] || '').trim() || '(sem motivo)';
+          if (!motivosMap[motivo]) motivosMap[motivo] = { qtd: 0, valor: 0 };
+          motivosMap[motivo].qtd++;
+          motivosMap[motivo].valor += val;
+          if (val > 0) {
+            topNFsCand.push({
+              nf: nf, nfd: String(l[IDX_NFD] || '').trim(), forn: forn,
+              desc: String(l[IDX_DESC] || '').trim(), vlTot: val,
+              status: st, data: dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '', _dt: dt instanceof Date ? dt.getTime() : 0
+            });
+          }
+          var dias = dt instanceof Date ? Math.floor((hoje - dt) / 864e5) : 0;
+          if      (st === 'Pendente')  { counts.Pendente++;  valores.Pendente  += val; if (dias > 30) atrasos30++; }
+          else if (st === 'Devolvido') { counts.Devolvido++; valores.Devolvido += val; }
+          else if (st === 'Venda')     { counts.Venda++;     valores.Venda     += val; }
+          if (forn) {
+            if (!porFornecedor[forn]) porFornecedor[forn] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
+            if (st === 'Pendente' || st === 'Devolvido' || st === 'Venda') porFornecedor[forn][st]++;
+            if (st === 'Pendente' && dias > 30) porFornecedor[forn].atrasos++;
+            porFornecedor[forn].vlTot += val;
+            if      (st === 'Pendente')  porFornecedor[forn].vlPendente  += val;
+            else if (st === 'Devolvido') porFornecedor[forn].vlDevolvido += val;
+            else if (st === 'Venda')     porFornecedor[forn].vlVenda     += val;
+          }
+        });
+    });
+
+    // Contagem de Em Transferência + transferências vencidas (leitura única reutilizada abaixo)
+    var transfVencidas = 0;
+    var transfRows = [];
+    var wsTrD = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (wsTrD && wsTrD.getLastRow() >= 2) {
+      transfRows = wsTrD.getRange(2, 1, wsTrD.getLastRow() - 1, TRANSF_TOTAL_COL).getValues();
+      transfRows.forEach(function(l) {
+        var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+        if (stTr !== 'Em Transferência') return;
+        if (!dentroPeriodo(l[IDX_DATA])) return;
+        var val  = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+        counts.EmTransferencia++;
+        valores.EmTransferencia += val;
+        var agend = l[TRANSF_COL_DATA_AGEND - 1];
+        if (agend instanceof Date && agend < hoje) transfVencidas++;
+      });
+    }
+
+    // Últimas 10 notas lançadas (mais recentes por data de entrada)
+    var recentes = [];
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l, i) {
+          var nf = String(l[IDX_NF] || '').trim();
+          if (!nf) return;
+          if (!dentroPeriodo(l[IDX_DATA])) return;
+          recentes.push({
+            nf:     nf,
+            nfd:    String(l[IDX_NFD]  || '').trim(),
+            forn:   String(l[IDX_FORN] || '').trim(),
+            desc:   String(l[IDX_DESC] || '').trim(),
+            qtd:    parseFloat(l[IDX_QTD]  || 0) || 0,
+            status: String(l[IDX_STATUS]||'').trim(),
+            vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+            data:   l[IDX_DATA] instanceof Date ? Utilities.formatDate(l[IDX_DATA], tz, 'dd/MM/yyyy') : '',
+            _dt:    l[IDX_DATA] instanceof Date ? l[IDX_DATA].getTime() : 0,
+            aba:    nome
+          });
+        });
+    });
+    recentes.sort(function(a, b) { return b._dt - a._dt; });
+    recentes = recentes.slice(0, 10);
+    recentes.forEach(function(r) { delete r._dt; });
+
+    // Adiciona EmTransferência ao porFornecedor (reutiliza transfRows, sem segunda leitura)
+    transfRows.forEach(function(l) {
+      var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+      if (stTr !== 'Em Transferência') return;
+      if (!dentroPeriodo(l[IDX_DATA])) return;
+      var fTr = String(l[IDX_FORN] || '').trim();
+      if (!fTr) return;
+      if (!porFornecedor[fTr]) porFornecedor[fTr] = {Pendente:0,Devolvido:0,Venda:0,EmTransferencia:0,atrasos:0,vlTot:0,vlPendente:0,vlDevolvido:0,vlVenda:0,vlTransf:0};
+      var valTr = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+      porFornecedor[fTr].EmTransferencia++;
+      porFornecedor[fTr].vlTransf  += valTr;
+      porFornecedor[fTr].vlTot     += valTr;
+    });
+    var fornArr = Object.keys(porFornecedor).map(function(k) {
+      var f = porFornecedor[k];
+      return { forn:k, Pendente:f.Pendente, EmTransferencia:f.EmTransferencia,
+               Devolvido:f.Devolvido, Venda:f.Venda, atrasos:f.atrasos, vlTot:f.vlTot,
+               vlPendente:f.vlPendente, vlDevolvido:f.vlDevolvido, vlVenda:f.vlVenda, vlTransf:f.vlTransf,
+               total: f.Pendente + f.EmTransferencia + f.Devolvido + f.Venda };
+    }).sort(function(a, b) { return b.total - a.total; });
+
+    var motivosArr = Object.keys(motivosMap).map(function(m) {
+      return { motivo: m, qtd: motivosMap[m].qtd, valor: motivosMap[m].valor };
+    }).sort(function(a, b) { return b.qtd - a.qtd; });
+    if (motivosArr.length > 8) {
+      var resto = motivosArr.slice(8).reduce(function(acc, m) {
+        acc.qtd += m.qtd; acc.valor += m.valor; return acc;
+      }, { motivo: 'Outros', qtd: 0, valor: 0 });
+      motivosArr = motivosArr.slice(0, 8).concat([resto]);
+    }
+
+    topNFsCand.sort(function(a, b) { return b.vlTot - a.vlTot; });
+    // Envia mais que 10 (top 50) porque o client filtra por fornecedor selecionado
+    // depois de receber — só 10 globais deixaria fornecedores fora do top geral
+    // sempre aparentando "sem NF de alto valor" mesmo tendo dados no período.
+    var topNFs = topNFsCand.slice(0, 50).map(function(r) { delete r._dt; return r; });
+
+    var periodoAnterior = null;
+    if (temFiltro) {
+      var deEfetivo  = de  || ate; // se só "ate" foi informado, usa "ate" como fim de referência
+      var ateEfetivo = ate || de;
+      var duracaoMs  = Math.max(864e5, ateEfetivo.getTime() - deEfetivo.getTime());
+      var deAnt  = new Date(deEfetivo.getTime() - duracaoMs);
+      var ateAnt = new Date(deEfetivo.getTime() - 1);
+      var countsAnt  = { Pendente: 0, EmTransferencia: 0, Devolvido: 0, Venda: 0 };
+      var valoresAnt = { Pendente: 0, EmTransferencia: 0, Devolvido: 0, Venda: 0 };
+      _getTodasAbas().forEach(function(nome) {
+        var ws = ss.getSheetByName(nome);
+        if (!ws) return;
+        var ul = obterUltimaLinhaDados(ws);
+        if (ul < LINHA_DADOS) return;
+        ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+          .forEach(function(l) {
+            var nf = String(l[IDX_NF] || '').trim();
+            if (!nf) return;
+            var dt = l[IDX_DATA];
+            if (!(dt instanceof Date) || dt < deAnt || dt > ateAnt) return;
+            var st  = String(l[IDX_STATUS] || '').trim();
+            var val = parseFloat(l[IDX_VL_TOT] || 0) || 0;
+            if      (st === 'Pendente')  { countsAnt.Pendente++;  valoresAnt.Pendente  += val; }
+            else if (st === 'Devolvido') { countsAnt.Devolvido++; valoresAnt.Devolvido += val; }
+            else if (st === 'Venda')     { countsAnt.Venda++;     valoresAnt.Venda     += val; }
+          });
+      });
+      periodoAnterior = { counts: countsAnt, valores: valoresAnt };
+    }
+
+    var payload = JSON.stringify({
+      counts:          counts,
+      valores:         valores,
+      atrasos30:       atrasos30,
+      transfVencidas:  transfVencidas,
+      recentes:        recentes,
+      porFornecedor:   fornArr,
+      motivos:         motivosArr,
+      topNFs:          topNFs,
+      periodoAnterior: periodoAnterior
+    });
+    if (!temFiltro) { try { cache.put('cdv_dash_payload', payload, 45); } catch(_) {} }
+    return payload;
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Busca tudo que está dentro de um período de datas, em todas as origens:
+ * abas ativas (Pendente/Devolvido/Venda), Transferências e Historico_Arquivo.
+ * @param {string} deStr  'yyyy-MM-dd' ou vazio
+ * @param {string} ateStr 'yyyy-MM-dd' ou vazio
+ */
+function buscarPorPeriodoDashboard(deStr, ateStr) {
+  try {
+    var ss = getSS();
+    var tz = Session.getScriptTimeZone();
+    var de  = deStr  ? new Date(deStr  + 'T00:00:00') : null;
+    var ate = ateStr ? new Date(ateStr + 'T23:59:59') : null;
+    if (de && isNaN(de.getTime()))  de  = null;
+    if (ate && isNaN(ate.getTime())) ate = null;
+    if (!de && !ate) return JSON.stringify({ erro: 'Informe pelo menos uma data.' });
+
+    var itens = [];
+    var resumo = { Pendente:0, Devolvido:0, Venda:0, 'Em Transferência':0, Arquivado:0 };
+
+    function dentro(dt) {
+      if (!(dt instanceof Date)) return false;
+      if (de  && dt < de)  return false;
+      if (ate && dt > ate) return false;
+      return true;
+    }
+    function push(l, origem, status, aba, contarComo) {
+      var nf = String(l[IDX_NF] || '').trim(), nfd = String(l[IDX_NFD] || '').trim();
+      if (!nf && !nfd) return;
+      var dt = l[IDX_DATA];
+      if (!dentro(dt)) return;
+      var chave = contarComo || status;
+      itens.push({
+        origem: origem,
+        aba:    aba,
+        nf:     nf,
+        nfd:    nfd,
+        forn:   String(l[IDX_FORN] || '').trim(),
+        desc:   String(l[IDX_DESC] || '').trim().substring(0, 55),
+        qtd:    parseFloat(l[IDX_QTD] || 0) || 0,
+        valor:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        status: status,
+        data:   Utilities.formatDate(dt, tz, 'dd/MM/yyyy'),
+        _dt:    dt.getTime()
+      });
+      if (resumo[chave] !== undefined) resumo[chave]++;
+    }
+
+    // Abas ativas
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l) {
+          push(l, 'ativo', String(l[IDX_STATUS] || '').trim(), nome);
+        });
+    });
+
+    // Transferências — só 1 linha de cabeçalho (dados começam na linha 2);
+    // ver nota equivalente em executarBusca.
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (wsTr) {
+      var ulT = wsTr.getLastRow();
+      if (ulT >= 2) {
+        wsTr.getRange(2, 1, ulT - 1, TRANSF_COL_LOTE_ID).getValues()
+          .forEach(function(l) {
+            var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim() || 'Em Transferência';
+            push(l, 'transferencia', stTr, ABA_TRANSFERENCIAS);
+          });
+      }
+    }
+
+    // Arquivados
+    var hist = ss.getSheetByName('Historico_Arquivo');
+    if (hist && hist.getLastRow() >= 2) {
+      var ncols = Math.min(TOTAL_COLUNAS, hist.getLastColumn());
+      hist.getRange(2, 1, hist.getLastRow() - 1, ncols).getValues().forEach(function(l) {
+        var stH = String(l[IDX_STATUS] || '').trim();
+        push(l, 'arquivado', stH, 'Historico_Arquivo', 'Arquivado');
+      });
+    }
+
+    itens.sort(function(a, b) { return b._dt - a._dt; });
+    var temMais = itens.length > 500;
+    if (temMais) itens = itens.slice(0, 500);
+    itens.forEach(function(it) { delete it._dt; });
+
+    return JSON.stringify({ itens: itens, resumo: resumo, temMais: temMais });
+  } catch (e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Retorna agrupamento mensal de lançamentos para o gráfico de tendência.
+ * @param {number} periodo  Número de meses para trás (3, 6 ou 12).
+ */
+function obterTendencia(periodo) {
+  try {
+    var meses = parseInt(periodo, 10) || 6;
+    var ss    = getSS();
+    var tz    = Session.getScriptTimeZone();
+    var hoje  = new Date();
+
+    // Montar mapa de chaves "MM/AAAA" para os últimos N meses
+    var buckets = {};
+    var labels  = [];
+    for (var m = meses - 1; m >= 0; m--) {
+      var d = new Date(hoje.getFullYear(), hoje.getMonth() - m, 1);
+      var chave = Utilities.formatDate(d, tz, 'MM/yyyy');
+      var label = Utilities.formatDate(d, tz, 'MMM/yy');
+      buckets[chave] = { mes: label, total: 0, pendente: 0 };
+      labels.push(chave);
+    }
+
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l) {
+          var nf = String(l[IDX_NF] || '').trim();
+          if (!nf) return;
+          var dt = l[IDX_DATA];
+          if (!(dt instanceof Date)) return;
+          var chave = Utilities.formatDate(dt, tz, 'MM/yyyy');
+          if (!buckets[chave]) return;
+          buckets[chave].total++;
+          if (String(l[IDX_STATUS] || '').trim() === 'Pendente') buckets[chave].pendente++;
+        });
+    });
+
+    var tendencia = labels.map(function(k) { return buckets[k]; });
+    return JSON.stringify({ tendencia: tendencia });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+/**
+ * Retorna contagem de transferências "Em Transferência" e quantas estão vencidas.
+ * Usado pelo sidebar badge (S).
+ */
+function obterBadgeCount() {
+  try {
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr || wsTr.getLastRow() < 2) return JSON.stringify({ total: 0, vencidas: 0 });
+    var hoje  = new Date();
+    var total = 0, vencidas = 0;
+    wsTr.getRange(2, 1, wsTr.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
+      .forEach(function(l) {
+        var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+        if (stTr !== 'Em Transferência') return;
+        total++;
+        var agend = l[TRANSF_COL_DATA_AGEND - 1];
+        if (agend instanceof Date && agend < hoje) vencidas++;
+      });
+    return JSON.stringify({ total: total, vencidas: vencidas });
+  } catch(e) { return JSON.stringify({ total: 0, vencidas: 0 }); }
+}
+
+function executarAcaoEmLoteNotas(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss=getSS(), acao=String(params.acao||''), itens=params.itens||[];
+    var usuario=Session.getActiveUser().getEmail()||'sistema';
+    if (!itens.length) return JSON.stringify({ erro: 'Nenhum item selecionado.' });
+    if (acao === 'frete') {
+      var fp=params.freteParams||{}, ok=0, erros=[];
+      var loteId = itens.length > 1 ? Utilities.getUuid() : '';
+      for (var fi = 0; fi < itens.length; fi++) {
+        var it = itens[fi];
+        try {
+          var r=JSON.parse(salvarProgramacaoDevolucao({
+            aba:it.aba, linha:it.linha, freteTipo:fp.tipo, freteValor:fp.valor,
+            dataAgendamento:fp.dataAgend, obs:fp.obs||'',
+            numeroPedido:fp.numeroPedido||'',
+            nf:it.nf, nfd:it.nfd, forn:it.forn, dataNF:it.data,
+            loteId:loteId
+          }));
+          if (r.ok) ok++; else erros.push(it.nf+': '+(r.erro||'Erro'));
+        } catch(e){ erros.push(it.nf+': '+e.message); }
+      }
+      var msg = loteId
+        ? '🚚 Lote programado — '+ok+' NF(s) — '+(itens[0]&&itens[0].forn||'')+'.'
+        : '🚚 '+ok+' NF(s) programadas para devolução.';
+      return JSON.stringify({ ok: msg, erros: erros });
+    }
+    var novoStatus = acao==='venda' ? 'Venda' : 'Devolvido';
+    var ok=0, erros=[];
+    var trava=LockService.getScriptLock();
+    if (!trava.tryLock(15000)) return JSON.stringify({ erro:'Sistema ocupado. Tente em instantes.' });
+    try {
+      itens.forEach(function(it){
+        try {
+          var ws=ss.getSheetByName(it.aba);
+          if (!ws){erros.push(it.nf+': aba não encontrada');return;}
+          var stAtual=ws.getRange(it.linha,COL_STATUS).getValue();
+          if (stAtual!=='Pendente'){erros.push(it.nf+': status é "'+stAtual+'"');return;}
+          _aplicarStatus(ss,ws,it.aba,it.linha,novoStatus,stAtual);
+          registrarLog(ss,it.aba,it.linha,COL_STATUS,stAtual,novoStatus,
+            'Ação em lote WebApp por '+usuario+' → '+novoStatus);
+          ok++;
+        } catch(e){erros.push(it.nf+': '+e.message);}
+      });
+    } finally { trava.releaseLock(); }
+    if (ok>0) _atualizarMetricasDashboard(ss);
+    return JSON.stringify({ ok:(novoStatus==='Venda'?'🛒':'✅')+' '+ok+' NF(s) marcada(s) como '+novoStatus+'.', erros:erros });
+  } catch(e){ return JSON.stringify({ erro:e.toString() }); }
+}
+
+function desfazerAcaoEmLoteNotas(itens) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss = getSS();
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item para desfazer.' });
+    var ok = 0, erros = [];
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(15000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente em instantes.' });
+    try {
+      itens.forEach(function(it) {
+        try {
+          var ws = ss.getSheetByName(it.aba);
+          if (!ws) { erros.push(it.nf + ': aba não encontrada'); return; }
+          var stAtual = ws.getRange(it.linha, COL_STATUS).getValue();
+          if (stAtual === 'Pendente') { erros.push(it.nf + ': já está Pendente'); return; }
+          _aplicarStatus(ss, ws, it.aba, it.linha, 'Pendente', stAtual);
+          registrarLog(ss, it.aba, it.linha, COL_STATUS, stAtual, 'Pendente',
+            'Desfazer ação em lote por ' + usuario);
+          ok++;
+        } catch(e) { erros.push(it.nf + ': ' + e.message); }
+      });
+    } finally { trava.releaseLock(); }
+    if (ok > 0) _atualizarMetricasDashboard(ss);
+    return JSON.stringify({ ok: '↩ ' + ok + ' NF(s) revertida(s) para Pendente.', erros: erros });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterDetalhesNF(aba, linha) {
+  try {
+    var ss=getSS(), ws=ss.getSheetByName(aba);
+    if (!ws) return JSON.stringify({ erro:'Aba não encontrada.' });
+    var l=ws.getRange(linha,1,1,TOTAL_COLUNAS).getValues()[0];
+    var tz=Session.getScriptTimeZone(), dt=l[IDX_DATA];
+    var nf=String(l[IDX_NF]||'').trim(), nfd=String(l[IDX_NFD]||'').trim();
+    var emailsHist=[], logHist=[];
+    var wsE=ss.getSheetByName('_EmailsEnviados');
+    if (wsE) {
+      var ulE=wsE.getLastRow();
+      if (ulE>=2) wsE.getRange(2,1,ulE-1,6).getValues().forEach(function(r){
+        var nfdsCol=String(r[4]||'');
+        if (nfdsCol.indexOf(nfd)!==-1||nfdsCol.indexOf(nf)!==-1)
+          emailsHist.push({
+            data:r[0] instanceof Date?Utilities.formatDate(r[0],tz,'dd/MM/yyyy HH:mm'):String(r[0]||''),
+            para:String(r[1]||''), assunto:String(r[2]||''), nfds:nfdsCol
+          });
+      });
+    }
+    var wsL=ss.getSheetByName('_Log');
+    if (wsL) {
+      var ulL=wsL.getLastRow();
+      if (ulL>=2) wsL.getRange(2,1,ulL-1,8).getValues().forEach(function(r){
+        var ref=String(r[5]||'')+String(r[6]||'')+String(r[7]||'');
+        if (ref.indexOf(nf)!==-1||(nfd&&ref.indexOf(nfd)!==-1))
+          logHist.push({
+            data:r[0] instanceof Date?Utilities.formatDate(r[0],tz,'dd/MM/yyyy HH:mm'):String(r[0]||''),
+            usuario:String(r[1]||''), coluna:String(r[4]||''),
+            anterior:String(r[5]||''), novo:String(r[6]||''), acao:String(r[7]||'')
+          });
+      });
+      logHist=logHist.slice(-20);
+    }
+    return JSON.stringify({
+      nfd:nfd, nf:nf,
+      data:dt instanceof Date?Utilities.formatDate(dt,tz,'dd/MM/yyyy'):'',
+      forn:String(l[IDX_FORN]||''), tipo:String(l[IDX_TIPO]||''),
+      motivo:String(l[IDX_MOTIVO]||''), desc:String(l[IDX_DESC]||''),
+      qtd:parseFloat(l[IDX_QTD]||0)||0, vlUnit:parseFloat(l[IDX_VL_UNIT]||0)||0,
+      vlTot:parseFloat(l[IDX_VL_TOT]||0)||0, status:String(l[IDX_STATUS]||''),
+      obs:String(l[IDX_OBS]||''), resp:String(l[IDX_RESP]||''),
+      anexo:String(l[IDX_ANEXO]||''), freteTipo:String(l[IDX_FRETE_TIPO]||''),
+      freteValor:parseFloat(l[IDX_FRETE_VALOR]||0)||0,
+      aba:aba, linha:linha, emailsHist:emailsHist, logHist:logHist
+    });
+  } catch(e){ return JSON.stringify({ erro:e.toString() }); }
+}
+
+function editarNF(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss=getSS(), ws=ss.getSheetByName(params.aba);
+    if (!ws) return JSON.stringify({ erro:'Aba não encontrada.' });
+    var linha=Number(params.linha), campos=params.campos||{};
+    var usuario=Session.getActiveUser().getEmail()||'sistema';
+    var mapa={nf:COL_NF, nfd:COL_NFD, forn:COL_FORN, data:COL_DATA, tipo:COL_TIPO, motivo:COL_MOTIVO,
+              desc:COL_DESC, qtd:COL_QTD, vlUnit:COL_VL_UNIT, obs:COL_OBS, resp:COL_RESP};
+    Object.keys(campos).forEach(function(campo){
+      var col=mapa[campo]; if (!col) return;
+      var ant=ws.getRange(linha,col).getValue();
+      ws.getRange(linha,col).setValue(campos[campo]);
+      registrarLog(ss,params.aba,linha,col,ant,campos[campo],'Edição WebApp por '+usuario);
+    });
+    return JSON.stringify({ ok:'✅ NF atualizada com sucesso.' });
+  } catch(e){ return JSON.stringify({ erro:e.toString() }); }
+}
+
+function abrirFormNotas() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormNotas').setWidth(1200).setHeight(700),
+    '📋 Notas Lançadas'
+  );
+}
+
+function abrirFormTransferencias() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormTransferencias').setWidth(900).setHeight(580),
+    '🚛 Transferências — Devoluções Programadas'
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   BAIXA PARA VENDA
+// ════════════════════════════════════════════════════════════
+
+function abrirFormularioVenda() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormVenda').setWidth(450).setHeight(320),
+    '🛒 Baixa de Mercadorias para Venda'
+  );
+}
+
+function executarBaixaVenda(txtNfsRaw) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  var nfsDigitadas = txtNfsRaw.split(/[\n,]/).map(function(s) { return String(s).trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF válida identificada.' });
+
+  var ss               = getSS();
+  var tz               = ss.getSpreadsheetTimeZone();
+  var itensEncontrados = [];
+  var itensDoc         = [];
+  var nfsOk            = [];
+  var processados      = new Set();
+  var agora            = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm:ss');
+  var porAba           = {};
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    dados.forEach(function(l, i) {
+      var nfd = String(l[IDX_NFD]).trim();
+      var nf  = String(l[IDX_NF]).trim();
+      var st  = String(l[IDX_STATUS]).trim();
+      var bat = _baterTermos(nfsDigitadas, nfd, nf);
+      if (!bat.bate || st !== 'Pendente' || processados.has(bat.termoBateu)) return;
+
+      processados.add(bat.termoBateu);
+      var linha = LINHA_DADOS + i;
+      itensEncontrados.push([nfd || nf, String(l[IDX_FORN]).trim(), String(l[IDX_DESC]).trim(), l[IDX_QTD] || 0]);
+      var dtVenda = l[IDX_DATA];
+      itensDoc.push({
+        nfd:    nfd,
+        nf:     nf,
+        forn:   String(l[IDX_FORN]   || '').trim(),
+        tipo:   String(l[IDX_TIPO]   || '').trim(),
+        motivo: String(l[IDX_MOTIVO] || '').trim(),
+        qtd:    parseFloat(l[IDX_QTD]    || 0) || 0,
+        vlTot:  parseFloat(l[IDX_VL_TOT] || 0) || 0,
+        data:   dtVenda instanceof Date ? Utilities.formatDate(dtVenda, tz, 'dd/MM/yyyy') : ''
+      });
+
+      // [P18] status + checkboxes + obs em 1 setValues
+      ws.getRange(linha, COL_STATUS, 1, 5).setValues([[
+        'Venda', false, false, true,
+        'Enviado para o Fábio em: ' + Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm:ss')
+      ]]);
+      protegerLinhaConcluida(ss, ws, linha, 'Venda');
+      registrarLog(ss, nomeAba, linha, COL_STATUS, nf, 'Venda',
+        '🛒 Baixa Venda via HTML — NF: ' + (nfd || nf));
+      nfsOk.push(nfd || nf);
+
+      if (!porAba[nomeAba]) porAba[nomeAba] = { ws: ws, linhas: [] };
+      porAba[nomeAba].linhas.push(linha);
+    });
+  });
+
+  if (!itensEncontrados.length) return JSON.stringify({ erro: "Nenhuma NF localizada como 'Pendente'." });
+
+  Object.keys(porAba).forEach(function(nomeAba) {
+    var g   = porAba[nomeAba];
+    var lns = g.linhas;
+    var minL = Math.min.apply(null, lns), maxL = Math.max.apply(null, lns);
+    var n    = maxL - minL + 1;
+    var bg   = g.ws.getRange(minL, 1, n, TOTAL_COLUNAS).getBackgrounds();
+    lns.forEach(function(r) { bg[r - minL] = Array(TOTAL_COLUNAS).fill(COR_LARANJA); });
+    g.ws.getRange(minL, 1, n, TOTAL_COLUNAS).setBackgrounds(bg);
+  });
+
+  try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+  _atualizarMetricasDashboard(ss);
+
+  notificarEvento('vendas', '🛒 <b>Venda registrada</b> — ' + nfsOk.length + ' item(ns)\n' +
+    nfsOk.slice(0, 10).map(function(n){ return '• ' + _esc(n); }).join('\n') +
+    (nfsOk.length > 10 ? '\n… e mais ' + (nfsOk.length - 10) + '.' : ''));
+
+  if (!ID_PASTA_DESTINO_VENDA || ID_PASTA_DESTINO_VENDA.startsWith('INSIRA'))
+    return JSON.stringify({
+      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! (PDF não gerado — configure ID_PASTA_DESTINO_VENDA).',
+      itens: itensDoc
+    });
+
+  try {
+    // [Redesign] PDF de venda com identidade v12: nº do documento, faixa
+    // âmbar, colunas completas (tipo, motivo, VALOR em R$, data) e assinaturas.
+    var ssTemp = SpreadsheetApp.create('Temp_Relatorio_Venda');
+    var sh     = ssTemp.getSheets()[0];
+    var tzV    = ss.getSpreadsheetTimeZone();
+    var numDoc = 'VD-' + new Date().getFullYear() + '-' + String(new Date().getTime()).slice(-5);
+    var totalQtdV = itensDoc.reduce(function(s, it) { return s + (it.qtd || 0); }, 0);
+    var totalValV = itensDoc.reduce(function(s, it) { return s + (it.vlTot || 0); }, 0);
+    var nColsV = 7;
+    [130, 90, 90, 220, 55, 90, 90].forEach(function(w, i) { sh.setColumnWidth(i + 1, w); });
+
+    // faixa de marca (header v12 com logo + nº de documento em 2 linhas, igual Doc.Carga)
+    sh.setRowHeight(1, 42);
+    sh.getRange(1, 1, 2, 1).merge().setBackground('#FFFFFF')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    try {
+      var _logoBlobV = _obterLogoTransbenBlob();
+      if (_logoBlobV) _inserirLogoComAspecto(sh, _logoBlobV, 1, 1, 46, 24);
+      else registrarErroSistema('executarBaixaVenda.logo', '_obterLogoTransbenBlob() retornou null — cache LOGO2_B64_* ausente/vazio.');
+    } catch(eLogoV) {
+      registrarErroSistema('executarBaixaVenda.logo', eLogoV.message || eLogoV.toString());
+    }
+    sh.getRange(1, 2, 1, 4).merge()
+      .setValue('Relação de Mercadorias — Baixa para Venda')
+      .setBackground('#0B1526').setFontColor('#FFFFFF')
+      .setFontWeight('bold').setFontSize(12)
+      .setHorizontalAlignment('left').setVerticalAlignment('middle');
+    sh.getRange(1, 6, 1, 2).merge()
+      .setValue('DOCUMENTO Nº')
+      .setBackground('#0B1526').setFontColor('#7E93B8')
+      .setFontSize(7).setFontWeight('bold')
+      .setHorizontalAlignment('right').setVerticalAlignment('top');
+    sh.setRowHeight(2, 16);
+    sh.getRange(2, 2, 1, 4).merge()
+      .setValue('Emissão ' + Utilities.formatDate(new Date(), tzV, 'dd/MM/yyyy HH:mm') + ' · ' + itensDoc.length + ' NF(s)')
+      .setBackground('#0B1526').setFontColor('#7E93B8')
+      .setFontSize(8).setHorizontalAlignment('left').setVerticalAlignment('top');
+    sh.getRange(2, 6, 1, 2).merge()
+      .setValue(numDoc)
+      .setBackground('#0B1526').setFontColor('#FFFFFF')
+      .setFontWeight('bold').setFontSize(11)
+      .setHorizontalAlignment('right').setVerticalAlignment('top');
+
+    sh.setRowHeight(3, 16);
+    sh.getRange(3, 1, 1, nColsV).merge()
+      .setValue('MERCADORIA DESTINADA À VENDA — CONFERIR NO RECEBIMENTO')
+      .setBackground('#B45309').setFontColor('#FFFFFF')
+      .setFontSize(9).setFontWeight('bold')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+    // resumo (notas/caixas/valor total)
+    sh.setRowHeight(4, 6);
+    sh.getRange(4, 1, 1, nColsV).setBackground('#F8F9FA');
+    var resumoDefs = [
+      { label: 'NOTAS',       val: String(itensDoc.length),      cor: '#0B1526', bg: '#FFFFFF', bd: '#E3E8F2' },
+      { label: 'CAIXAS',      val: totalQtdV.toLocaleString('pt-BR'), cor: '#0B1526', bg: '#FFFFFF', bd: '#E3E8F2' },
+      { label: 'VALOR TOTAL', val: 'R$ ' + _fmtVal(totalValV),   cor: '#B45309', bg: '#FFFBEB', bd: '#FDE68A' }
+    ];
+    sh.setRowHeight(5, 12);
+    resumoDefs.forEach(function(r, ri) {
+      sh.getRange(5, 1 + ri * 2, 1, 2).merge().setValue(r.label)
+        .setBackground(r.bg).setFontColor('#5B7186').setFontWeight('bold').setFontSize(7)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    sh.setRowHeight(6, 20);
+    resumoDefs.forEach(function(r, ri) {
+      sh.getRange(6, 1 + ri * 2, 1, 2).merge().setValue(r.val)
+        .setBackground(r.bg).setFontColor(r.cor).setFontWeight('bold').setFontSize(14)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    resumoDefs.forEach(function(r, ri) {
+      sh.getRange(5, 1 + ri * 2, 2, 2).setBorder(true, true, true, true, false, false, r.bd, SpreadsheetApp.BorderStyle.SOLID);
+    });
+    sh.getRange(5, 7, 2, 1).setBackground('#F8F9FA');
+
+    sh.setRowHeight(7, 6);
+    sh.getRange(7, 1, 1, nColsV).setBackground('#F8F9FA');
+
+    // cabeçalho da tabela
+    sh.setRowHeight(8, 18);
+    sh.getRange(8, 1, 1, nColsV)
+      .setValues([['NFD / NF', 'Fornecedor', 'Tipo', 'Descrição', 'Cxs', 'Valor', 'Entrada']])
+      .setFontWeight('bold').setBackground('#1E3A5F')
+      .setFontColor('#FFFFFF').setFontSize(8).setHorizontalAlignment('center');
+    sh.getRange(8, 4).setHorizontalAlignment('left');
+
+    var valsV = itensDoc.map(function(it) {
+      return [(it.nfd || it.nf) + (it.nfd && it.nf && it.nfd !== it.nf ? ' / ' + it.nf : ''),
+              it.forn, it.tipo || '—', it.desc || '', it.qtd || 0, 'R$ ' + _fmtVal(it.vlTot), it.data || ''];
+    });
+    var rl0 = 9;
+    sh.getRange(rl0, 1, valsV.length, nColsV).setValues(valsV).setFontSize(8).setHorizontalAlignment('center');
+    sh.getRange(rl0, 4, valsV.length, 1).setHorizontalAlignment('left').setWrap(true);
+    sh.getRange(rl0, 6, valsV.length, 1).setHorizontalAlignment('right');
+    // zebra + cor de fonte por tipo
+    var bgV = itensDoc.map(function(_, zi) { return Array(nColsV).fill(zi % 2 === 1 ? '#F8FAFD' : '#FFFFFF'); });
+    sh.getRange(rl0, 1, valsV.length, nColsV).setBackgrounds(bgV);
+    var fcTipoV = { 'Avaria': '#B45309', 'Rejeição': '#DC2626', 'Falta': '#2563EB' };
+    var fontTipoV = itensDoc.map(function(it) { return [fcTipoV[it.tipo] || '#344256']; });
+    sh.getRange(rl0, 3, valsV.length, 1).setFontColors(fontTipoV).setFontWeight('bold');
+
+    // total geral
+    var lt = rl0 + valsV.length;
+    sh.getRange(lt, 1, 1, 4).merge()
+      .setValue('TOTAL GERAL').setFontWeight('bold').setFontSize(9)
+      .setBackground('#FFFBEB').setFontColor('#92400E').setHorizontalAlignment('right');
+    sh.getRange(lt, 5).setValue(totalQtdV).setFontWeight('bold').setFontSize(9)
+      .setBackground('#FFFBEB').setFontColor('#92400E').setHorizontalAlignment('center');
+    sh.getRange(lt, 6).setValue('R$ ' + _fmtVal(totalValV)).setFontWeight('bold').setFontSize(9)
+      .setBackground('#FFFBEB').setFontColor('#92400E').setHorizontalAlignment('right');
+    sh.getRange(lt, 7).setBackground('#FFFBEB');
+
+    // assinaturas
+    var la = lt + 3;
+    sh.setRowHeight(la, 24);
+    [[1, 2, 'Expedição / Responsável'], [3, 5, 'Recebedor (Venda)'], [6, 7, 'Data / Hora']].forEach(function(cfg) {
+      sh.getRange(la, cfg[0], 1, cfg[1] - cfg[0] + 1).merge()
+        .setValue(cfg[2]).setFontSize(8).setFontColor('#5B7186')
+        .setHorizontalAlignment('center').setVerticalAlignment('bottom')
+        .setBorder(true, null, null, null, null, null, '#1E3A5F', SpreadsheetApp.BorderStyle.SOLID);
+    });
+    var lf = la + 2;
+    sh.setRowHeight(lf, 14);
+    sh.getRange(lf, 1, 1, 4).merge()
+      .setValue('Transben · Controle de Devoluções · ' + numDoc)
+      .setFontColor('#8A9BB0').setFontSize(7).setFontStyle('italic')
+      .setHorizontalAlignment('left');
+    sh.getRange(lf, 5, 1, 3).merge()
+      .setValue('Página 1 de 1')
+      .setFontColor('#8A9BB0').setFontSize(7).setFontStyle('italic')
+      .setHorizontalAlignment('right');
+    SpreadsheetApp.flush();
+
+    var url  = ssTemp.getUrl().replace(/\/edit.*$/, '') +
+      '/export?exportFormat=pdf&format=pdf&size=A4&portrait=false&scale=1&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false' +
+      '&top_margin=0.3&bottom_margin=0.3&left_margin=0.3&right_margin=0.3' +
+      '&horizontal_alignment=CENTER&vertical_alignment=MIDDLE';
+    var blob = UrlFetchApp.fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true
+    }).getBlob().setName('Relacao_Venda_' + nfsOk.length + '_itens.pdf');
+    var arquivo = DriveApp.getFolderById(ID_PASTA_DESTINO_VENDA).createFile(blob);
+    DriveApp.getFileById(ssTemp.getId()).setTrashed(true);
+    return JSON.stringify({
+      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída!',
+      urlPdf: arquivo.getUrl(),
+      itens: itensDoc
+    });
+  } catch (e) {
+    // Limpa a planilha temporária mesmo em caso de falha (timeout, erro no
+    // logo, cota do Drive etc.) para não acumular arquivos "Temp_Relatorio_Venda"
+    // esquecidos no Drive.
+    try { if (ssTemp) DriveApp.getFileById(ssTemp.getId()).setTrashed(true); } catch (_) {}
+    return JSON.stringify({
+      sucesso: '✅ Baixa de ' + nfsOk.length + ' itens concluída! ⚠️ Erro no PDF: ' + e.toString(),
+      itens: itensDoc
+    });
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   FORMULÁRIO DE LANÇAMENTO
+// ════════════════════════════════════════════════════════════
+
+function abrirFormularioLancamento() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormLancamento').setWidth(500).setHeight(600),
+    '➕ Lançar / Excluir Devolução'
+  );
+}
+
+function salvarLancamentoForm(dados) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  _validarDadosForm(dados);
+  var ss = getSS();
+  var ws = ss.getSheetByName(dados.abaSelecao);
+  if (!ws) throw new Error('Aba "' + dados.abaSelecao + '" não encontrada.');
+  // [P19] Uma única leitura de COL_NF cobre: lastRow + verificação de duplicata + busca de buracos
+  var lastRow = ws.getLastRow();
+  var nfVals  = lastRow >= LINHA_DADOS
+    ? ws.getRange(LINHA_DADOS, COL_NF, lastRow - LINHA_DADOS + 1, 1).getValues() : [];
+  var ul = LINHA_DADOS - 1;
+  nfVals.forEach(function(r, i) { if (r[0] !== '' && r[0] != null) ul = LINHA_DADOS + i; });
+  if (_nfDuplicada(nfVals, -1, dados.nf))
+    return JSON.stringify({ aviso: 'NF "' + dados.nf + '" já existe nesta aba. Confirme para lançar mesmo assim.' });
+  return _gravarLancamento(ss, ws, dados, ul, nfVals);
+}
+
+function salvarLancamentoFormConfirmado(dados) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  _validarDadosForm(dados);
+  var ss = getSS();
+  var ws = ss.getSheetByName(dados.abaSelecao);
+  if (!ws) throw new Error('Aba "' + dados.abaSelecao + '" não encontrada.');
+  return _gravarLancamento(ss, ws, dados, null, null);
+}
+
+function _validarDadosForm(dados) {
+  if (!dados.abaSelecao || !dados.nf || !dados.descricao || !dados.qtd || !dados.valorUnit)
+    throw new Error('Preencha todos os campos obrigatórios.');
+  // Validação server-side do campo Tipo — até aqui só existia como aviso
+  // (setAllowInvalid(true)) na validação de dados da própria planilha,
+  // então um valor fora da lista podia ser gravado direto via
+  // google.script.run sem passar pela tela.
+  if (dados.tipo && TIPOS_DEVOLUCAO.indexOf(String(dados.tipo).trim()) === -1) {
+    throw new Error('Tipo inválido. Valores aceitos: ' + TIPOS_DEVOLUCAO.join(', ') + '.');
+  }
+  // Normalização automática: remove espaços duplicados e capitaliza primeira letra
+  if (dados.fornecedor) {
+    dados.fornecedor = dados.fornecedor.replace(/\s+/g,' ').trim()
+      .replace(/\b(\w)/g, function(c){ return c.toUpperCase(); });
+  }
+  if (dados.descricao) dados.descricao = dados.descricao.replace(/\s+/g,' ').trim();
+  if (dados.motivo)    dados.motivo    = dados.motivo.replace(/\s+/g,' ').trim();
+}
+
+function _gravarLancamento(ss, ws, dados, ulPre, nfsPre) {
+  var valorUnit = Number(String(dados.valorUnit).replace(',', '.'));
+  var qtd       = Number(dados.qtd);
+  if (isNaN(valorUnit) || valorUnit < 0) throw new Error('Valor unitário inválido.');
+  if (isNaN(qtd) || qtd <= 0)            throw new Error('Quantidade inválida.');
+
+  // [P20] Upload do anexo ANTES do lock — usa subpasta da NF se disponível
+  var urlAnexo = '';
+  var pastaNF = _garantirPastaNF(dados.abaSelecao, dados.nf);
+  if (dados.base64 && dados.mimeType && dados.nomeArquivo) {
+    try {
+      var blob    = Utilities.newBlob(Utilities.base64Decode(dados.base64), dados.mimeType, dados.nomeArquivo);
+      var destPasta = pastaNF || _pastaAnexos();
+      var arquivo = destPasta.createFile(blob);
+      arquivo.setName('NF_' + dados.nf + '_' + dados.nomeArquivo);
+      urlAnexo = arquivo.getUrl();
+    } catch (eAnexo) {
+      console.error('Erro ao salvar anexo: ' + eAnexo);
+      registrarErroSistema('_gravarLancamento.anexo', eAnexo.message || eAnexo.toString());
+    }
+  }
+  // Fotos extras (múltiplas — salvas na mesma pasta com prefixo FOTO_)
+  if (dados.fotos && dados.fotos.length) {
+    var destPastaFotos = pastaNF || _pastaAnexos();
+    dados.fotos.forEach(function(foto, idx) {
+      try {
+        var fb = Utilities.newBlob(Utilities.base64Decode(foto.base64), foto.mime, foto.nome);
+        var arq = destPastaFotos.createFile(fb);
+        arq.setName('FOTO_' + (idx + 1) + '_NF_' + dados.nf + '_' + foto.nome);
+      } catch (eFoto) { console.error('Erro ao salvar foto ' + foto.nome + ': ' + eFoto); registrarErroSistema('_gravarLancamento.foto', eFoto.message || eFoto.toString()); }
+    });
+  }
+
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(8000)) throw new Error('Sistema ocupado. Tente novamente.');
+  try {
+    var ul = (ulPre !== null && ulPre !== undefined) ? ulPre : obterUltimaLinhaDados(ws);
+    var nfsExistentes = nfsPre || (ul >= LINHA_DADOS
+      ? ws.getRange(LINHA_DADOS, COL_NF, ul - LINHA_DADOS + 1, 1).getValues() : []);
+
+    var dest = ul + 1;
+    for (var i = 0; i < nfsExistentes.length; i++) {
+      if (nfsExistentes[i][0] === '' || nfsExistentes[i][0] == null) {
+        dest = LINHA_DADOS + i;
+        break;
+      }
+    }
+    if (dest > LINHA_DADOS + MAX_LINHAS_ABA - 1)
+      throw new Error('Aba cheia. Faça o arquivamento antes de lançar novos itens.');
+
+    var rowVals = [
+      dados.nfd     || '',
+      dados.nf,
+      new Date(),
+      dados.fornecedor || ws.getName(),
+      dados.tipo    || '',
+      dados.motivo  || '',
+      dados.descricao,
+      qtd,
+      valorUnit,
+      '',
+      'Pendente',
+      true, false, false,
+      '',
+      Session.getActiveUser().getEmail() || 'Não identificado',
+      urlAnexo,
+      '',  // COL_DIAS_ARMAZ — fórmula gravada abaixo
+      '',  // COL_FRETE_TIPO — definido depois via "Programar Frete da Devolução"
+      ''   // COL_FRETE_VALOR
+    ];
+
+    ws.getRange(dest, 1, 1, TOTAL_COLUNAS).setValues([rowVals]);
+    ws.getRange(dest, COL_VL_TOT).setFormula(_formulaTotal(dest));
+    ws.getRange(dest, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(dest));
+    aplicarCorLinha(ws, dest, 'Pendente', new Date());
+    _atualizarMetricasDashboard(ss);
+    registrarLog(ss, dados.abaSelecao, dest, COL_NF, '', dados.nf,
+      '➕ Lançamento via Formulário' + (urlAnexo ? ' + anexo' : ''));
+    return JSON.stringify({
+      ok: '✅ NF ' + dados.nf + ' lançada na linha ' + dest + ' — ' + dados.abaSelecao +
+          (urlAnexo ? '\n📎 Anexo salvo no Drive.' : '') + '.'
+    });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+/**
+ * Salva um lote de lançamentos de uma só vez.
+ * Recebe array de objetos com os mesmos campos de salvarLancamentoForm.
+ * Upload de anexos fora do lock; gravação de todas as linhas dentro de 1 lock.
+ */
+function salvarLoteLancamentos(itens) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item recebido.' });
+
+  var ss = getSS();
+
+  // [P20-lote] Upload de todos os anexos ANTES do lock
+  var urlsAnexo = itens.map(function(it) {
+    if (!it.base64 || !it.mimeType || !it.nomeArquivo) return '';
+    try {
+      var blob    = Utilities.newBlob(Utilities.base64Decode(it.base64), it.mimeType, it.nomeArquivo);
+      var arquivo = _pastaAnexos().createFile(blob);
+      arquivo.setName('NF_' + it.nf + '_' + it.nomeArquivo);
+      return arquivo.getUrl();
+    } catch (e) {
+      console.error('Erro ao salvar anexo NF ' + it.nf + ': ' + e);
+      registrarErroSistema('salvarLoteLancamentos.anexo', e.message || e.toString());
+      return '';
+    }
+  });
+
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(15000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+
+  try {
+    var resp     = Session.getActiveUser().getEmail() || 'Não identificado';
+    var agora    = new Date();
+    var salvos   = [];
+    var erros    = [];
+
+    // Agrupa itens por aba para minimizar leituras
+    var porAba = {};
+    itens.forEach(function(it, i) {
+      if (!porAba[it.abaSelecao]) porAba[it.abaSelecao] = [];
+      porAba[it.abaSelecao].push({ it: it, idx: i });
+    });
+
+    Object.keys(porAba).forEach(function(nomeAba) {
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) {
+        porAba[nomeAba].forEach(function(e) {
+          erros.push('NF ' + e.it.nf + ': aba "' + nomeAba + '" não encontrada.');
+        });
+        return;
+      }
+
+      // Lê coluna NF uma vez por aba
+      var lastRow = ws.getLastRow();
+      var nfVals  = lastRow >= LINHA_DADOS
+        ? ws.getRange(LINHA_DADOS, COL_NF, lastRow - LINHA_DADOS + 1, 1).getValues() : [];
+      var ul = LINHA_DADOS - 1;
+      nfVals.forEach(function(r, i) { if (r[0] !== '' && r[0] != null) ul = LINHA_DADOS + i; });
+
+      porAba[nomeAba].forEach(function(entry) {
+        var it      = entry.it;
+        var urlAnexo = urlsAnexo[entry.idx];
+
+        var valorUnit = Number(String(it.valorUnit).replace(',', '.'));
+        var qtd       = Number(it.qtd);
+        if (isNaN(valorUnit) || valorUnit < 0) { erros.push('NF ' + it.nf + ': valor inválido.'); return; }
+        if (isNaN(qtd) || qtd <= 0)            { erros.push('NF ' + it.nf + ': quantidade inválida.'); return; }
+        if (it.tipo && TIPOS_DEVOLUCAO.indexOf(String(it.tipo).trim()) === -1) {
+          erros.push('NF ' + it.nf + ': tipo inválido ("' + it.tipo + '"). Valores aceitos: ' + TIPOS_DEVOLUCAO.join(', ') + '.');
+          return;
+        }
+
+        // Encontra próxima linha disponível
+        var dest = ul + 1;
+        for (var i = 0; i < nfVals.length; i++) {
+          if (nfVals[i][0] === '' || nfVals[i][0] == null) {
+            dest = LINHA_DADOS + i;
+            break;
+          }
+        }
+        if (dest > LINHA_DADOS + MAX_LINHAS_ABA - 1) {
+          erros.push('NF ' + it.nf + ': aba "' + nomeAba + '" cheia.');
+          return;
+        }
+
+        var rowVals = [
+          it.nfd       || '',
+          it.nf,
+          agora,
+          it.fornecedor || ws.getName(),
+          it.tipo      || '',
+          it.motivo    || '',
+          it.descricao,
+          qtd,
+          valorUnit,
+          '',           // COL_VL_TOT — fórmula gravada abaixo
+          'Pendente',
+          true, false, false,
+          '',
+          resp,
+          urlAnexo,
+          '',           // COL_DIAS_ARMAZ — fórmula gravada abaixo
+          '',           // COL_FRETE_TIPO
+          ''            // COL_FRETE_VALOR
+        ];
+
+        ws.getRange(dest, 1, 1, TOTAL_COLUNAS).setValues([rowVals]);
+        ws.getRange(dest, COL_VL_TOT).setFormula(_formulaTotal(dest));
+        ws.getRange(dest, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(dest));
+        aplicarCorLinha(ws, dest, 'Pendente', agora);
+        registrarLog(ss, nomeAba, dest, COL_NF, '', it.nf,
+          '➕ Lançamento em lote' + (urlAnexo ? ' + anexo' : ''));
+
+        salvos.push('NF ' + it.nf + ' → linha ' + dest);
+
+        // Avança ponteiro para o próximo espaço disponível
+        nfVals[dest - LINHA_DADOS] = [it.nf];
+        ul = Math.max(ul, dest);
+      });
+    });
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    if (!salvos.length) return JSON.stringify({ erro: '❌ Nenhum item salvo.\n' + erros.join('\n') });
+
+    var msg = '✅ ' + salvos.length + ' item(ns) salvo(s) com sucesso!';
+    if (erros.length) msg += '\n⚠️ ' + erros.length + ' erro(s):\n' + erros.join('\n');
+    return JSON.stringify({ ok: msg });
+
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+/**
+ * Busca uma NF Pendente para confirmar exclusão.
+ * Retorna { item: { nf, nfd, aba, linha, status, desc } } ou { erro }.
+ */
+function buscarNFParaExcluir(nfBusca) {
+  nfBusca = String(nfBusca || '').trim();
+  if (!nfBusca) return JSON.stringify({ erro: 'Informe a NF ou NFD.' });
+
+  var ss = getSS();
+
+  // Bloqueia exclusão se a NF está em Transferências (Em Transferência)
+  var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+  if (wsTr && wsTr.getLastRow() >= 2) {
+    var dadosTr = wsTr.getRange(2, 1, wsTr.getLastRow() - 1, TRANSF_TOTAL_COL).getValues();
+    for (var ti = 0; ti < dadosTr.length; ti++) {
+      var nfTr  = String(dadosTr[ti][IDX_NF]  || '').trim();
+      var nfdTr = String(dadosTr[ti][IDX_NFD] || '').trim();
+      var stTr  = String(dadosTr[ti][TRANSF_COL_STATUS - 1] || '').trim();
+      if ((nfTr === nfBusca || nfdTr === nfBusca) && stTr === 'Em Transferência') {
+        return JSON.stringify({ erro: '🚫 NF "' + nfBusca + '" está atualmente em Transferências.\n' +
+          'Cancele a transferência antes de excluir.' });
+      }
+    }
+  }
+
+  var _todasAbas = _getTodasAbas();
+  for (var a = 0; a < _todasAbas.length; a++) {
+    var nomeAba = _todasAbas[a];
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) continue;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) continue;
+
+    var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    for (var i = 0; i < dados.length; i++) {
+      var nfd = String(dados[i][IDX_NFD]).trim();
+      var nf  = String(dados[i][IDX_NF]).trim();
+      if (nf !== nfBusca && nfd !== nfBusca) continue;
+
+      var st = String(dados[i][IDX_STATUS]).trim();
+      if (st !== 'Pendente') {
+        return JSON.stringify({ erro: 'NF "' + nfBusca + '" encontrada em ' + nomeAba +
+          ' mas tem status "' + st + '". Só é possível excluir itens Pendentes.' });
+      }
+      return JSON.stringify({
+        item: {
+          nf:     nf,
+          nfd:    nfd,
+          aba:    nomeAba,
+          linha:  LINHA_DADOS + i,
+          status: st,
+          desc:   String(dados[i][IDX_DESC]).substring(0, 60)
+        }
+      });
+    }
+  }
+  return JSON.stringify({ erro: 'NF "' + nfBusca + '" não encontrada como Pendente em nenhuma aba.' });
+}
+
+/**
+ * Exclui um lançamento Pendente com registro no histórico de log.
+ * params: { item: { nf, nfd, aba, linha }, motivo: string }
+ */
+function excluirLancamento(params) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!params || !params.item || !params.motivo)
+    return JSON.stringify({ erro: 'Dados incompletos para exclusão.' });
+
+  var item   = params.item;
+  var motivo = String(params.motivo).trim();
+  if (!motivo) return JSON.stringify({ erro: 'Informe o motivo da exclusão.' });
+
+  var ss = getSS();
+  var ws = ss.getSheetByName(item.aba);
+  if (!ws) return JSON.stringify({ erro: 'Aba "' + item.aba + '" não encontrada.' });
+
+  // Confirma que a linha ainda é Pendente (pode ter mudado desde a busca)
+  var statusAtual = ws.getRange(item.linha, COL_STATUS).getValue();
+  if (statusAtual !== 'Pendente')
+    return JSON.stringify({ erro: 'O item não está mais Pendente (status atual: "' + statusAtual + '"). Exclusão cancelada.' });
+
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+
+  try {
+    var nfLabel = item.nfd ? 'NFD ' + item.nfd + ' / NF ' + item.nf : 'NF ' + item.nf;
+
+    // Apaga o conteúdo da linha e repõe valores neutros (checkboxes + fornecedor padrão)
+    ws.getRange(item.linha, 1, 1, TOTAL_COLUNAS).clearContent();
+    ws.getRange(item.linha, COL_PEND_CHK).setValue(false);
+    ws.getRange(item.linha, COL_DEV_CHK).setValue(false);
+    ws.getRange(item.linha, COL_VENDA_CHK).setValue(false);
+    if (item.aba !== 'Fornecedores Variados') {
+      ws.getRange(item.linha, COL_FORN).setValue(item.aba);
+    }
+    ws.getRange(item.linha, 1, 1, TOTAL_COLUNAS).setBackground('#FFFFFF');
+    ws.getRange(item.linha, COL_VL_TOT).setFormula(_formulaTotal(item.linha));
+    ws.getRange(item.linha, COL_DIAS_ARMAZ).setFormula(_formulaDiasArmazenado(item.linha));
+
+    // Mover para lixeira antes de limpar
+    _moverParaLixeira(ss, ws, item, motivo);
+
+    // Apagar pasta Drive da NF (fotos, anexos)
+    _apagarPastaNFDrive(item.aba, item.nf, item.nfd);
+
+    registrarLog(ss, item.aba, item.linha, COL_NF, item.nfd || '', item.nf,
+      '🗑️ Exclusão manual — ' + nfLabel + ' | Motivo: ' + motivo);
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    return JSON.stringify({ ok: '✅ ' + nfLabel + ' excluída com sucesso.\nMotivo registrado no log.' });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   CONFIRMAÇÃO DE RECEBIMENTO PELO FORNECEDOR
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Registra confirmação de recebimento pelo fornecedor.
+ * Acrescenta tag "[Receb.Forn: DD/MM/AAAA - email]" ao campo OBS da linha.
+ * params: { aba, linha, nf }
+ */
+function confirmarRecebimentoFornecedor(params) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!params || !params.aba || !params.linha)
+    return JSON.stringify({ erro: 'Dados incompletos.' });
+  var ss = getSS();
+  var ws = ss.getSheetByName(params.aba);
+  if (!ws) return JSON.stringify({ erro: 'Aba "' + params.aba + '" não encontrada.' });
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(6000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+  try {
+    var linha = Number(params.linha);
+    var rowData = ws.getRange(linha, 1, 1, TOTAL_COLUNAS).getValues()[0];
+    var status = String(rowData[IDX_STATUS] || '').trim();
+    if (status !== 'Devolvido')
+      return JSON.stringify({ erro: 'Apenas itens com status "Devolvido" podem ter recebimento confirmado (status atual: "' + status + '").' });
+    var usuario = Session.getActiveUser().getEmail() || 'sistema';
+    var tz  = Session.getScriptTimeZone();
+    var agora = new Date();
+    var tag = '[Receb.Forn: ' + Utilities.formatDate(agora, tz, 'dd/MM/yyyy') + ' — ' + usuario + ']';
+    var obsAtual = String(rowData[IDX_OBS] || '').trim();
+    if (obsAtual.indexOf('[Receb.Forn:') !== -1)
+      return JSON.stringify({ erro: 'Recebimento já confirmado anteriormente.' });
+    var obsNova = obsAtual ? obsAtual + ' | ' + tag : tag;
+    ws.getRange(linha, COL_OBS).setValue(obsNova);
+    var nf  = String(rowData[IDX_NF]  || '').trim();
+    var nfd = String(rowData[IDX_NFD] || '').trim();
+    var nfLabel = nfd ? 'NFD ' + nfd + ' / NF ' + nf : 'NF ' + nf;
+    registrarLog(ss, params.aba, linha, COL_OBS, obsAtual, obsNova,
+      '🏭 Recebimento confirmado pelo fornecedor — ' + nfLabel + ' — ' + usuario);
+    return JSON.stringify({ ok: '✅ Recebimento confirmado!\n' + nfLabel + '\n' + tag });
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   DESFAZER CONCLUSÃO (REABERTURA)
+// ════════════════════════════════════════════════════════════
+
+function desfazerConclusao() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormReabertura').setWidth(480).setHeight(400),
+    '🔓 Reabrir Devoluções'
+  );
+}
+
+function buscarNFsConcluidas(txtNfsRaw) {
+  var nfsDigitadas = txtNfsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF informada.' });
+
+  var ss = getSS();
+  var encontradas = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l, i) {
+        var nfd = String(l[IDX_NFD]).trim();
+        var nf  = String(l[IDX_NF]).trim();
+        if (_baterTermos(nfsDigitadas, nfd, nf).bate) {
+          encontradas.push({
+            nf: nf, nfd: nfd, aba: nomeAba,
+            status: String(l[IDX_STATUS]).trim(),
+            linha: LINHA_DADOS + i,
+            desc: String(l[IDX_DESC]).substring(0, 40)
+          });
+        }
+      });
+  });
+
+  if (!encontradas.length) return JSON.stringify({ erro: 'Nenhuma NF localizada nas abas.' });
+  return JSON.stringify({ itens: encontradas });
+}
+
+/**
+ * [P30] Versão otimizada de executarReabertura chamada pelo FormReabertura.
+ * Recebe o array itens (com linha+aba pré-resolvidos pelo buscarNFsConcluidas).
+ */
+function executarReaberturaPorItens(itens, motivo) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!itens || !itens.length) return JSON.stringify({ erro: 'Nenhum item para reabrir.' });
+
+  var ss        = getSS();
+  var reabertos = [];
+  var porAba    = {};
+  var usuario   = Session.getActiveUser().getEmail() || 'desconhecido';
+  var agora     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  var rastro    = '\n[Reaberta em ' + agora + ' por ' + usuario + (motivo ? ' | Motivo: ' + motivo : '') + ']';
+
+  itens.forEach(function(it) {
+    if (!porAba[it.aba]) porAba[it.aba] = [];
+    porAba[it.aba].push(it);
+  });
+
+  Object.keys(porAba).forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+
+    var loteAba = porAba[nomeAba];
+    var protsAba = ws.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    var protMap  = {};
+    protsAba.forEach(function(p) { protMap[p.getRange().getRow()] = p; });
+
+    var linhasReabrir = loteAba.map(function(it) { return it.linha; });
+    var minRow = Math.min.apply(null, linhasReabrir);
+    var maxRow = Math.max.apply(null, linhasReabrir);
+    var nRows  = maxRow - minRow + 1;
+    var bgAtual = ws.getRange(minRow, 1, nRows, TOTAL_COLUNAS).getBackgrounds();
+
+    loteAba.forEach(function(it) {
+      if (protMap[it.linha]) { protMap[it.linha].remove(); _decrementarProtecoes(1); }
+      var obsAtual = String(ws.getRange(it.linha, COL_OBS).getValue() || '');
+      ws.getRange(it.linha, COL_STATUS, 1, 5).setValues([['Pendente', true, false, false, obsAtual + rastro]]);
+      bgAtual[it.linha - minRow] = Array(TOTAL_COLUNAS).fill(COR_AZUL);
+      var nfLabel = it.nfd || it.nf;
+      var logMsg  = '🔓 Reabertura — Usuário: ' + usuario + (motivo ? ' | Motivo: ' + motivo : '') + ' — NF: ' + nfLabel;
+      registrarLog(ss, nomeAba, it.linha, COL_STATUS, nfLabel, 'Pendente', logMsg);
+      reabertos.push((it.nfd ? 'NFD ' + it.nfd + ' / ' : '') + 'NF ' + it.nf + ' (' + nomeAba + ')');
+    });
+    ws.getRange(minRow, 1, nRows, TOTAL_COLUNAS).setBackgrounds(bgAtual);
+  });
+
+  if (!reabertos.length) return JSON.stringify({ erro: 'Nenhuma NF foi reaberta.' });
+  try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+  _atualizarMetricasDashboard(ss);
+  return JSON.stringify({ sucesso: '✅ ' + reabertos.length + ' NF(s) reabertas:\n' + reabertos.join(', ') });
+}
+
+function executarReabertura(txtNfsRaw) {
+  var _chk = _exigirModulo('notas', true);
+  if (!_chk.ok) return _chk.resp;
+  var nfsDigitadas = txtNfsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfsDigitadas.length) return JSON.stringify({ erro: 'Nenhuma NF informada.' });
+
+  var ss = getSS();
+  var reabertos = [], naoEncontradas = nfsDigitadas.slice();
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+
+    // [P21] Lista proteções UMA VEZ por aba
+    var protsAba = ws.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    var protMap  = {};
+    protsAba.forEach(function(p) { protMap[p.getRange().getRow()] = p; });
+
+    var dados         = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    var linhasReabrir = [];
+
+    dados.forEach(function(l, i) {
+      var nfd = String(l[IDX_NFD]).trim();
+      var nf  = String(l[IDX_NF]).trim();
+      var bat = _baterTermos(nfsDigitadas, nfd, nf);
+      if (!bat.bate) return;
+      var row = LINHA_DADOS + i;
+      if (protMap[row]) { protMap[row].remove(); _decrementarProtecoes(1); }
+      linhasReabrir.push({ row: row, nfd: nfd, nf: nf, bat: bat });
+    });
+
+    if (!linhasReabrir.length) return;
+
+    // [P22] status+chk+obs em 1 setValues por linha + cores em batch por aba
+    var minRow  = linhasReabrir[0].row;
+    var maxRow  = linhasReabrir[linhasReabrir.length - 1].row;
+    var nRows   = maxRow - minRow + 1;
+    var bgAtual = ws.getRange(minRow, 1, nRows, TOTAL_COLUNAS).getBackgrounds();
+
+    linhasReabrir.forEach(function(info) {
+      ws.getRange(info.row, COL_STATUS, 1, 5).setValues([[
+        'Pendente', true, false, false, ''
+      ]]);
+      bgAtual[info.row - minRow] = Array(TOTAL_COLUNAS).fill(COR_AZUL);
+      var nfLabel = info.nfd || info.nf;
+      registrarLog(ss, nomeAba, info.row, COL_STATUS, nfLabel, 'Pendente',
+        '🔓 Reabertura em lote — NF: ' + nfLabel);
+      reabertos.push((info.nfd ? 'NFD ' + info.nfd + ' / ' : '') + 'NF ' + info.nf + ' (' + nomeAba + ')');
+      var idx = naoEncontradas.indexOf(info.bat.termoBateu);
+      if (idx > -1) naoEncontradas.splice(idx, 1);
+    });
+    ws.getRange(minRow, 1, nRows, TOTAL_COLUNAS).setBackgrounds(bgAtual);
+  });
+
+  if (!reabertos.length) return JSON.stringify({ erro: 'Nenhuma NF foi reaberta. Verifique os números.' });
+  try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+  _atualizarMetricasDashboard(ss);
+
+  var msg = '✅ ' + reabertos.length + ' NF(s) reabertas:\n' + reabertos.join(', ');
+  if (naoEncontradas.length) msg += '\n⚠️ Não localizadas: ' + naoEncontradas.join(', ');
+  return JSON.stringify({ sucesso: msg });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   BUSCA / FILTRO RÁPIDO
+// ════════════════════════════════════════════════════════════
+
+function abrirBusca() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormBusca').setWidth(620).setHeight(500),
+    '🔍 Buscar NF ou Fornecedor'
+  );
+}
+
+function executarBusca(termo) {
+  termo = String(termo).trim().toLowerCase();
+  if (!termo) return JSON.stringify({ erro: 'Informe um termo para buscar.' });
+
+  var ss  = getSS();
+  var tz  = Session.getScriptTimeZone();
+  var res = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l, i) {
+        var nfd  = String(l[IDX_NFD]  || '').trim();
+        var nf   = String(l[IDX_NF]   || '').trim();
+        var forn = String(l[IDX_FORN] || '').trim();
+        var desc = String(l[IDX_DESC] || '').trim();
+        if (!nf && !nfd) return;
+        if ([nf, nfd, forn, desc].every(function(s) {
+          return s.toLowerCase().indexOf(termo) === -1;
+        })) return;
+        var dt = l[IDX_DATA];
+        res.push({
+          origem:    'ativo',
+          nf:        nf,
+          nfd:       nfd,
+          forn:      forn,
+          desc:      desc.substring(0, 55),
+          status:    String(l[IDX_STATUS] || ''),
+          data:      dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+          dataArq:   '',
+          valor:     parseFloat(l[IDX_VL_TOT]) || 0,
+          aba:       nomeAba,
+          linha:     LINHA_DADOS + i
+        });
+      });
+  });
+
+  // Transferências (mesmo layout cols 1–20 + extras 21–30)
+  // Nota: "Transferencias" tem só 1 linha de cabeçalho (dados começam na
+  // linha 2) — diferente das abas de fornecedor (3 cabeçalhos, LINHA_DADOS=4).
+  // Usar obterUltimaLinhaDados/LINHA_DADOS aqui faria a busca ignorar todas
+  // as transferências (ou lê linhas de cabeçalho como se fossem dados).
+  var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+  if (wsTr) {
+    var ulT = wsTr.getLastRow();
+    if (ulT >= 2) {
+      wsTr.getRange(2, 1, ulT - 1, TRANSF_COL_LOTE_ID).getValues()
+        .forEach(function(l, i) {
+          var nfd  = String(l[IDX_NFD]  || '').trim();
+          var nf   = String(l[IDX_NF]   || '').trim();
+          var forn = String(l[IDX_FORN] || '').trim();
+          var desc = String(l[IDX_DESC] || '').trim();
+          if (!nf && !nfd) return;
+          if ([nf, nfd, forn, desc].every(function(s) {
+            return s.toLowerCase().indexOf(termo) === -1;
+          })) return;
+          var dt = l[IDX_DATA];
+          var stTr = String(l[TRANSF_COL_STATUS - 1] || '').trim() || 'Em Transferência';
+          res.push({
+            origem:    'transferencia',
+            nf:        nf,
+            nfd:       nfd,
+            forn:      forn,
+            desc:      desc.substring(0, 55),
+            status:    stTr,
+            data:      dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+            dataArq:   '',
+            valor:     parseFloat(l[IDX_VL_TOT]) || 0,
+            aba:       ABA_TRANSFERENCIAS,
+            linha:     2 + i
+          });
+        });
+    }
+  }
+
+  var hist = ss.getSheetByName('Historico_Arquivo');
+  if (hist) {
+    var ulH = hist.getLastRow();
+    if (ulH >= 2) {
+      var ncols = Math.min(TOTAL_COLUNAS + 1, hist.getLastColumn());
+      hist.getRange(2, 1, ulH - 1, ncols).getValues().forEach(function(l) {
+        var nfd  = String(l[IDX_NFD]  || '').trim();
+        var nf   = String(l[IDX_NF]   || '').trim();
+        var forn = String(l[IDX_FORN] || '').trim();
+        var desc = String(l[IDX_DESC] || '').trim();
+        if (!nf && !nfd) return;
+        if ([nf, nfd, forn, desc].every(function(s) {
+          return s.toLowerCase().indexOf(termo) === -1;
+        })) return;
+        var dt    = l[IDX_DATA];
+        var dtArq = l[TOTAL_COLUNAS];
+        res.push({
+          origem:    'historico',
+          nf:        nf,
+          nfd:       nfd,
+          forn:      forn,
+          desc:      desc.substring(0, 55),
+          status:    String(l[IDX_STATUS] || ''),
+          data:      dt    instanceof Date ? Utilities.formatDate(dt,    tz, 'dd/MM/yyyy') : '',
+          dataArq:   dtArq instanceof Date ? Utilities.formatDate(dtArq, tz, 'dd/MM/yyyy') : '',
+          valor:     parseFloat(l[IDX_VL_TOT]) || 0,
+          aba:       '',
+          linha:     0
+        });
+      });
+    }
+  }
+
+  if (!res.length)
+    return JSON.stringify({ erro: 'Nenhum resultado encontrado para "' + termo + '".' });
+
+  var _ordemOrigem = { ativo: 0, transferencia: 1, historico: 2 };
+  res.sort(function(a, b) {
+    if (a.origem !== b.origem) return (_ordemOrigem[a.origem] || 9) - (_ordemOrigem[b.origem] || 9);
+    return (b.data || '').localeCompare(a.data || '');
+  });
+
+  return JSON.stringify({ resultados: res });
+}
+
+// [P28] flush() desnecessário removido
+function navegarParaLinha(nomeAba, linha) {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    ws.activate();
+    ws.setActiveRange(ws.getRange(linha, 1));
+  } catch (e) { console.error('navegarParaLinha: ' + e); }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   HISTÓRICO DA NF
+// ════════════════════════════════════════════════════════════
+
+function buscarHistoricoNF(nf) {
+  nf = String(nf).trim();
+  if (!nf) return JSON.stringify({ erro: 'Informe o número da NF ou NFD.' });
+
+  var ss    = getSS();
+  var wsLog = ss.getSheetByName('_Log');
+  if (!wsLog) return JSON.stringify({ erro: 'Aba _Log não encontrada.' });
+
+  var registros = [];
+  try {
+    // [P24] Lê apenas as últimas 500 linhas em vez de toda a coluna
+    var totalRows = wsLog.getMaxRows();
+    var startRow  = Math.max(2, totalRows - 499);
+    var blocoA    = wsLog.getRange(startRow, 1, totalRows - startRow + 1, 1).getValues();
+    var ultimaLinha = startRow - 1;
+    for (var k = blocoA.length - 1; k >= 0; k--) {
+      if (blocoA[k][0] !== '' && blocoA[k][0] != null) { ultimaLinha = startRow + k; break; }
+    }
+    if (ultimaLinha < 2) return JSON.stringify({ registros: [] });
+
+    var dados = wsLog.getRange(2, 1, ultimaLinha - 1, 8).getValues();
+
+    var linhasNF = {};
+    _getTodasAbas().forEach(function(nomeAba) {
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l, i) {
+          if (String(l[IDX_NFD] || '').trim() === nf || String(l[IDX_NF] || '').trim() === nf) {
+            linhasNF[nomeAba + ':' + (LINHA_DADOS + i)] = true;
+          }
+        });
+    });
+
+    dados.forEach(function(l) {
+      var aba    = String(l[2]);
+      var linha  = String(l[3]);
+      var valAnt = String(l[5]);
+      var valNov = String(l[6]);
+      var acao   = String(l[7]);
+
+      var bateChave = !!linhasNF[aba + ':' + linha];
+      var bateTexto = valAnt === nf || valNov === nf ||
+                      valAnt.indexOf(nf) !== -1 || valNov.indexOf(nf) !== -1 ||
+                      acao.indexOf(nf) !== -1;
+      if (!bateChave && !bateTexto) return;
+
+      registros.push({
+        data:     l[0] instanceof Date
+                    ? Utilities.formatDate(l[0], Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
+                    : String(l[0]),
+        usuario:  String(l[1]),
+        aba:      aba,
+        coluna:   String(l[4]),
+        anterior: valAnt,
+        novo:     valNov,
+        acao:     acao
+      });
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: 'Erro ao ler log: ' + e.toString() });
+  }
+
+  return JSON.stringify({ nf: nf, registros: registros });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   ANEXO DE NF
+// ════════════════════════════════════════════════════════════
+
+function abrirAnexoNF() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormAnexo').setWidth(480).setHeight(360),
+    '📎 Anexar Foto/PDF da NF'
+  );
+}
+
+function salvarAnexoNF(dados) {
+  if (!dados.nf || !dados.base64 || !dados.mimeType)
+    return JSON.stringify({ erro: 'Dados incompletos para o anexo.' });
+
+  var ss = getSS();
+  var linhaEncontrada = null, wsEncontrado = null, abaEncontrada = '';
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    if (linhaEncontrada) return;
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l, i) {
+        if (linhaEncontrada) return;
+        var termo = String(dados.nf).trim();
+        if (String(l[IDX_NFD] || '').trim() === termo || String(l[IDX_NF] || '').trim() === termo) {
+          linhaEncontrada = LINHA_DADOS + i;
+          wsEncontrado    = ws;
+          abaEncontrada   = nomeAba;
+        }
+      });
+  });
+
+  if (!linhaEncontrada)
+    return JSON.stringify({ erro: 'NF "' + dados.nf + '" não encontrada nas abas.' });
+
+  try {
+    var blob    = Utilities.newBlob(Utilities.base64Decode(dados.base64), dados.mimeType, dados.nomeArquivo);
+    var arquivo = _pastaAnexos().createFile(blob);
+    arquivo.setName('NF_' + dados.nf + '_' + dados.nomeArquivo);
+    var url = arquivo.getUrl();
+    wsEncontrado.getRange(linhaEncontrada, COL_ANEXO).setValue(url);
+    registrarLog(ss, abaEncontrada, linhaEncontrada, COL_ANEXO, '', url, '📎 Anexo NF adicionado');
+    return JSON.stringify({ sucesso: '✅ Arquivo anexado à NF ' + dados.nf + '.', url: url });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ Erro ao salvar anexo: ' + e.toString() });
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   E-MAIL DE DEVOLUÇÃO POR NFD
+// ════════════════════════════════════════════════════════════
+
+function abrirEmailDevolucao() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormEmailDevolucao').setWidth(520).setHeight(520),
+    '📧 Enviar E-mail de Devolução'
+  );
+}
+
+function buscarDadosNFDs(nfdsRaw) {
+  var nfds = nfdsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfds.length) return JSON.stringify({ erro: 'Nenhuma NFD informada.' });
+
+  var ss = getSS();
+  var itens = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l) {
+        var bat = _baterTermos(nfds, String(l[IDX_NFD]).trim(), String(l[IDX_NF]).trim());
+        if (!bat.bate) return;
+        var dt = l[IDX_DATA];
+        itens.push({
+          nfd:      String(l[IDX_NFD]).trim() || String(l[IDX_NF]).trim(),
+          tipo:     String(l[IDX_TIPO]).trim(),
+          motivo:   String(l[IDX_MOTIVO]).trim(),
+          nf:       String(l[IDX_NF]).trim(),
+          forn:     String(l[IDX_FORN]).trim(),
+          desc:     String(l[IDX_DESC]).trim(),
+          qtd:      l[IDX_QTD] || 0,
+          valor:    parseFloat(l[IDX_VL_TOT]) || 0,
+          data:     dt instanceof Date ? Utilities.formatDate(dt, Session.getScriptTimeZone(), 'dd/MM/yyyy') : '',
+          urlAnexo: String(l[IDX_ANEXO] || '').trim()
+        });
+      });
+  });
+
+  if (!itens.length) return JSON.stringify({ erro: 'Nenhuma NFD localizada nas abas.' });
+
+  var forns = _fornecedoresUnicos(itens);
+  if (forns.length > 1)
+    return JSON.stringify({ erro: 'NFDs de fornecedores diferentes: ' + forns.join(', ') + '. Use apenas NFDs do mesmo fornecedor.' });
+
+  return JSON.stringify({
+    itens:      itens,
+    forn:       forns[0],
+    titulo:     _montarTituloEmail(itens, forns[0]),
+    emailsBase: _getEmailsGeral()
+  });
+}
+
+// ── Agendamento de e-mail ───────────────────────────────────
+function agendarEmailDevolucao(params, dataEnvioISO) {
+  var _chk = _exigirModulo('email', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var usuario = Session.getActiveUser().getEmail();
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw);
+    var id = 'ae_' + new Date().getTime();
+    lista.push({ id: id, params: params, dataEnvio: dataEnvioISO, usuario: usuario, status: 'pendente' });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(lista));
+    _garantirTriggerEmailAgendado();
+    return JSON.stringify({ ok: '✅ E-mail agendado para ' + dataEnvioISO + '.', id: id });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function cancelarEmailAgendado(id) {
+  var _chk = _exigirModulo('email', true);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw).filter(function(e){ return e.id !== id; });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Agendamento cancelado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function listarEmailsAgendados() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function _garantirTriggerEmailAgendado() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === '_processarEmailsAgendados') return;
+  }
+  ScriptApp.newTrigger('_processarEmailsAgendados').timeBased().everyHours(1).create();
+}
+
+function _processarEmailsAgendados() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_AGENDADOS) || '[]';
+    var lista = JSON.parse(raw);
+    var agora = new Date();
+    var restantes = [];
+    lista.forEach(function(item) {
+      if (item.status !== 'pendente') return;
+      var data = new Date(item.dataEnvio);
+      if (agora >= data) {
+        try { enviarEmailDevolucao(item.params); item.status = 'enviado'; }
+        catch(e) { item.status = 'erro_' + e.message; restantes.push(item); return; }
+      } else {
+        restantes.push(item);
+      }
+    });
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAILS_AGENDADOS, JSON.stringify(restantes));
+  } catch(_) {}
+}
+
+function previewEmailDevolucao(params) {
+  try {
+    var nfds = params.nfds || [];
+    if (!nfds.length) return JSON.stringify({ html: '<p>Nenhuma NFD informada.</p>' });
+    var assunto = params.assunto || 'Devolução';
+    var obs     = params.obs     || '';
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var amostra = [];
+    var forn = '';
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < LINHA_DADOS) return;
+      var dados = aba.getRange(LINHA_DADOS, 1, ult - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+      dados.forEach(function(row) {
+        var nfd = String(row[IDX_NFD]||'').trim();
+        if (nfds.indexOf(nfd) > -1) {
+          if (!forn) forn = String(row[IDX_FORN]||'');
+          amostra.push({ nfd: nfd, desc: String(row[IDX_DESC]||''), qtd: row[IDX_QTD], vlUnit: row[IDX_VL_UNIT], tipo: row[IDX_TIPO]||'' });
+        }
+      });
+    });
+    var vlTotalPrev = 0, qtdPrev = 0;
+    var linhas = amostra.map(function(it) {
+      var valor = Number(it.vlUnit || 0);
+      vlTotalPrev += valor;
+      qtdPrev += parseFloat(it.qtd) || 0;
+      return _linhaEmailDevolucao({
+        nfd: it.nfd, nf: '', data: '', tipo: it.tipo,
+        desc: it.desc, motivo: '', qtd: it.qtd, valor: valor
+      });
+    }).join('');
+    var htmlBody = _montarHtmlEmail(assunto, new Date().toLocaleDateString('pt-BR'), forn || '—', linhas, vlTotalPrev,
+      (obs ? '<p style="margin:0;font-size:13px;color:#444"><strong>Observações:</strong> ' + _esc(obs) + '</p>' : ''),
+      { notas: amostra.length, qtd: qtdPrev, comLogo: false });
+    var assinHtml = _obterHtmlAssinaturaById(params.assinaturaFileId || '');
+    if (assinHtml) htmlBody += assinHtml;
+    return JSON.stringify({ html: htmlBody });
+  } catch(e) { return JSON.stringify({ html: '<p style="color:red">Erro: '+e+'</p>' }); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Logo Transben — cache em Script Properties (não por-usuário)
+// ──────────────────────────────────────────────────────────────────
+// O Web App roda "como usuário acessando" — DriveApp/URLs diretas do
+// Drive só funcionam pra quem tem acesso próprio ao arquivo (o dono).
+// Pra todo outro usuário do sistema a logo falha silenciosamente.
+// Solução: gerar o base64 UMA VEZ (rodando _gerarLogoBase64() manualmente
+// do editor, como dono) e guardar em PropertiesService — por-projeto,
+// não por-usuário. Nenhuma leitura em runtime toca o Drive.
+// Fatiado porque uma propriedade individual tem limite de ~9KB.
+// ══════════════════════════════════════════════════════════════════
+var LOGO_TRANSBEN_FILE_ID = '1KxmJpaO61C5bUwqPP5SYqHDDIrCtKDS8';
+
+/**
+ * Rodar manualmente do editor Apps Script, uma única vez (ou sempre que
+ * a logo mudar), com a conta dona do arquivo. Gera o base64 e salva
+ * fatiado em Script Properties.
+ */
+function _gerarLogoBase64() {
+  var blob = DriveApp.getFileById(LOGO_TRANSBEN_FILE_ID).getBlob();
+  var b64  = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+
+  var props = PropertiesService.getScriptProperties();
+  var chunkSize = 8000;
+  var partes = Math.ceil(b64.length / chunkSize);
+  for (var i = 0; i < partes; i++) {
+    props.setProperty('LOGO_B64_' + i, b64.substring(i * chunkSize, (i + 1) * chunkSize));
+  }
+  props.setProperty('LOGO_B64_PARTES', String(partes));
+  Logger.log('OK — logo salva em ' + partes + ' parte(s), tamanho total: ' + b64.length + ' caracteres');
+}
+
+/**
+ * Retorna a logo como data URI base64 (string, pronta pra <img src="...">).
+ * Não toca no Drive — lê só de Script Properties. Retorna '' se
+ * _gerarLogoBase64() ainda não foi rodada.
+ */
+function obterLogoBase64() {
+  var props   = PropertiesService.getScriptProperties();
+  var partes  = parseInt(props.getProperty('LOGO_B64_PARTES') || '0', 10);
+  if (!partes) return '';
+  var out = '';
+  for (var i = 0; i < partes; i++) out += props.getProperty('LOGO_B64_' + i) || '';
+  return out;
+}
+
+/**
+ * Versão Blob da logo (pra e-mail via CID / DocumentApp / etc.), a
+ * partir do mesmo cache de Script Properties — sem tocar no Drive.
+ * Retorna null se _gerarLogoBase64() ainda não foi rodada.
+ */
+function _obterLogoBlob() {
+  var b64 = obterLogoBase64();
+  if (!b64) return null;
+  var m = b64.match(/^data:([^;]+);base64,(.*)$/);
+  if (!m) return null;
+  try {
+    return Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'logo_transben');
+  } catch(_) { return null; }
+}
+
+// ── Segundo asset de logo (ID_LOGO_TRANSBEN, constante em uso nos PDFs
+// de Sheets/relatórios e no alerta genérico) — mesmo problema, mesma
+// solução, cache separado porque é um arquivo do Drive diferente do
+// usado acima em obterLogoBase64()/_obterLogoBlob(). ────────────────
+
+/** Rodar manualmente do editor, uma única vez, como dono do arquivo. */
+function _gerarLogoTransbenBase64() {
+  var blob = DriveApp.getFileById(ID_LOGO_TRANSBEN).getBlob();
+  var b64  = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+
+  var props = PropertiesService.getScriptProperties();
+  var chunkSize = 8000;
+  var partes = Math.ceil(b64.length / chunkSize);
+  for (var i = 0; i < partes; i++) {
+    props.setProperty('LOGO2_B64_' + i, b64.substring(i * chunkSize, (i + 1) * chunkSize));
+  }
+  props.setProperty('LOGO2_B64_PARTES', String(partes));
+  Logger.log('OK — logo (ID_LOGO_TRANSBEN) salva em ' + partes + ' parte(s), tamanho total: ' + b64.length + ' caracteres');
+}
+
+/** Versão Blob (pra sh.insertImage/inlineImages), sem tocar no Drive. */
+function _obterLogoTransbenBlob() {
+  var props   = PropertiesService.getScriptProperties();
+  var partes  = parseInt(props.getProperty('LOGO2_B64_PARTES') || '0', 10);
+  if (!partes) return null;
+  var b64 = '';
+  for (var i = 0; i < partes; i++) b64 += props.getProperty('LOGO2_B64_' + i) || '';
+  var m = b64.match(/^data:([^;]+);base64,(.*)$/);
+  if (!m) return null;
+  try {
+    return Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'logo_transben2');
+  } catch(_) { return null; }
+}
+
+/**
+ * Insere `blob` na planilha `sh` em (col, row) e redimensiona mantendo a
+ * proporção original — sem isso, setWidth/setHeight fixos esticam/achatam
+ * a imagem quando o aspect ratio real da logo não bate com maxW×maxH.
+ * OverGridImage.getWidth()/getHeight() devolvem o tamanho NATURAL da
+ * imagem (antes de qualquer resize), usado aqui só pra calcular a escala.
+ */
+function _inserirLogoComAspecto(sh, blob, col, row, maxW, maxH) {
+  var img = sh.insertImage(blob, col, row);
+  try {
+    var wNat = img.getWidth(), hNat = img.getHeight();
+    if (wNat > 0 && hNat > 0) {
+      var escala = Math.min(maxW / wNat, maxH / hNat);
+      img.setWidth(Math.round(wNat * escala)).setHeight(Math.round(hNat * escala));
+      return img;
+    }
+  } catch (_) {}
+  img.setWidth(maxW).setHeight(maxH); // fallback se getWidth/getHeight falhar
+  return img;
+}
+
+/**
+ * Diagnóstico manual — rodar do editor Apps Script e conferir os
+ * registros de execução (Ver → Registros de execução / Executions).
+ * Confirma se as 2 gerações de cache funcionaram de verdade, sem
+ * precisar disparar um PDF ou e-mail inteiro.
+ */
+function _testeLogoAdmin() {
+  var b1 = obterLogoBase64();
+  Logger.log('[Logo 1] LOGO_B64_PARTES=' + PropertiesService.getScriptProperties().getProperty('LOGO_B64_PARTES') +
+    ' | obterLogoBase64() tamanho=' + b1.length + (b1 ? ' | prefixo=' + b1.substring(0, 30) : ' | VAZIO'));
+
+  var blob1 = _obterLogoBlob();
+  Logger.log('[Logo 1] _obterLogoBlob() => ' + (blob1 ? ('OK, ' + blob1.getBytes().length + ' bytes, mime=' + blob1.getContentType()) : 'NULL'));
+
+  Logger.log('[Logo 2] LOGO2_B64_PARTES=' + PropertiesService.getScriptProperties().getProperty('LOGO2_B64_PARTES'));
+  var blob2 = _obterLogoTransbenBlob();
+  Logger.log('[Logo 2] _obterLogoTransbenBlob() => ' + (blob2 ? ('OK, ' + blob2.getBytes().length + ' bytes, mime=' + blob2.getContentType()) : 'NULL'));
+}
+
+function enviarEmailDevolucao(params) {
+  var _chk = _exigirModulo('email', true);
+  if (!_chk.ok) return _chk.resp;
+  var nfds = params.nfdsRaw.split(/[\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (!nfds.length) return JSON.stringify({ erro: 'Nenhuma NFD informada.' });
+
+  var ss = getSS();
+  var itens = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l, li) {
+        var bat = _baterTermos(nfds, String(l[IDX_NFD]).trim(), String(l[IDX_NF]).trim());
+        if (!bat.bate) return;
+        var dt = l[IDX_DATA];
+        itens.push({
+          nfd:      String(l[IDX_NFD]).trim() || String(l[IDX_NF]).trim(),
+          tipo:     String(l[IDX_TIPO]).trim(),
+          motivo:   String(l[IDX_MOTIVO]).trim(),
+          nf:       String(l[IDX_NF]).trim(),
+          forn:     String(l[IDX_FORN]).trim(),
+          desc:     String(l[IDX_DESC]).trim(),
+          qtd:      l[IDX_QTD] || 0,
+          valor:    parseFloat(l[IDX_VL_TOT]) || 0,
+          data:     dt instanceof Date ? Utilities.formatDate(dt, Session.getScriptTimeZone(), 'dd/MM/yyyy') : '',
+          urlAnexo: String(l[IDX_ANEXO] || '').trim(),
+          linha:    LINHA_DADOS + li,
+          ws:       ws,
+          nomeAba:  nomeAba
+        });
+      });
+  });
+
+  if (!itens.length) return JSON.stringify({ erro: 'Nenhuma NFD localizada.' });
+
+  var forn          = itens[0].forn;
+  var destinatarios = _montarDestinatarios(params.emailsExtras);
+  var assunto       = params.assunto || _montarTituloEmail(itens, forn);
+
+  // Templates customizados: usa o tipo mais frequente ou o do primeiro item
+  (function() {
+    try {
+      var rawTpl = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES);
+      if (!rawTpl) return;
+      var tpls = JSON.parse(rawTpl);
+      var tipo = itens[0].tipo || '';
+      var tplKey = tipo.toLowerCase().replace(/\s+/g, '_');
+      if (tpls[tplKey] && tpls[tplKey].assunto && !params.assunto) {
+        assunto = tpls[tplKey].assunto
+          .replace('{forn}', forn).replace('{qtd}', itens.length).replace('{tipo}', tipo);
+      }
+    } catch(_) {}
+  })();
+
+  // CC/BCC por fornecedor
+  var _ccFornConfig = (function() {
+    try {
+      var rawCC = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN);
+      if (!rawCC) return {};
+      return JSON.parse(rawCC);
+    } catch(_) { return {}; }
+  })();
+  var _ccExtra = (_ccFornConfig[forn] || {}).cc  || '';
+  var _bccExtra= (_ccFornConfig[forn] || {}).bcc || '';
+  var valorTotal    = itens.reduce(function(s, it) { return s + it.valor; }, 0);
+
+  var linhasTabela = itens.map(_linhaEmailDevolucao).join('');
+
+  var dataEnvio = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  // ── Comunicados de retorno: suporta múltiplos arquivos ──
+  var blobsComunicado = [];
+  // novo formato: array params.comunicados
+  var comList = params.comunicados && params.comunicados.length ? params.comunicados : [];
+  // backward compat: campo único legado
+  if (!comList.length && params.comBase64 && params.comMime && params.comNome) {
+    comList = [{ base64: params.comBase64, mime: params.comMime, nome: params.comNome }];
+  }
+  comList.forEach(function(c) {
+    try {
+      if (c.base64 && c.mime && c.nome) {
+        blobsComunicado.push(Utilities.newBlob(Utilities.base64Decode(c.base64), c.mime, c.nome));
+      }
+    } catch (eCom) { console.error('Erro ao decodificar comunicado "' + (c.nome||'?') + '": ' + eCom); }
+  });
+
+  var comObsHtml = '';
+  if (blobsComunicado.length) {
+    comObsHtml =
+      '<div style="margin:14px 0 0;padding:10px 14px;background:#FFF8E1;' +
+      'border-left:4px solid #F59E0B;border-radius:0 4px 4px 0">' +
+      '<p style="margin:0;font-size:13px;color:#92400E;font-weight:bold">📋 Comunicado de Retorno em Anexo'
+      + (blobsComunicado.length > 1 ? ' (' + blobsComunicado.length + ' arquivos)' : '') + '</p>';
+    if (params.comObs) {
+      comObsHtml += '<p style="margin:6px 0 0;font-size:13px;color:#444">' + _esc(params.comObs) + '</p>';
+    }
+    comObsHtml += '</div>';
+  }
+
+  var obsHtml = comObsHtml;
+  if (params.obs) {
+    obsHtml += '<p style="margin:14px 0 0;font-size:13px;color:#444"><strong>Observações:</strong> ' + _esc(params.obs) + '</p>';
+  }
+
+  // Logo Transben via CID (imagem embutida — não cai em "imagens bloqueadas")
+  // Vem do cache em Script Properties (obterLogoBase64/_gerarLogoBase64
+  // acima) — não do Drive, que só funciona pro dono do arquivo.
+  var logoBlob = _obterLogoBlob();
+
+  var qtdTotal = itens.reduce(function(s, it) { return s + (parseFloat(it.qtd) || 0); }, 0);
+  var htmlBody = _montarHtmlEmail(assunto, dataEnvio, forn, linhasTabela, valorTotal, obsHtml,
+    { notas: itens.length, qtd: qtdTotal, comLogo: !!logoBlob });
+
+  var blobs = [], semAnexo = [];
+  var _idsAnexados = {}; // dedupe: mesmo arquivo Drive nunca anexado 2x (PDF duplicado)
+  itens.forEach(function(it) {
+    var temAnexo = false;
+    if (it.urlAnexo && it.urlAnexo.startsWith('http')) {
+      try {
+        var fileId = _extrairIdDriveUrl(it.urlAnexo);
+        if (fileId) {
+          if (!_idsAnexados[fileId]) {
+            _idsAnexados[fileId] = true;
+            var driveFile = DriveApp.getFileById(fileId);
+            blobs.push(driveFile.getBlob().setName('NFD_' + it.nfd + '_' + driveFile.getName()));
+          }
+          temAnexo = true;
+        }
+      } catch (eBlob) {
+        console.warn('Não foi possível anexar arquivo da NFD ' + it.nfd + ': ' + eBlob);
+        registrarErroSistema('enviarEmailDevolucao.anexo', eBlob.message || eBlob.toString());
+      }
+    }
+    // Fotos extras (FOTO_*) salvas na pasta da NF
+    try {
+      var pasta = _garantirPastaNF(it.nomeAba, it.nf);
+      if (pasta) {
+        var _dbgTotal = 0, _dbgFotos = 0;
+        var iter = pasta.getFiles();
+        while (iter.hasNext()) {
+          var f = iter.next();
+          _dbgTotal++;
+          if (f.getName().indexOf('FOTO_') === 0) {
+            var fid = f.getId();
+            if (!_idsAnexados[fid]) {
+              _idsAnexados[fid] = true;
+              blobs.push(f.getBlob().setName('FOTO_NFD_' + it.nfd + '_' + f.getName()));
+            }
+            temAnexo = true;
+            _dbgFotos++;
+          }
+        }
+        if (_dbgFotos === 0) {
+          registrarErroSistema('DEBUG_fotos',
+            'NFD=' + it.nfd + '|aba=' + it.nomeAba + '|nf=' + it.nf +
+            '|pastaId=' + pasta.getId() + '|arqsTotal=' + _dbgTotal + '|fotos=0');
+        }
+      }
+    } catch (eFoto) { console.warn('Erro ao buscar fotos NFD ' + it.nfd + ': ' + eFoto); registrarErroSistema('enviarEmailDevolucao.fotos', eFoto.message || eFoto.toString()); }
+    if (!temAnexo) semAnexo.push(it.nfd);
+  });
+
+  var avisoSemAnexo = semAnexo.length
+    ? '<p style="margin:10px 0 0;font-size:12px;color:#E65100">⚠️ NFD(s) sem arquivo anexado: ' + semAnexo.map(_esc).join(', ') + '</p>'
+    : '';
+
+  var htmlFinal = htmlBody.replace('<!--AVISO_ANEXO-->', avisoSemAnexo);
+
+  // Assinatura via CID inline image — data: URI é bloqueado pelo Gmail
+  var assinaturaBlob = null;
+  if (params.assinaturaFileId) {
+    try {
+      assinaturaBlob = DriveApp.getFileById(params.assinaturaFileId.trim()).getBlob();
+      htmlFinal += '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
+        + '<img src="cid:assinatura_img" alt="Assinatura" style="max-height:95px;max-width:320px;object-fit:contain">'
+        + '</div>';
+    } catch(_) {}
+  }
+
+  try {
+    var todosBlobs = blobs.slice();
+    blobsComunicado.forEach(function(b){ todosBlobs.push(b); });
+
+    var mailOpts = {
+      to:       destinatarios.join(','),
+      subject:  assunto,
+      htmlBody: htmlFinal
+    };
+    if (todosBlobs.length) mailOpts.attachments = todosBlobs;
+    var inlineImgs = {};
+    if (assinaturaBlob) inlineImgs.assinatura_img = assinaturaBlob;
+    if (logoBlob)       inlineImgs.logo_transben  = logoBlob;
+    if (assinaturaBlob || logoBlob) mailOpts.inlineImages = inlineImgs;
+    if (_ccExtra)  mailOpts.cc  = _ccExtra;
+    if (_bccExtra) mailOpts.bcc = _bccExtra;
+    MailApp.sendEmail(mailOpts);
+
+    var infoAnexos = todosBlobs.length
+      ? ' | ' + todosBlobs.length + ' arquivo(s) anexado(s)' + (blobsComunicado.length ? ' (incl. ' + blobsComunicado.length + ' comunicado(s))' : '')
+      : ' | sem anexos';
+    registrarLog(ss, 'SISTEMA', 0, 0, '', assunto,
+      '📧 E-mail devolução enviado para: ' + destinatarios.join(', ') + infoAnexos);
+
+    _registrarEmailEnviado(ss, {
+      assunto:       assunto,
+      destinatarios: destinatarios,
+      nfds:          itens.map(function(it) { return it.nfd || it.nf; }),
+      forn:          forn,
+      totalItens:    itens.length,
+      totalValor:    valorTotal,
+      anexos:        todosBlobs.length,
+      corpo:         htmlFinal
+    });
+
+    var itensFalta   = itens.filter(function(it) { return it.tipo === 'Falta'; });
+    var linhasFalta  = itensFalta.map(function(it) { return { ws: it.ws, linha: it.linha, nomeAba: it.nomeAba }; });
+    var nfdsArquivadas = itensFalta.map(function(it) { return it.nfd || it.nf; });
+
+    var totalArquivadas = 0;
+    if (linhasFalta.length) {
+      itensFalta.forEach(function(it) {
+        var nfRef = it.nfd || it.nf;
+        registrarLog(ss, it.nomeAba, it.linha, COL_STATUS, nfRef, 'Arquivado',
+          '📧 Falta arquivada após envio do e-mail — NF: ' + nfRef);
+      });
+      totalArquivadas = _arquivarLinhasEspecificas(ss, linhasFalta);
+      _atualizarMetricasDashboard(ss);
+    }
+
+    var infoArquivadas = totalArquivadas > 0
+      ? '\n📦 ' + totalArquivadas + ' nota(s) de Falta movida(s) para Historico_Arquivo: ' + nfdsArquivadas.join(', ')
+      : '';
+
+    return JSON.stringify({
+      sucesso: '✅ E-mail enviado para ' + destinatarios.length + ' destinatário(s)' + infoAnexos + ':\n' +
+               destinatarios.join('\n') + infoArquivadas
+    });
+  } catch (e) {
+    registrarErroSistema('enviarEmailDevolucao', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ Erro ao enviar: ' + e.toString() });
+  }
+}
+
+/**
+ * [Redesign] Linha da tabela do e-mail de devolução (5 colunas, mobile-safe):
+ * NFD+NF+data empilhados · tipo em pill · descrição+motivo · qtd · valor.
+ */
+function _linhaEmailDevolucao(it) {
+  var c = it.tipo === 'Avaria'   ? { bg:'#FFF7ED', tx:'#B45309', bd:'#FDBA74' }
+        : it.tipo === 'Rejeição' ? { bg:'#FEF2F2', tx:'#DC2626', bd:'#FECACA' }
+        :                          { bg:'#EFF4FF', tx:'#2563EB', bd:'#BFDBFE' };
+  var pill = '<span style="display:inline-block;background:' + c.bg + ';color:' + c.tx + ';border:1px solid ' + c.bd +
+             ';border-radius:99px;padding:2px 10px;font-size:11px;font-weight:bold;white-space:nowrap">' + _esc(it.tipo || '—') + '</span>';
+  return '<tr>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #E9EDF5;vertical-align:top">' +
+      '<span style="font-weight:bold;color:#0B1526;font-size:13px">' + _esc(it.nfd) + '</span><br>' +
+      '<span style="font-size:11px;color:#8A9BB0">' + (it.nf && it.nf !== it.nfd ? 'NF ' + _esc(it.nf) + ' · ' : '') + _esc(it.data || '') + '</span></td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #E9EDF5;vertical-align:top;text-align:center">' + pill + '</td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #E9EDF5;vertical-align:top">' +
+      '<span style="color:#344256;font-size:13px">' + _esc(it.desc) + '</span><br>' +
+      '<span style="font-size:11px;color:#8A9BB0">' + _esc(it.motivo || '—') + '</span></td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #E9EDF5;vertical-align:top;text-align:center;color:#344256">' + _esc(it.qtd) + '</td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #E9EDF5;vertical-align:top;text-align:right;font-weight:bold;color:#0B1526;white-space:nowrap">R$ ' + _fmtVal(it.valor) + '</td>' +
+    '</tr>';
+}
+
+/**
+ * [Redesign] Corpo do e-mail de devolução — identidade v12, email-safe
+ * (tabelas + inline, 640px, bgcolor fallback pro Outlook).
+ * resumo (opcional): { notas, qtd, comLogo } — stats no topo e logo via
+ * cid:logo_transben (só no envio; preview usa marca em texto).
+ * Marcador <!--AVISO_ANEXO--> recebe o aviso de NFDs sem anexo no envio.
+ */
+function _montarHtmlEmail(assunto, dataEnvio, forn, linhasTabela, valorTotal, obsHtml, resumo) {
+  resumo = resumo || {};
+  var marca = resumo.comLogo
+    ? '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
+        '<td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:8px;padding:6px 12px">' +
+          '<img src="cid:logo_transben" width="150" alt="Transben" style="display:block;border:0;max-width:150px;height:auto">' +
+        '</td></tr></table>' +
+      '<div style="font-size:9px;font-weight:bold;color:#9CC1FF;letter-spacing:2.5px;text-transform:uppercase;padding-top:7px">CONTROLE DE DEVOLUÇÕES</div>'
+    : '<div style="font-size:12px;font-weight:bold;color:#9CC1FF;letter-spacing:2px;text-transform:uppercase">TRANSBEN · DEVOLUÇÕES</div>';
+
+  var stat = function(lbl, val) {
+    return '<td align="center" style="padding:12px 6px">' +
+      '<div style="font-size:19px;font-weight:bold;color:#FFFFFF;font-family:Arial,sans-serif">' + val + '</div>' +
+      '<div style="font-size:10px;color:#9CC1FF;text-transform:uppercase;letter-spacing:1px;padding-top:2px">' + lbl + '</div></td>';
+  };
+  var statsHtml = (resumo.notas || resumo.qtd)
+    ? '<tr><td bgcolor="#13223A" style="background:#13223A;padding:2px 14px">' +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+          stat('Notas', resumo.notas || 0) + stat('Itens', resumo.qtd || 0) + stat('Valor total', 'R$ ' + _fmtVal(valorTotal)) +
+        '</tr></table></td></tr>'
+    : '';
+
+  return '' +
+  '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F1F4F9" style="background:#F1F4F9;padding:24px 8px">' +
+  '<tr><td align="center">' +
+  '<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;font-family:Arial,Helvetica,sans-serif">' +
+    '<tr><td bgcolor="#0B1526" style="background:linear-gradient(135deg,#0B1526,#1E3A5F);border-radius:12px 12px 0 0;padding:22px 26px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+        '<td style="vertical-align:middle">' + marca + '</td>' +
+        '<td align="right" style="font-size:11px;color:#7E93B8;vertical-align:top">Emitido em ' + _esc(dataEnvio) + '</td>' +
+      '</tr></table>' +
+      '<div style="font-size:19px;font-weight:bold;color:#FFFFFF;padding-top:10px;line-height:1.35">' + _esc(assunto) + '</div>' +
+    '</td></tr>' +
+    statsHtml +
+    '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:24px 26px 8px">' +
+      '<p style="margin:0 0 6px;font-size:14px;color:#101828"><strong>Prezados,</strong></p>' +
+      '<p style="margin:0 0 18px;font-size:13px;color:#5B7186;line-height:1.6">Encaminhamos a relação de notas fiscais referentes às devoluções de <strong style="color:#1E3A5F">' + _esc(forn) + '</strong>. Detalhes de cada nota abaixo:</p>' +
+    '</td></tr>' +
+    '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:0 26px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E3E8F2;border-radius:10px;border-collapse:separate;overflow:hidden">' +
+        '<tr bgcolor="#1E3A5F">' +
+          '<th width="120" align="left"  style="padding:10px 12px;font-size:10px;color:#FFFFFF;text-transform:uppercase;letter-spacing:1px">NFD / NF</th>' +
+          '<th width="80" align="center" style="padding:10px 12px;font-size:10px;color:#FFFFFF;text-transform:uppercase;letter-spacing:1px">Tipo</th>' +
+          '<th align="left" style="padding:10px 12px;font-size:10px;color:#FFFFFF;text-transform:uppercase;letter-spacing:1px">Descrição / Motivo</th>' +
+          '<th width="50" align="center" style="padding:10px 12px;font-size:10px;color:#FFFFFF;text-transform:uppercase;letter-spacing:1px">Qtd</th>' +
+          '<th width="90" align="right" style="padding:10px 12px;font-size:10px;color:#FFFFFF;text-transform:uppercase;letter-spacing:1px">Valor</th>' +
+        '</tr>' + linhasTabela +
+      '</table>' +
+    '</td></tr>' +
+    '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:14px 26px 4px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td></td>' +
+        '<td align="right" width="260">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" bgcolor="#EFF4FF" style="background:#EFF4FF;border:1px solid #BFDBFE;border-radius:10px"><tr>' +
+            '<td style="padding:12px 16px;font-size:11px;color:#1E3A5F;text-transform:uppercase;letter-spacing:1px;font-weight:bold">Total geral</td>' +
+            '<td align="right" style="padding:12px 16px;font-size:17px;font-weight:bold;color:#2563EB;white-space:nowrap">R$ ' + _fmtVal(valorTotal) + '</td>' +
+          '</tr></table>' +
+        '</td></tr></table>' +
+    '</td></tr>' +
+    '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:6px 26px 18px;font-size:13px;color:#344256;line-height:1.6">' +
+      (obsHtml || '') + '<!--AVISO_ANEXO-->' +
+    '</td></tr>' +
+    '<tr><td bgcolor="#F1F4F9" style="background:#F1F4F9;border:1px solid #E3E8F2;border-top:none;border-radius:0 0 12px 12px;padding:14px 26px" align="center">' +
+      '<div style="font-size:11px;color:#8A9BB0;line-height:1.7">E-mail gerado automaticamente pelo <strong style="color:#5B7186">Controle de Devoluções · Transben</strong>.<br>Em caso de dúvidas, responda este e-mail ou contate a equipe de logística.</div>' +
+    '</td></tr>' +
+  '</table></td></tr></table>';
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   HISTÓRICO DE E-MAILS ENVIADOS
+// ════════════════════════════════════════════════════════════
+
+function garantirAbaEmailsEnviados(ss) {
+  var ws = ss.getSheetByName('_EmailsEnviados');
+  if (!ws) {
+    ws = ss.insertSheet('_EmailsEnviados');
+    ws.hideSheet();
+    var cab = ['Data/Hora','Assunto','Fornecedor','Destinatários','NFDs/NFs Incluídas','Total Itens','Valor Total (R$)','Arquivos Anexados','Corpo do E-mail'];
+    ws.getRange(1, 1, 1, cab.length).setValues([cab])
+      .setBackground('#1E3A5F').setFontColor('#FFFFFF').setFontWeight('bold');
+    ws.setFrozenRows(1);
+    [160,300,160,260,300,80,140,120,500].forEach(function(w, i) { ws.setColumnWidth(i + 1, w); });
+  }
+  return ws;
+}
+
+function _registrarEmailEnviado(ss, info) {
+  try {
+    var ws    = garantirAbaEmailsEnviados(ss);
+    var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+    ws.appendRow([
+      agora, info.assunto, info.forn,
+      info.destinatarios.join('; '),
+      info.nfds.join(', '),
+      info.totalItens, info.totalValor, info.anexos,
+      info.corpo || ''
+    ]);
+  } catch (e) {
+    console.error('_registrarEmailEnviado: ' + e);
+    registrarErroSistema('_registrarEmailEnviado', e.message || e.toString());
+  }
+}
+
+function buscarHistoricoEmails() {
+  var ss = getSS();
+  var ws = ss.getSheetByName('_EmailsEnviados');
+  if (!ws) return JSON.stringify({ registros: [] });
+
+  try {
+    var ul = ws.getLastRow();
+    if (ul < 2) return JSON.stringify({ registros: [] });
+    var dados = ws.getRange(2, 1, ul - 1, 9).getValues();
+    var registros = dados
+      .filter(function(l) { return l[0]; })
+      .map(function(l) {
+        return {
+          data:       l[0] instanceof Date
+                        ? Utilities.formatDate(l[0], Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
+                        : String(l[0]),
+          assunto:    String(l[1]),
+          forn:       String(l[2]),
+          destinos:   String(l[3]),
+          nfds:       String(l[4]),
+          totalItens: l[5] || 0,
+          totalValor: parseFloat(l[6]) || 0,
+          anexos:     l[7] || 0,
+          corpo:      String(l[8] || '')
+        };
+      })
+      .reverse();
+    return JSON.stringify({ registros: registros });
+  } catch (e) {
+    return JSON.stringify({ erro: 'Erro ao ler histórico: ' + e.toString() });
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   ALERTAS DE ATRASO E RESUMO SEMANAL
+// ════════════════════════════════════════════════════════════
+
+function verificarAtrasosEEnviarAlerta() {
+  var ss     = getSS();
+  var tz     = ss.getSpreadsheetTimeZone();
+  var hoje   = new Date();
+  var limite = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
+  var linhas = [];
+
+  var alertaOff = _getAlerta30Off();
+  _getTodasAbas().filter(function(n) { return alertaOff.indexOf(n) === -1; }).forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l) {
+        var nf = l[IDX_NF], st = l[IDX_STATUS], dt = l[IDX_DATA];
+        if (nf && st === 'Pendente' && dt instanceof Date && dt < limite) {
+          linhas.push({
+            nfd:  String(l[IDX_NFD]  || '').trim(),
+            nf:   String(nf).trim(),
+            data: Utilities.formatDate(dt, tz, 'dd/MM/yyyy'),
+            forn: String(l[IDX_FORN] || nomeAba).trim(),
+            tipo: String(l[IDX_TIPO] || '').trim(),
+            desc: String(l[IDX_DESC] || '').trim(),
+            qtd:  l[IDX_QTD] || 0,
+            val:  parseFloat(l[IDX_VL_TOT]) || 0,
+            st:   st,
+            dias: Math.floor((hoje - dt) / 864e5),
+            resp: String(l[IDX_RESP] || 'Não informado').trim()
+          });
+        }
+      });
+  });
+
+  if (!linhas.length) {
+    try { SpreadsheetApp.getUi().alert('✅ Nenhum item com +30 dias pendente.'); } catch (_) {}
+    return JSON.stringify({ sucesso: '✅ Nenhum item com +30 dias pendente.', total: 0 });
+  }
+
+  var dataStr  = Utilities.formatDate(hoje, tz, 'dd/MM/yyyy');
+  var valTotal = linhas.reduce(function(s, l) { return s + l.val; }, 0);
+  var assunto  = '⚠️ [Devoluções] ' + linhas.length + ' item(ns) em atraso crítico (+30 dias) — ' + dataStr;
+
+  var pdf = _gerarRelatorioPDF(ss, {
+    titulo:   'DEVOLUÇÕES EM ATRASO CRÍTICO (+30 DIAS)',
+    periodo:  dataStr,
+    linhas:   linhas,
+    valTotal: valTotal,
+    nomeArq:  'Atraso_Critico_' + dataStr.replace(/\//g, '-') + '.pdf',
+    kpiLabel: 'Em Atraso (+30 dias)',
+    kpiCor:   '#DC2626',
+    colExtra: { header: 'Atraso', fn: function(l) { return l.dias + ' dias'; } }
+  });
+
+  var maisAntigo = linhas.reduce(function(a, b) { return b.dias > a.dias ? b : a; }, linhas[0]);
+
+  var htmlEmail = _montarHtmlRelatorio({
+    icone:    '⚠️',
+    titulo:   'Devoluções em Atraso Crítico',
+    subtitulo: dataStr,
+    faixaTexto: 'AÇÃO NECESSÁRIA — ' + linhas.length + ' ITEM(NS) COM MAIS DE 30 DIAS EM ABERTO',
+    intro:    'Foram encontradas <strong>' + linhas.length + '</strong> devolução(ões) com mais de <strong>30 dias</strong> em aberto. O relatório completo com a listagem por fornecedor está em anexo (PDF).',
+    kpis: [
+      { label: 'Em Atraso', cor: '#DC2626', valor: String(linhas.length), sub: 'itens' },
+      { label: 'Valor Parado', cor: '#0B1526', valor: 'R$ ' + _fmtVal(valTotal), sub: 'soma dos itens' },
+      { label: 'Mais Antigo', cor: '#B45309', valor: maisAntigo.dias + ' dias', sub: 'NF ' + (maisAntigo.nfd || maisAntigo.nf) }
+    ]
+  });
+
+  var anexos = pdf ? [pdf.blob] : [];
+  enviarEmail(assunto, htmlEmail, anexos, 'atraso');
+  notificarEvento('sistema', '⚠️ <b>' + linhas.length + ' devolução(ões) em atraso crítico</b> (+30 dias) — ' + dataStr +
+    '\nTotal: R$ ' + _fmtVal(valTotal) +
+    '\nMais antigo: NF ' + _esc(String(maisAntigo.nfd || maisAntigo.nf)) + ' — ' + maisAntigo.dias + ' dias');
+  registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '⚠️ Alerta de atraso enviado — ' + dataStr);
+  try { SpreadsheetApp.getUi().alert('📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.'); } catch (_) {}
+  return JSON.stringify({ sucesso: '📧 Alerta enviado! ' + linhas.length + ' item(ns) em atraso.', total: linhas.length });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   WEBHOOK — NOTIFICAÇÕES TELEGRAM
+// ════════════════════════════════════════════════════════════
+
+function obterConfWebhook() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ conf: {} });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+    var conf = JSON.parse(raw);
+    delete conf.webhookSecret;
+    return JSON.stringify({ conf: conf });
+  } catch(e) { return JSON.stringify({ conf: {} }); }
+}
+
+function salvarConfWebhook(conf) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Apenas administradores podem alterar esta configuração.' });
+  try {
+    if (!conf || typeof conf !== 'object') return JSON.stringify({ erro: 'Configuração inválida.' });
+    var anterior = {};
+    try { anterior = JSON.parse(PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}'); } catch(_) {}
+    var payload = {
+      ativo: !!conf.ativo,
+      telegram: {
+        token:  String((conf.telegram && conf.telegram.token)  || ''),
+        chatId: String((conf.telegram && conf.telegram.chatId) || '')
+      },
+      topicos: anterior.topicos || {},
+      webhookSecret: anterior.webhookSecret || Utilities.getUuid()
+    };
+    PropertiesService.getScriptProperties().setProperty(_KEY_WEBHOOK_CONF, JSON.stringify(payload));
+    return JSON.stringify({ ok: '✅ Configuração de Telegram salva.' });
+  } catch(e) {
+    registrarErroSistema('salvarConfWebhook', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function testarWebhookAlerta(conf) {
+  try {
+    var msg = '🔔 <b>Teste do sistema de alertas</b> — Devoluções Transben\n' +
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+    var resultado = notificarEvento('sistema', msg, null, conf);
+    if (!resultado) return JSON.stringify({ erro: '⚠️ Falha ao enviar — confira token, Chat ID e se as notificações estão ativas.' });
+    return JSON.stringify({ ok: '✅ Mensagem de teste enviada com sucesso.' });
+  } catch(e) {
+    registrarErroSistema('testarWebhookAlerta', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/* Chamada HTTP genérica à Bot API do Telegram. Retorna o JSON já parseado. */
+function _tgApi(token, method, payload) {
+  try {
+    var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/' + method, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    return JSON.parse(resp.getContentText());
+  } catch(e) {
+    return { ok: false, description: e.message || e.toString() };
+  }
+}
+
+/* Dispatcher central de notificações. categoria escolhe o tópico do grupo.
+   confOverride permite testar uma config ainda não salva (usado por testarWebhookAlerta). */
+function notificarEvento(categoria, htmlMsg, opts, confOverride) {
+  try {
+    var conf = confOverride;
+    if (!conf) {
+      var raw = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+      conf = JSON.parse(raw);
+    }
+    if (!conf || !conf.ativo) return null;
+    var tg     = conf.telegram || {};
+    var token  = (tg.token  || '').trim();
+    var chatId = (tg.chatId || '').trim();
+    if (!token || !chatId) return null;
+
+    var payload = { chat_id: chatId, text: htmlMsg, parse_mode: 'HTML' };
+    var threadId = conf.topicos && conf.topicos[categoria];
+    if (threadId) payload.message_thread_id = Number(threadId);
+    if (opts && opts.botoes) payload.reply_markup = { inline_keyboard: opts.botoes };
+
+    var body = _tgApi(token, 'sendMessage', payload);
+    if (!body.ok) {
+      registrarErroSistema('notificarEvento', categoria + ': ' + (body.description || 'erro'));
+      return null;
+    }
+    return body.result;
+  } catch(e) {
+    registrarErroSistema('notificarEvento', e.message || e.toString());
+    return null;
+  }
+}
+
+/**
+ * [Fase 4, item 4b] Registra a URL do Web App como webhook do Telegram
+ * (chamada setWebhook da Bot API). Até aqui isso nunca era feito pelo
+ * próprio sistema — doPost só processa updates recebidos, mas nada no
+ * código pedia ao Telegram pra mandar updates pra essa URL, então esse
+ * registro dependia de alguém rodar um curl manual. Como redeploy às vezes
+ * troca a URL de implantação, o webhook parava de funcionar silenciosamente
+ * até alguém perceber que os botões do Telegram pararam de responder.
+ */
+function configurarWebhookTelegram() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+    var conf = JSON.parse(raw);
+    var token = String((conf.telegram && conf.telegram.token) || '').trim();
+    if (!token) return JSON.stringify({ erro: 'Configure o token do bot antes de registrar o webhook.' });
+
+    if (!conf.webhookSecret) {
+      conf.webhookSecret = Utilities.getUuid();
+      PropertiesService.getScriptProperties().setProperty(_KEY_WEBHOOK_CONF, JSON.stringify(conf));
+    }
+    var execUrl = _getWebAppExecUrl();
+    if (!execUrl) return JSON.stringify({ erro: 'Não foi possível obter a URL de implantação do Web App. Implante o Web App primeiro.' });
+
+    var urlWebhook = execUrl + '?secret=' + encodeURIComponent(conf.webhookSecret);
+    var body = _tgApi(token, 'setWebhook', { url: urlWebhook });
+    if (!body.ok) {
+      registrarErroSistema('configurarWebhookTelegram', body.description || 'Falha ao registrar webhook.');
+      return JSON.stringify({ erro: '❌ Telegram recusou o registro: ' + (body.description || 'erro desconhecido') });
+    }
+    return JSON.stringify({ ok: '✅ Webhook registrado com a URL de implantação atual.', url: urlWebhook });
+  } catch(e) {
+    registrarErroSistema('configurarWebhookTelegram', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/** Consulta o status atual do webhook registrado no Telegram (getWebhookInfo). */
+function obterStatusWebhookTelegram() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+    var conf = JSON.parse(raw);
+    var token = String((conf.telegram && conf.telegram.token) || '').trim();
+    if (!token) return JSON.stringify({ erro: 'Configure o token do bot primeiro.' });
+    var body = _tgApi(token, 'getWebhookInfo', {});
+    if (!body.ok) return JSON.stringify({ erro: body.description || 'Falha ao consultar status.' });
+    var info = body.result || {};
+    var urlAtual = _getWebAppExecUrl();
+    return JSON.stringify({
+      url: info.url || '',
+      registrado: !!info.url,
+      divergente: !!(info.url && urlAtual && info.url.indexOf(urlAtual) !== 0),
+      pendingUpdateCount: info.pending_update_count || 0,
+      ultimoErro: info.last_error_message || ''
+    });
+  } catch(e) {
+    return JSON.stringify({ erro: e.message || e.toString() });
+  }
+}
+
+function criarTopicosWebhook(conf) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var token  = String((conf && conf.telegram && conf.telegram.token)  || '').trim();
+    var chatId = String((conf && conf.telegram && conf.telegram.chatId) || '').trim();
+    if (!token || !chatId) return JSON.stringify({ erro: 'Informe token e Chat ID antes de criar os tópicos.' });
+
+    var nomes = {
+      aprovacoes:     '🔔 Aprovações',
+      transferencias: '🔄 Transferências',
+      vendas:         '💰 Vendas/Lançamentos',
+      sistema:        '⚙️ Sistema/Alertas'
+    };
+    var topicos = {};
+    var erros = [];
+    Object.keys(nomes).forEach(function(chave) {
+      var body = _tgApi(token, 'createForumTopic', { chat_id: chatId, name: nomes[chave] });
+      if (body.ok && body.result && body.result.message_thread_id) {
+        topicos[chave] = String(body.result.message_thread_id);
+      } else {
+        erros.push(chave + ': ' + (body.description || 'erro desconhecido'));
+      }
+    });
+
+    if (Object.keys(topicos).length) {
+      var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}';
+      var atual = JSON.parse(raw);
+      atual.topicos = topicos;
+      if (!atual.telegram || !atual.telegram.token) atual.telegram = { token: token, chatId: chatId };
+      if (!atual.webhookSecret) atual.webhookSecret = Utilities.getUuid();
+      PropertiesService.getScriptProperties().setProperty(_KEY_WEBHOOK_CONF, JSON.stringify(atual));
+    }
+
+    if (erros.length) return JSON.stringify({ erro: '⚠️ Alguns tópicos falharam: ' + erros.join(' | ') });
+    return JSON.stringify({ ok: '✅ 4 tópicos criados e salvos.' });
+  } catch(e) {
+    registrarErroSistema('criarTopicosWebhook', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+function enviarEmail(assunto, htmlBody, anexos, tipoAlerta) {
+  try {
+    var destinatarios = _getEmailsGeral();
+    if (!destinatarios || !destinatarios.length) return;
+    var opts = {
+      to:       destinatarios.join(','),
+      subject:  assunto,
+      htmlBody: htmlBody
+    };
+    if (anexos && anexos.length) opts.attachments = anexos;
+    try {
+      var _logoBlobE = _obterLogoTransbenBlob();
+      if (_logoBlobE) opts.inlineImages = { logo_transben: _logoBlobE };
+      else registrarErroSistema('enviarEmail.logo', '_obterLogoTransbenBlob() retornou null — cache LOGO2_B64_* ausente/vazio.');
+    } catch(eLogoE) {
+      registrarErroSistema('enviarEmail.logo', eLogoE.message || eLogoE.toString());
+    }
+    if (tipoAlerta) {
+      var ccBcc = _getCCBccAlerta(tipoAlerta);
+      if (ccBcc.cc)  opts.cc  = ccBcc.cc;
+      if (ccBcc.bcc) opts.bcc = ccBcc.bcc;
+    }
+    MailApp.sendEmail(opts);
+  } catch (e) {
+    console.error('enviarEmail: ' + e);
+  }
+}
+
+function _getCCBccAlerta(tipo) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA);
+    if (!raw) return { cc: '', bcc: '' };
+    var map = JSON.parse(raw);
+    var cfg = map[tipo] || {};
+    return { cc: cfg.cc || '', bcc: cfg.bcc || '' };
+  } catch(_) { return { cc: '', bcc: '' }; }
+}
+
+function obterCCAlerta() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Apenas administradores podem acessar esta configuração.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA) || '{}';
+  try { return JSON.stringify({ ccAlerta: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ ccAlerta: {} }); }
+}
+
+function salvarCCAlerta(tipo, cc, bcc) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Apenas administradores podem alterar esta configuração.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_ALERTA) || '{}';
+  var mapa;
+  try { mapa = JSON.parse(raw); } catch(_) { mapa = {}; }
+  // normaliza a chave (trim + lowercase) por segurança — "tipo" aqui é o
+  // tipo de alerta ('atraso','mensal','semanal','diario','pendencias',
+  // 'transferencia'), não o nome de um fornecedor; todo chamador interno já
+  // usa essas strings fixas em minúsculo, então isto não muda comportamento
+  // hoje, só evita divergência futura de maiúscula/minúscula.
+  var chave = String(tipo || '').trim().toLowerCase();
+  if (!cc && !bcc) {
+    delete mapa[chave];
+  } else {
+    mapa[chave] = { cc: String(cc || '').trim(), bcc: String(bcc || '').trim() };
+  }
+  PropertiesService.getScriptProperties().setProperty(_KEY_CC_ALERTA, JSON.stringify(mapa));
+  return JSON.stringify({ sucesso: '✅ CC/BCC para "' + tipo + '" salvo.' });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   BUSCA NO HISTÓRICO ARQUIVADO
+// ════════════════════════════════════════════════════════════
+
+function abrirBuscaHistorico() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormBuscaHistorico').setWidth(620).setHeight(520),
+    '🗂️ Buscar no Histórico Arquivado'
+  );
+}
+
+function executarBuscaHistorico(params) {
+  var termo        = String(params.termo || '').trim().toLowerCase();
+  var incluirAtivas = !!params.incluirAtivas;
+  if (!termo) return JSON.stringify({ erro: 'Informe um termo para buscar.' });
+
+  var ss         = getSS();
+  var resultados = [];
+  var tz         = Session.getScriptTimeZone();
+
+  var hist = ss.getSheetByName('Historico_Arquivo');
+  if (hist) {
+    var ulH = hist.getLastRow();
+    if (ulH >= 2) {
+      var ncols = Math.min(TOTAL_COLUNAS + 1, hist.getLastColumn());
+      hist.getRange(2, 1, ulH - 1, ncols).getValues().forEach(function(l, i) {
+        var nfd  = String(l[IDX_NFD]  || '').trim();
+        var nf   = String(l[IDX_NF]   || '').trim();
+        var forn = String(l[IDX_FORN] || '').trim();
+        var desc = String(l[IDX_DESC] || '').trim();
+        if (!nf && !nfd) return;
+        if ([nf, nfd, forn, desc].every(function(s) {
+          return s.toLowerCase().indexOf(termo) === -1;
+        })) return;
+        var dt       = l[IDX_DATA];
+        var dtArq    = l[TOTAL_COLUNAS];
+        resultados.push({
+          origem:    'Histórico',
+          aba:       forn || 'Arquivado',
+          nf:        nf,
+          nfd:       nfd,
+          forn:      forn,
+          desc:      desc.substring(0, 55),
+          status:    String(l[IDX_STATUS] || ''),
+          tipo:      String(l[IDX_TIPO]   || ''),
+          qtd:       l[IDX_QTD]  || 0,
+          valor:     parseFloat(l[IDX_VL_TOT]) || 0,
+          data:      dt instanceof Date
+                       ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+          dataArq:   dtArq instanceof Date
+                       ? Utilities.formatDate(dtArq, tz, 'dd/MM/yyyy') : '',
+          linha:     i + 2,
+          navegavel: false
+        });
+      });
+    }
+  }
+
+  if (incluirAtivas) {
+    _getTodasAbas().forEach(function(nomeAba) {
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+        .forEach(function(l, i) {
+          var nfd  = String(l[IDX_NFD]  || '').trim();
+          var nf   = String(l[IDX_NF]   || '').trim();
+          var forn = String(l[IDX_FORN] || '').trim();
+          var desc = String(l[IDX_DESC] || '').trim();
+          if (!nf && !nfd) return;
+          if ([nf, nfd, forn, desc].every(function(s) {
+            return s.toLowerCase().indexOf(termo) === -1;
+          })) return;
+          var dt = l[IDX_DATA];
+          resultados.push({
+            origem:    'Ativo',
+            aba:       nomeAba,
+            nf:        nf,
+            nfd:       nfd,
+            forn:      forn,
+            desc:      desc.substring(0, 55),
+            status:    String(l[IDX_STATUS] || ''),
+            tipo:      String(l[IDX_TIPO]   || ''),
+            qtd:       l[IDX_QTD]  || 0,
+            valor:     parseFloat(l[IDX_VL_TOT]) || 0,
+            data:      dt instanceof Date
+                         ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+            dataArq:   '',
+            linha:     LINHA_DADOS + i,
+            navegavel: true
+          });
+        });
+    });
+  }
+
+  if (!resultados.length)
+    return JSON.stringify({ erro: 'Nenhum resultado encontrado para "' + termo + '".' });
+
+  resultados.sort(function(a, b) {
+    if (a.origem !== b.origem) return a.origem === 'Ativo' ? -1 : 1;
+    return (b.data || '').localeCompare(a.data || '');
+  });
+
+  return JSON.stringify({ resultados: resultados, total: resultados.length });
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   RELATÓRIOS (MENSAL / SEMANAL / DIÁRIO)
+// ════════════════════════════════════════════════════════════
+
+function abrirRelatorios() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormRelatorios').setWidth(480).setHeight(400),
+    '📊 Relatórios de Devoluções'
+  );
+}
+
+// ─── MENSAL ──────────────────────────────────────────────────
+
+function gerarRelatorioMensal(params) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  var mes = parseInt(params.mes, 10);
+  var ano = parseInt(params.ano, 10);
+  var enviarEmailFlag = !!params.enviarEmail;
+
+  if (!mes || !ano || mes < 1 || mes > 12)
+    return JSON.stringify({ erro: 'Mês ou ano inválido.' });
+  if (!ID_PASTA_DESTINO || ID_PASTA_DESTINO.startsWith('INSIRA'))
+    return JSON.stringify({ erro: 'Configure ID_PASTA_DESTINO no topo do script.' });
+
+  var ss      = getSS();
+  var tz      = ss.getSpreadsheetTimeZone();
+  var dataIni = new Date(ano, mes - 1, 1);
+  var dataFim = new Date(ano, mes, 0, 23, 59, 59);
+  var nomeMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes - 1];
+  var periodo = nomeMes + ' / ' + ano;
+
+  var linhas = _coletarLinhas(ss, tz, dataIni, dataFim);
+  if (!linhas.length)
+    return JSON.stringify({ erro: 'Nenhum lançamento encontrado para ' + periodo + '.' });
+
+  var acc     = _acumular(linhas);
+  var nomeArq = 'Relatorio_Mensal_' + nomeMes + '_' + ano + '.pdf';
+  var pdf     = _gerarRelatorioPDF(ss, { titulo: 'RELATÓRIO MENSAL DE DEVOLUÇÕES', periodo: periodo, linhas: linhas, acc: acc, nomeArq: nomeArq });
+
+  if (!pdf) return JSON.stringify({ erro: '❌ Erro ao gerar o PDF. Verifique o log.' });
+
+  if (enviarEmailFlag) {
+    var htmlEmail = _montarHtmlRelatorio({ icone: '📊', titulo: 'Relatório Mensal de Devoluções',
+      subtitulo: Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'), subtitulo2: periodo + ' · gerado automaticamente',
+      intro: 'Segue em anexo o relatório mensal referente a <strong>' + periodo + '</strong>.',
+      kpis: _kpisEmail(acc), totalCount: linhas.length });
+    enviarEmail('📊 Relatório Mensal de Devoluções — ' + periodo, htmlEmail, [pdf.blob], 'mensal');
+    registrarLog(ss, 'SISTEMA', 0, 0, '', periodo, '📊 Relatório mensal gerado e enviado — ' + periodo);
+  } else {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', periodo, '📊 Relatório mensal gerado — ' + periodo);
+  }
+
+  return JSON.stringify({
+    sucesso: '✅ Relatório de ' + periodo + ' gerado!\n' +
+             linhas.length + ' lançamento(s) — R$ ' + _fmtVal(acc.vTotal) +
+             (enviarEmailFlag ? '\n📧 Enviado por e-mail.' : ''),
+    urlPdf: pdf.arquivo.getUrl()
+  });
+}
+
+// ─── SEMANAL ─────────────────────────────────────────────────
+
+function gerarRelatorioSemanal(params) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!ID_PASTA_DESTINO || ID_PASTA_DESTINO.startsWith('INSIRA'))
+    return JSON.stringify({ erro: 'Configure ID_PASTA_DESTINO no topo do script.' });
+
+  var ss   = getSS();
+  var tz   = ss.getSpreadsheetTimeZone();
+  var hoje = new Date();
+  var enviarEmailFlag = !!params.enviarEmail;
+  var dataIni, dataFim, periodoLabel;
+  var modo = params.modo || 'ultimos7';
+
+  if (modo === 'personalizado') {
+    dataIni = _parseDateStr(params.dataIni);
+    dataFim = _parseDateStr(params.dataFim, true);
+    if (!dataIni || !dataFim) return JSON.stringify({ erro: 'Datas inválidas.' });
+    periodoLabel = _fmtDt(dataIni, tz) + ' a ' + _fmtDt(dataFim, tz);
+  } else if (modo === 'semana_corrente') {
+    var dia = hoje.getDay();
+    var diffSeg = (dia === 0) ? -6 : 1 - dia;
+    dataIni = new Date(hoje); dataIni.setDate(hoje.getDate() + diffSeg);
+    dataIni.setHours(0, 0, 0, 0);
+    dataFim = new Date(dataIni); dataFim.setDate(dataIni.getDate() + 6);
+    dataFim.setHours(23, 59, 59, 999);
+    periodoLabel = 'Semana ' + _fmtDt(dataIni, tz) + ' – ' + _fmtDt(dataFim, tz);
+  } else if (modo === 'semana_anterior') {
+    var dia2 = hoje.getDay();
+    var diffSeg2 = (dia2 === 0) ? -6 : 1 - dia2;
+    dataFim = new Date(hoje); dataFim.setDate(hoje.getDate() + diffSeg2 - 1);
+    dataFim.setHours(23, 59, 59, 999);
+    dataIni = new Date(dataFim); dataIni.setDate(dataFim.getDate() - 6);
+    dataIni.setHours(0, 0, 0, 0);
+    periodoLabel = 'Semana ' + _fmtDt(dataIni, tz) + ' – ' + _fmtDt(dataFim, tz);
+  } else {
+    dataFim = new Date(hoje); dataFim.setHours(23, 59, 59, 999);
+    dataIni = new Date(hoje); dataIni.setDate(hoje.getDate() - 6);
+    dataIni.setHours(0, 0, 0, 0);
+    periodoLabel = 'Últimos 7 dias — até ' + _fmtDt(dataFim, tz);
+  }
+
+  var linhas = _coletarLinhas(ss, tz, dataIni, dataFim);
+  if (!linhas.length)
+    return JSON.stringify({ erro: 'Nenhum lançamento encontrado para o período selecionado.' });
+
+  var acc     = _acumular(linhas);
+  var nomeArq = 'Relatorio_Semanal_' + Utilities.formatDate(dataIni, tz, 'dd-MM-yyyy') +
+                '_a_' + Utilities.formatDate(dataFim, tz, 'dd-MM-yyyy') + '.pdf';
+  var pdf     = _gerarRelatorioPDF(ss, { titulo: 'RELATÓRIO SEMANAL DE DEVOLUÇÕES', periodo: periodoLabel, linhas: linhas, acc: acc, nomeArq: nomeArq });
+
+  if (!pdf) return JSON.stringify({ erro: '❌ Erro ao gerar o PDF. Verifique o log.' });
+
+  if (enviarEmailFlag) {
+    var htmlEmail = _montarHtmlRelatorio({ icone: '📊', titulo: 'Relatório Semanal de Devoluções',
+      subtitulo: Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'), subtitulo2: periodoLabel + ' · gerado automaticamente',
+      intro: 'Segue em anexo o relatório semanal referente a <strong>' + periodoLabel + '</strong>.',
+      kpis: _kpisEmail(acc), totalCount: linhas.length });
+    enviarEmail('📊 Relatório Semanal de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob], 'semanal');
+    registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📊 Relatório semanal gerado e enviado — ' + periodoLabel);
+  } else {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📊 Relatório semanal gerado — ' + periodoLabel);
+  }
+
+  return JSON.stringify({
+    sucesso: '✅ Relatório semanal gerado!\n' +
+             linhas.length + ' lançamento(s) — R$ ' + _fmtVal(acc.vTotal) +
+             (enviarEmailFlag ? '\n📧 Enviado por e-mail.' : ''),
+    urlPdf: pdf.arquivo.getUrl()
+  });
+}
+
+/** Compatibilidade com trigger semanal automático. */
+function enviarResumoSemanal() {
+  var r = gerarRelatorioSemanal({ modo: 'ultimos7', enviarEmail: true });
+  var obj = JSON.parse(r);
+  if (obj.erro) console.error('enviarResumoSemanal: ' + obj.erro);
+}
+
+// ─── DIÁRIO ──────────────────────────────────────────────────
+
+function gerarRelatorioDiario(params) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!ID_PASTA_DESTINO || ID_PASTA_DESTINO.startsWith('INSIRA'))
+    return JSON.stringify({ erro: 'Configure ID_PASTA_DESTINO no topo do script.' });
+
+  var ss  = getSS();
+  var tz  = ss.getSpreadsheetTimeZone();
+  var enviarEmailFlag = !!params.enviarEmail;
+
+  var dataIni = _parseDateStr(params.data);
+  if (!dataIni) return JSON.stringify({ erro: 'Data inválida.' });
+  var dataFim = new Date(dataIni);
+  dataFim.setHours(23, 59, 59, 999);
+
+  var periodoLabel = _fmtDt(dataIni, tz);
+  var linhas = _coletarLinhas(ss, tz, dataIni, dataFim);
+  if (!linhas.length)
+    return JSON.stringify({ erro: 'Nenhum lançamento encontrado para ' + periodoLabel + '.' });
+
+  var acc     = _acumular(linhas);
+  var nomeArq = 'Relatorio_Diario_' + Utilities.formatDate(dataIni, tz, 'dd-MM-yyyy') + '.pdf';
+  var pdf     = _gerarRelatorioPDF(ss, { titulo: 'RELATÓRIO DIÁRIO DE DEVOLUÇÕES', periodo: periodoLabel, linhas: linhas, acc: acc, nomeArq: nomeArq });
+
+  if (!pdf) return JSON.stringify({ erro: '❌ Erro ao gerar o PDF. Verifique o log.' });
+
+  if (enviarEmailFlag) {
+    var htmlEmail = _montarHtmlRelatorio({ icone: '📋', titulo: 'Relatório Diário de Devoluções',
+      subtitulo: Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'), subtitulo2: periodoLabel + ' · gerado automaticamente',
+      intro: 'Segue em anexo o relatório diário referente a <strong>' + periodoLabel + '</strong>.',
+      kpis: _kpisEmail(acc), totalCount: linhas.length });
+    enviarEmail('📋 Relatório Diário de Devoluções — ' + periodoLabel, htmlEmail, [pdf.blob], 'diario');
+    registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📋 Relatório diário gerado e enviado — ' + periodoLabel);
+  } else {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens', '📋 Relatório diário gerado — ' + periodoLabel);
+  }
+
+  return JSON.stringify({
+    sucesso: '✅ Relatório diário de ' + periodoLabel + ' gerado!\n' +
+             linhas.length + ' lançamento(s) — R$ ' + _fmtVal(acc.vTotal) +
+             (enviarEmailFlag ? '\n📧 Enviado por e-mail.' : ''),
+    urlPdf: pdf.arquivo.getUrl()
+  });
+}
+
+// ─── HELPERS DE COLETA ───────────────────────────────────────
+
+/**
+ * Extrai a data de resolução da coluna Obs ("Devolvido em: dd/MM/yyyy ..."
+ * ou "Enviado para o Fábio em: dd/MM/yyyy ..."). Retorna Date ou null.
+ */
+function _extrairDataResolucao(obs) {
+  var m = String(obs || '').match(/em:\s*(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+}
+
+/**
+ * Coleta linhas dentro de [dataIni, dataFim] varrendo:
+ * 1. Abas operacionais (itens ainda ativos/pendentes)
+ * 2. Historico_Arquivo (itens já arquivados — Devolvido/Venda)
+ * Entra no relatório se a DATA DE ENTRADA (col 3) OU a DATA DE
+ * RESOLUÇÃO (Obs "... em: dd/MM/yyyy"; no histórico, fallback para
+ * "Arquivado em") estiver dentro do período. Assim itens devolvidos ou
+ * vendidos na semana aparecem mesmo que tenham entrado antes.
+ */
+function _coletarLinhas(ss, tz, dataIni, dataFim) {
+  var linhas = [];
+
+  function _dentroPeriodo(dt) {
+    return dt instanceof Date && dt >= dataIni && dt <= dataFim;
+  }
+
+  function _incluir(l, fornPadrao, dtArquivado) {
+    var nf = l[IDX_NF], dt = l[IDX_DATA];
+    if (!nf) return;
+    var st = String(l[IDX_STATUS] || '');
+    var dtRes = null;
+    if (st === 'Devolvido' || st === 'Venda') {
+      dtRes = _extrairDataResolucao(l[IDX_OBS]);
+      if (!dtRes && dtArquivado instanceof Date) dtRes = dtArquivado;
+    }
+    if (!_dentroPeriodo(dt) && !_dentroPeriodo(dtRes)) return;
+    linhas.push({
+      nfd:  String(l[IDX_NFD]  || '').trim(),
+      nf:   String(nf).trim(),
+      data: dt instanceof Date ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+      forn: String(l[IDX_FORN] || fornPadrao).trim(),
+      tipo: String(l[IDX_TIPO] || '').trim(),
+      desc: String(l[IDX_DESC] || '').trim(),
+      qtd:  l[IDX_QTD] || 0,
+      val:  parseFloat(l[IDX_VL_TOT]) || 0,
+      st:   st
+    });
+  }
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l) { _incluir(l, nomeAba, null); });
+  });
+
+  var hist = ss.getSheetByName('Historico_Arquivo');
+  if (hist && hist.getLastRow() >= 2) {
+    var ulH  = hist.getLastRow();
+    var cols = Math.min(TOTAL_COLUNAS + 1, hist.getLastColumn());
+    hist.getRange(2, 1, ulH - 1, cols).getValues()
+      .forEach(function(l) {
+        var dtArq = cols > TOTAL_COLUNAS ? l[TOTAL_COLUNAS] : null;
+        _incluir(l, '', dtArq);
+      });
+  }
+
+  return linhas;
+}
+
+// ─── PDF DE RELATÓRIO ─────────────────────────────────────────
+
+/**
+ * Gera PDF do relatório com layout completo:
+ *   1. Cabeçalho  2. KPIs  3. Resumo por fornecedor
+ *   4. Listagem detalhada  5. Rodapé
+ */
+function _gerarRelatorioPDF(ss, params) {
+  var tz = ss.getSpreadsheetTimeZone();
+  var ssTemp;
+  try {
+    ssTemp = SpreadsheetApp.create('_Rel_Temp_' + new Date().getTime());
+    var sh = ssTemp.getSheets()[0];
+
+    var AZUL_ESC  = '#0B1526';   // ink v12 — faixa de marca
+    var AZUL_SUB  = '#1E3A5F';   // navy-deep v12
+    var CINZA_BG  = '#F8F9FA';
+    var BRANCO    = '#FFFFFF';
+    var corStatus = { 'Pendente': '#EBF3FF', 'Devolvido': '#ECFDF5', 'Venda': '#FFF7ED' };
+    var corTipo   = { 'Avaria': '#FFF3E0', 'Falta': '#E3F2FD', 'Rejeição': '#FEF2F2' };
+
+    var nCols    = 9;
+    var larguras = [70, 75, 80, 140, 65, 70, 210, 50, 80];
+    if (params.colExtra) { nCols = 10; larguras.push(70); }
+    larguras.forEach(function(w, i) { sh.setColumnWidth(i + 1, w); });
+
+    var acc  = params.acc || _acumular(params.linhas);
+    var taxa = acc.taxa;
+    var rl   = 1;
+
+    // ── Cabeçalho (faixa de marca: rótulo + título empilhados à esq., logo à dir.) ──
+    sh.setRowHeight(rl, 50);
+    var brandTxt  = 'TRANSBEN · CONTROLE DE DEVOLUÇÕES';
+    var headTxt   = brandTxt + '\n' + params.titulo + (params.periodo ? ' — ' + params.periodo.toUpperCase() : '');
+    var rtHead = SpreadsheetApp.newRichTextValue()
+      .setText(headTxt)
+      .setTextStyle(0, brandTxt.length,
+        SpreadsheetApp.newTextStyle().setForegroundColor('#9CC1FF').setFontSize(7).setBold(true).build())
+      .setTextStyle(brandTxt.length + 1, headTxt.length,
+        SpreadsheetApp.newTextStyle().setForegroundColor(BRANCO).setFontSize(12).setBold(true).build())
+      .build();
+    sh.getRange(rl, 1, 1, nCols - 1).merge()
+      .setRichTextValue(rtHead)
+      .setBackground(AZUL_ESC)
+      .setHorizontalAlignment('left').setVerticalAlignment('middle').setWrap(true);
+    sh.getRange(rl, nCols).setBackground(BRANCO).setHorizontalAlignment('center').setVerticalAlignment('middle');
+    try {
+      var _logoBlobR = _obterLogoTransbenBlob();
+      if (_logoBlobR) _inserirLogoComAspecto(sh, _logoBlobR, nCols, rl, 56, 30);
+      else registrarErroSistema('_gerarRelatorioPDF.logo', '_obterLogoTransbenBlob() retornou null — cache LOGO2_B64_* ausente/vazio.');
+    } catch(eLogoR) {
+      registrarErroSistema('_gerarRelatorioPDF.logo', eLogoR.message || eLogoR.toString());
+    }
+    rl++;
+
+    sh.setRowHeight(rl, 18);
+    var meio = Math.max(1, Math.floor(nCols / 2));
+    sh.getRange(rl, 1, 1, meio).merge()
+      .setValue('Emitido em ' + Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm'))
+      .setBackground(AZUL_SUB).setFontColor('#7E93B8')
+      .setFontSize(8)
+      .setHorizontalAlignment('left').setVerticalAlignment('middle');
+    sh.getRange(rl, meio + 1, 1, nCols - meio).merge()
+      .setValue(params.linhas.length + ' lançamento(s) no período')
+      .setBackground(AZUL_SUB).setFontColor('#7E93B8')
+      .setFontSize(8)
+      .setHorizontalAlignment('right').setVerticalAlignment('middle');
+    rl++;
+
+    // ── KPIs ─────────────────────────────────────────────
+    sh.setRowHeight(rl, 6);
+    sh.getRange(rl, 1, 1, nCols).setBackground(CINZA_BG);
+    rl++;
+
+    var kpiDefs = [
+      { label: 'PENDENTES',      cor: '#2563EB', st: 'Pendente',  qtd: acc.tP, val: acc.vP },
+      { label: 'DEVOLVIDOS',     cor: '#059669', st: 'Devolvido', qtd: acc.tD, val: acc.vD },
+      { label: 'VENDAS',         cor: '#D97706', st: 'Venda',     qtd: acc.tV, val: acc.vV },
+      { label: 'TOTAL',          cor: '#7C3AED', st: null,        qtd: params.linhas.length, val: acc.vTotal },
+      { label: 'TAXA RESOLUÇÃO', cor: taxa >= 70 ? '#059669' : taxa >= 40 ? '#D97706' : '#DC2626',
+        st: 'taxa', qtd: taxa, val: -1 }
+    ];
+
+    var kpiSpans, kpiStarts;
+    if (nCols === 9) {
+      kpiSpans  = [2, 2, 2, 2, 1];
+      kpiStarts = [1, 3, 5, 7, 9];
+    } else {
+      kpiSpans  = [2, 2, 2, 2, 2];
+      kpiStarts = [1, 3, 5, 7, 9];
+    }
+
+    // cartão: rótulo (cinza) / número grande (escuro) / subtítulo (cinza) / barra fina colorida
+    var cardTop = rl;
+    var BG_TAXA = '#ECFDF5';
+
+    sh.setRowHeight(rl, 12);
+    kpiDefs.forEach(function(k, ki) {
+      sh.getRange(rl, kpiStarts[ki], 1, kpiSpans[ki]).merge()
+        .setValue(k.label)
+        .setBackground(k.st === 'taxa' ? BG_TAXA : BRANCO)
+        .setFontColor(k.st === 'taxa' ? '#166534' : '#5B7186')
+        .setFontWeight('bold').setFontSize(7)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    rl++;
+
+    sh.setRowHeight(rl, 18);
+    kpiDefs.forEach(function(k, ki) {
+      var txt = (k.st === 'taxa') ? k.qtd + '%' : String(k.qtd);
+      sh.getRange(rl, kpiStarts[ki], 1, kpiSpans[ki]).merge()
+        .setValue(txt)
+        .setBackground(k.st === 'taxa' ? BG_TAXA : BRANCO)
+        .setFontColor(k.st === 'taxa' ? k.cor : AZUL_ESC)
+        .setFontWeight('bold').setFontSize(13)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    rl++;
+
+    sh.setRowHeight(rl, 11);
+    kpiDefs.forEach(function(k, ki) {
+      var sub = (k.st === 'taxa') ? 'meta ≥ 70%' : 'R$ ' + _fmtVal(k.val);
+      sh.getRange(rl, kpiStarts[ki], 1, kpiSpans[ki]).merge()
+        .setValue(sub)
+        .setBackground(k.st === 'taxa' ? BG_TAXA : BRANCO)
+        .setFontColor(k.st === 'taxa' ? '#4E9B75' : '#8A9BB0')
+        .setFontSize(7.5)
+        .setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    rl++;
+
+    sh.setRowHeight(rl, 4);
+    kpiDefs.forEach(function(k, ki) {
+      sh.getRange(rl, kpiStarts[ki], 1, kpiSpans[ki]).merge().setBackground(k.cor);
+    });
+    rl++;
+
+    kpiDefs.forEach(function(k, ki) {
+      sh.getRange(cardTop, kpiStarts[ki], 4, kpiSpans[ki])
+        .setBorder(true, true, true, true, false, false, '#E3E8F2', SpreadsheetApp.BorderStyle.SOLID);
+    });
+
+    sh.setRowHeight(rl, 6);
+    sh.getRange(rl, 1, 1, nCols).setBackground(CINZA_BG);
+    rl++;
+
+    // ── Resumo por fornecedor ─────────────────────────────
+    var fornMap = {};
+    params.linhas.forEach(function(l) {
+      var f = l.forn || '(sem fornecedor)';
+      if (!fornMap[f]) fornMap[f] = { tP:0,tD:0,tV:0, vP:0,vD:0,vV:0, total:0, vTotal:0 };
+      var m = fornMap[f];
+      m.total++;  m.vTotal += l.val;
+      if      (l.st === 'Pendente')  { m.tP++; m.vP += l.val; }
+      else if (l.st === 'Devolvido') { m.tD++; m.vD += l.val; }
+      else if (l.st === 'Venda')     { m.tV++; m.vV += l.val; }
+    });
+    var fornKeys = Object.keys(fornMap);
+
+    sh.setRowHeight(rl, 16);
+    sh.getRange(rl, 1, 1, nCols).merge()
+      .setValue('RESUMO POR FORNECEDOR')
+      .setBackground(BRANCO).setFontWeight('bold').setFontSize(9).setFontColor(AZUL_SUB)
+      .setHorizontalAlignment('left').setVerticalAlignment('bottom');
+    rl++;
+
+    var hForn = ['Fornecedor','Pendentes','Vl Pendente','Devolvidos','Vl Devolvido','Vendas','Vl Venda','Total','Vl Total'];
+    sh.setRowHeight(rl, 16);
+    sh.getRange(rl, 1, 1, 9).setValues([hForn])
+      .setBackground('#1E3A5F').setFontWeight('bold').setFontSize(8).setFontColor(BRANCO)
+      .setHorizontalAlignment('center');
+    sh.getRange(rl, 1).setHorizontalAlignment('left');
+    rl++;
+
+    var fornRows = fornKeys.map(function(f) {
+      var m = fornMap[f];
+      return [f, m.tP, 'R$ '+_fmtVal(m.vP), m.tD, 'R$ '+_fmtVal(m.vD),
+              m.tV, 'R$ '+_fmtVal(m.vV), m.total, 'R$ '+_fmtVal(m.vTotal)];
+    });
+    fornRows.push([
+      'TOTAL GERAL',
+      acc.tP, 'R$ '+_fmtVal(acc.vP),
+      acc.tD, 'R$ '+_fmtVal(acc.vD),
+      acc.tV, 'R$ '+_fmtVal(acc.vV),
+      params.linhas.length, 'R$ '+_fmtVal(acc.vTotal)
+    ]);
+
+    if (fornRows.length) {
+      sh.getRange(rl, 1, fornRows.length, 9).setValues(fornRows).setFontSize(8)
+        .setHorizontalAlignment('center');
+      sh.getRange(rl, 1, fornRows.length, 1).setHorizontalAlignment('left');
+      sh.getRange(rl + fornRows.length - 1, 1, 1, 9)
+        .setFontWeight('bold').setBackground('#E8EDF3');
+      for (var fi = 0; fi < fornRows.length - 1; fi++) {
+        if (fi % 2 === 1) sh.getRange(rl + fi, 1, 1, 9).setBackground('#F5F7FA');
+      }
+      rl += fornRows.length;
+    }
+
+    sh.setRowHeight(rl, 6);
+    sh.getRange(rl, 1, 1, nCols).setBackground(CINZA_BG);
+    rl++;
+
+    // ── Listagem detalhada ────────────────────────────────
+    sh.setRowHeight(rl, 16);
+    sh.getRange(rl, 1, 1, nCols).merge()
+      .setValue('LISTAGEM DETALHADA — ' + params.linhas.length + ' LANÇAMENTO(S)')
+      .setBackground(BRANCO).setFontWeight('bold').setFontSize(9).setFontColor(AZUL_SUB)
+      .setHorizontalAlignment('left').setVerticalAlignment('bottom');
+    rl++;
+
+    var headers = ['NFD', 'Nº NF', 'Data', 'Fornecedor', 'Tipo', 'Status', 'Descrição', 'Qtd', 'Valor (R$)'];
+    if (params.colExtra) headers.push(params.colExtra.header);
+
+    sh.setRowHeight(rl, 15);
+    sh.getRange(rl, 1, 1, nCols).setValues([headers])
+      .setBackground('#1E3A5F').setFontWeight('bold').setFontSize(8).setFontColor(BRANCO)
+      .setHorizontalAlignment('center');
+    sh.getRange(rl, 7).setHorizontalAlignment('left');
+    rl++;
+
+    if (params.linhas.length) {
+      var vals = params.linhas.map(function(it) {
+        var row = [it.nfd || '', it.nf, it.data, it.forn, it.tipo,
+                   it.st || '', it.desc, it.qtd || '', _fmtVal(it.val)];
+        if (params.colExtra) row.push(params.colExtra.fn(it));
+        return row;
+      });
+      sh.getRange(rl, 1, vals.length, nCols).setValues(vals).setFontSize(8)
+        .setHorizontalAlignment('center');
+      sh.getRange(rl, 7, vals.length, 1).setHorizontalAlignment('left').setWrap(true);
+
+      // [P25/redesign] zebra sutil + cores de FONTE por status/tipo
+      // (substitui o fundo pastel na linha inteira — imprime melhor em P&B)
+      var bgZebra = params.linhas.map(function(_, zi) {
+        return Array(nCols).fill(zi % 2 === 1 ? '#F8FAFD' : BRANCO);
+      });
+      sh.getRange(rl, 1, vals.length, nCols).setBackgrounds(bgZebra);
+      var fcStatus = { 'Pendente': '#2563EB', 'Devolvido': '#059669', 'Venda': '#D97706' };
+      var fontStatus = params.linhas.map(function(it) { return [fcStatus[it.st] || '#344256']; });
+      sh.getRange(rl, 6, vals.length, 1).setFontColors(fontStatus).setFontWeight('bold');
+      var fcTipo = { 'Avaria': '#B45309', 'Rejeição': '#DC2626', 'Falta': '#2563EB' };
+      var fontTipo = params.linhas.map(function(it) { return [fcTipo[it.tipo] || '#344256']; });
+      sh.getRange(rl, 5, vals.length, 1).setFontColors(fontTipo).setFontWeight('bold');
+      rl += vals.length;
+    }
+
+    // ── Rodapé ────────────────────────────────────────────
+    sh.setRowHeight(rl, 6); rl++;
+    sh.setRowHeight(rl, 14);
+    sh.getRange(rl, 1, 1, nCols).merge()
+      .setValue('Relatório gerado automaticamente pelo Sistema de Controle de Devoluções.')
+      .setFontColor('#9CA3AF').setFontSize(7).setFontStyle('italic')
+      .setHorizontalAlignment('center');
+
+    SpreadsheetApp.flush();
+    var exportUrl = ssTemp.getUrl().replace(/\/edit.*$/, '') +
+      '/export?exportFormat=pdf&format=pdf&size=A4&portrait=false' +
+      '&scale=1&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false' +
+      '&top_margin=0.3&bottom_margin=0.3&left_margin=0.3&right_margin=0.3' +
+      '&horizontal_alignment=CENTER&vertical_alignment=MIDDLE';
+
+    // [P26] pdfBlob reutilizado em memória
+    var pdfBlob = UrlFetchApp.fetch(exportUrl, {
+      headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true
+    }).getBlob().setName(params.nomeArq);
+
+    var arquivo = DriveApp.getFolderById(ID_PASTA_DESTINO).createFile(pdfBlob);
+    DriveApp.getFileById(ssTemp.getId()).setTrashed(true);
+    return { arquivo: arquivo, blob: pdfBlob };
+
+  } catch(e) {
+    console.error('_gerarRelatorioPDF: ' + e);
+    registrarErroSistema('_gerarRelatorioPDF', e.message || e.toString());
+    try { if (ssTemp) DriveApp.getFileById(ssTemp.getId()).setTrashed(true); } catch(_) {}
+    return null;
+  }
+}
+
+/**
+ * [Redesign] Monta o HTML padrão dos e-mails de relatório/alerta.
+ * Identidade v12 (faixa de marca #0B1526→#1E3A5F), faixa de severidade
+ * (vermelha quando o 1º KPI é crítico, azul informativa nos demais),
+ * KPIs em cartões arredondados e botão apontando pro anexo.
+ * Chamadores inalterados: { icone, titulo, subtitulo, intro, kpis[{label,cor,valor,sub}] }.
+ */
+function _montarHtmlRelatorio(params) {
+  var kpis = params.kpis || [];
+  var critico = kpis.length && String(kpis[0].cor).toUpperCase() === '#DC2626';
+  var faixaCor   = critico ? '#DC2626' : '#1E40AF';
+  var faixaTexto = critico
+    ? 'AÇÃO NECESSÁRIA — ' + _esc(String(kpis[0].valor || '').toUpperCase()) + ' ' + _esc(String(kpis[0].label || '').toUpperCase())
+    : 'RELATÓRIO COMPLETO EM ANEXO (PDF)';
+
+  var kpiCells = kpis.map(function(k) {
+    var destaque = String(k.cor).toUpperCase() === '#DC2626';
+    return '<td style="width:' + Math.floor(100 / kpis.length) + '%;text-align:center;vertical-align:top;' +
+           'border:1px solid ' + (destaque ? '#FECACA' : '#E3E8F2') + ';' +
+           (destaque ? 'background:#FEF2F2;' : '') + 'border-radius:10px;padding:12px 6px">' +
+      '<div style="font-size:9px;font-weight:bold;color:' + (destaque ? '#991B1B' : '#5B7186') + ';letter-spacing:1px">' + _esc(String(k.label).toUpperCase()) + '</div>' +
+      '<div style="font-size:20px;font-weight:bold;color:' + k.cor + ';margin:3px 0 1px">' + _esc(k.valor) + '</div>' +
+      '<div style="font-size:9.5px;color:#8A9BB0">' + _esc(k.sub) + '</div>' +
+      '</td>';
+  }).join('');
+
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F1F4F9" style="background:#F1F4F9;padding:20px 8px"><tr><td align="center">' +
+    '<table role="presentation" width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;font-family:Arial,Helvetica,sans-serif">' +
+    '<tr><td bgcolor="#0B1526" style="background:linear-gradient(135deg,#0B1526,#1E3A5F);border-radius:10px 10px 0 0;padding:18px 22px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+        '<td style="font-size:8.5px;font-weight:bold;color:#9CC1FF;letter-spacing:2px">TRANSBEN · CONTROLE DE DEVOLUÇÕES</td>' +
+        '<td align="right" style="font-size:10px;color:#7E93B8">' + _esc(params.subtitulo || '') + '</td>' +
+      '</tr></table>' +
+      '<div style="color:#fff;font-size:17px;font-weight:bold;margin-top:9px">' + _esc(params.icone) + ' ' + _esc(params.titulo) + '</div>' +
+    '</td></tr>' +
+    '<tr><td bgcolor="' + faixaCor + '" style="background:' + faixaCor + ';color:#fff;font-size:10px;font-weight:bold;letter-spacing:1px;text-align:center;padding:5px">' + faixaTexto + '</td></tr>' +
+    '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:20px 22px">' +
+      '<p style="margin:0 0 16px;font-size:13px;color:#344256;line-height:1.6">' + (params.intro || '') + '</p>' +
+      (kpiCells ? '<table role="presentation" style="width:100%;border-collapse:separate;border-spacing:7px;margin-bottom:14px"><tr>' + kpiCells + '</tr></table>' : '') +
+      '<div style="text-align:center;margin:16px 0 4px">' +
+        '<span style="background:linear-gradient(135deg,#3B76F6,#1E40AF);color:#fff;font-size:12px;font-weight:bold;padding:10px 26px;border-radius:9px;display:inline-block">📎 Ver relatório em anexo</span>' +
+      '</div>' +
+    '</td></tr>' +
+    '<tr><td bgcolor="#F1F4F9" style="background:#F1F4F9;border:1px solid #E3E8F2;border-top:none;border-radius:0 0 10px 10px;padding:12px 22px" align="center">' +
+      '<div style="font-size:10px;color:#8A9BB0;line-height:1.6">E-mail automático do <b style="color:#5B7186">Controle de Devoluções · Transben</b>.<br>O relatório completo está em anexo (PDF).</div>' +
+    '</td></tr>' +
+    '</table></td></tr></table>';
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   RELATÓRIO DE PENDENTES
+// ════════════════════════════════════════════════════════════
+
+function gerarRelatorioPendentes(params) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!ID_PASTA_DESTINO || ID_PASTA_DESTINO.startsWith('INSIRA'))
+    return JSON.stringify({ erro: 'Configure ID_PASTA_DESTINO no topo do script.' });
+
+  var ss   = getSS();
+  var tz   = ss.getSpreadsheetTimeZone();
+  var hoje = new Date();
+  var linhas = [];
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) return;
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) return;
+    ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues()
+      .forEach(function(l) {
+        if (!l[IDX_NF] || l[IDX_STATUS] !== 'Pendente') return;
+        var dt   = l[IDX_DATA];
+        var dias = (dt instanceof Date && !isNaN(dt))
+                   ? Math.floor((hoje - dt) / 864e5) : 0;
+        linhas.push({
+          nfd:  String(l[IDX_NFD]  || '').trim(),
+          nf:   String(l[IDX_NF]   || '').trim(),
+          data: (dt instanceof Date && !isNaN(dt))
+                ? Utilities.formatDate(dt, tz, 'dd/MM/yyyy') : '',
+          forn: String(l[IDX_FORN] || nomeAba).trim(),
+          tipo: String(l[IDX_TIPO] || '').trim(),
+          desc: String(l[IDX_DESC] || '').trim(),
+          qtd:  l[IDX_QTD]  || 0,
+          val:  parseFloat(l[IDX_VL_TOT]) || 0,
+          st:   'Pendente',
+          dias: dias
+        });
+      });
+  });
+
+  linhas.sort(function(a, b) { return b.dias - a.dias; });
+
+  if (!linhas.length)
+    return JSON.stringify({ erro: 'Nenhum item Pendente encontrado nas abas.' });
+
+  var acc      = _acumular(linhas);
+  var dataStr  = Utilities.formatDate(hoje, tz, 'dd/MM/yyyy');
+  var nomeArq  = 'Relatorio_Pendentes_' + dataStr.replace(/\//g, '-') + '.pdf';
+
+  var pdf;
+  try {
+    pdf = _gerarRelatorioPDF(ss, {
+      titulo:   'RELATÓRIO DE PENDÊNCIAS EM ABERTO',
+      periodo:  dataStr,
+      linhas:   linhas,
+      acc:      acc,
+      nomeArq:  nomeArq,
+      colExtra: { header: 'Em aberto', fn: function(it) {
+        return it.dias > 0 ? it.dias + ' dias' : 'Hoje';
+      }}
+    });
+  } catch (ePdf) {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', '', '❌ Erro PDF pendentes: ' + ePdf.toString());
+    return JSON.stringify({ erro: '❌ Erro ao gerar PDF: ' + ePdf.toString() });
+  }
+
+  if (!pdf)
+    return JSON.stringify({ erro: '❌ Erro ao gerar o PDF. Verifique o log do Apps Script para detalhes.' });
+
+  if (params && params.enviarEmail) {
+    try {
+      var htmlEmail = _montarHtmlRelatorio({
+        icone:     '⏳',
+        titulo:    'Pendências em Aberto',
+        subtitulo: dataStr,
+        intro:     'Snapshot de todos os itens atualmente <strong>Pendentes</strong>, ordenados por antiguidade.',
+        kpis: [
+          { label: 'Total Pendente', cor: '#2563EB',
+            valor: linhas.length + ' itens', sub: 'R$ ' + _fmtVal(acc.vP) },
+          { label: 'Valor em Aberto', cor: '#DC2626',
+            valor: 'R$ ' + _fmtVal(acc.vP), sub: 'a receber/resolver' }
+        ]
+      });
+      enviarEmail('⏳ Relatório de Pendências — ' + dataStr, htmlEmail, [pdf.blob], 'pendencias');
+    } catch (eMail) {
+      console.error('gerarRelatorioPendentes — e-mail: ' + eMail);
+      registrarErroSistema('gerarRelatorioPendentes.email', eMail.message || eMail.toString());
+    }
+  }
+
+  registrarLog(ss, 'SISTEMA', 0, 0, '', linhas.length + ' itens',
+    '⏳ Relatório pendentes gerado — ' + dataStr);
+
+  return JSON.stringify({
+    sucesso: '✅ Relatório de pendentes gerado!\n' +
+             linhas.length + ' item(ns) em aberto — R$ ' + _fmtVal(acc.vP) +
+             (params && params.enviarEmail ? '\n📧 Enviado por e-mail.' : ''),
+    urlPdf: pdf.arquivo.getUrl()
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//   RELATÓRIO POR FORNECEDOR
+//   Adicionar no Código.gs logo após gerarRelatorioPendentes()
+//   (após a linha que fecha a função com `}` na linha ~3445)
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Retorna lista de fornecedores presentes na aba "Fornecedores Variados".
+ * Chamada pelo FormRelatorios.html via google.script.run.listarFornecedoresVariados()
+ */
+function listarFornecedoresVariados() {
+  try {
+    var ss = getSS();
+    var ws = ss.getSheetByName('Fornecedores Variados');
+
+    if (!ws) {
+      return JSON.stringify({ variados: [], erro: 'Aba "Fornecedores Variados" não encontrada.' });
+    }
+
+    var ul = obterUltimaLinhaDados(ws);
+    if (ul < LINHA_DADOS) {
+      return JSON.stringify({ variados: [] });
+    }
+
+    var valores = ws.getRange(LINHA_DADOS, COL_FORN, ul - LINHA_DADOS + 1, 1).getValues();
+    var vistos  = {};
+    var lista   = [];
+
+    valores.forEach(function(row) {
+      var nome = String(row[0] || '').trim();
+      if (nome && !vistos[nome]) {
+        vistos[nome] = true;
+        lista.push(nome);
+      }
+    });
+
+    lista.sort(function(a, b) { return a.localeCompare(b, 'pt-BR'); });
+
+    return JSON.stringify({ variados: lista });
+
+  } catch (e) {
+    return JSON.stringify({ variados: [], erro: e.toString() });
+  }
+}
+
+/**
+ * Gera relatório PDF filtrado por fornecedor específico (ou todos) e período.
+ * Chamada pelo FormRelatorios.html via google.script.run.gerarRelatorioPorFornecedor(params)
+ *
+ * params: {
+ *   fornecedor:   string — nome do fornecedor ou 'TODOS'
+ *   dataIni:      string — 'YYYY-MM-DD'
+ *   dataFim:      string — 'YYYY-MM-DD'
+ *   enviarEmail:  boolean
+ * }
+ */
+function gerarRelatorioPorFornecedor(params) {
+  var _chk = _exigirModulo('relatorios', true);
+  if (!_chk.ok) return _chk.resp;
+  if (!ID_PASTA_DESTINO || ID_PASTA_DESTINO.startsWith('INSIRA'))
+    return JSON.stringify({ erro: 'Configure ID_PASTA_DESTINO no topo do script.' });
+
+  var ss   = getSS();
+  var tz   = ss.getSpreadsheetTimeZone();
+  var enviarEmailFlag = !!params.enviarEmail;
+
+  var fornFiltro = String(params.fornecedor || '').trim();
+  if (!fornFiltro)
+    return JSON.stringify({ erro: 'Selecione um fornecedor.' });
+
+  var dataIni = _parseDateStr(params.dataIni);
+  var dataFim = _parseDateStr(params.dataFim, true);
+  if (!dataIni || !dataFim)
+    return JSON.stringify({ erro: 'Datas inválidas.' });
+
+  var periodoLabel = _fmtDt(dataIni, tz) + ' a ' + _fmtDt(dataFim, tz);
+  var titulo, nomeArq;
+
+  // Coleta todas as linhas do período
+  var todasLinhas = _coletarLinhas(ss, tz, dataIni, dataFim);
+
+  // Filtra por fornecedor (se não for TODOS)
+  var linhas;
+  if (fornFiltro === 'TODOS') {
+    linhas  = todasLinhas;
+    titulo  = 'RELATÓRIO DE DEVOLUÇÕES — TODOS OS FORNECEDORES';
+    nomeArq = 'Relatorio_Fornecedor_TODOS_' +
+              Utilities.formatDate(dataIni, tz, 'dd-MM-yyyy') + '_a_' +
+              Utilities.formatDate(dataFim, tz, 'dd-MM-yyyy') + '.pdf';
+  } else {
+    var fornLower = fornFiltro.toLowerCase();
+    linhas = todasLinhas.filter(function(l) {
+      return l.forn.toLowerCase() === fornLower;
+    });
+    titulo  = 'RELATÓRIO DE DEVOLUÇÕES — ' + fornFiltro.toUpperCase();
+    nomeArq = 'Relatorio_Fornecedor_' +
+              fornFiltro.replace(/[^a-zA-Z0-9]/g, '_') + '_' +
+              Utilities.formatDate(dataIni, tz, 'dd-MM-yyyy') + '_a_' +
+              Utilities.formatDate(dataFim, tz, 'dd-MM-yyyy') + '.pdf';
+  }
+
+  if (!linhas.length) {
+    var msg = fornFiltro === 'TODOS'
+      ? 'Nenhum lançamento encontrado para o período ' + periodoLabel + '.'
+      : 'Nenhum lançamento de "' + fornFiltro + '" encontrado para ' + periodoLabel + '.';
+    return JSON.stringify({ erro: msg });
+  }
+
+  var acc = _acumular(linhas);
+
+  var pdf;
+  try {
+    pdf = _gerarRelatorioPDF(ss, {
+      titulo:  titulo,
+      periodo: periodoLabel,
+      linhas:  linhas,
+      acc:     acc,
+      nomeArq: nomeArq
+    });
+  } catch (ePdf) {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', '', '❌ Erro PDF fornecedor: ' + ePdf.toString());
+    return JSON.stringify({ erro: '❌ Erro ao gerar PDF: ' + ePdf.toString() });
+  }
+
+  if (!pdf)
+    return JSON.stringify({ erro: '❌ Erro ao gerar o PDF. Verifique o log do Apps Script.' });
+
+  if (enviarEmailFlag) {
+    try {
+      var htmlEmail = _montarHtmlRelatorio({
+        icone:    '🏭',
+        titulo:   'Relatório por Fornecedor — ' + (fornFiltro === 'TODOS' ? 'Todos' : fornFiltro),
+        subtitulo: Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'),
+        subtitulo2: periodoLabel + ' · gerado automaticamente',
+        intro:    'Segue em anexo o relatório de devoluções de <strong>' +
+                  (fornFiltro === 'TODOS' ? 'todos os fornecedores' : fornFiltro) +
+                  '</strong> referente ao período <strong>' + periodoLabel + '</strong>.',
+        kpis:     _kpisEmail(acc),
+        totalCount: linhas.length
+      });
+      enviarEmail(
+        '🏭 Relatório por Fornecedor — ' +
+        (fornFiltro === 'TODOS' ? 'Todos' : fornFiltro) + ' — ' + periodoLabel,
+        htmlEmail,
+        [pdf.blob],
+        'fornecedor'
+      );
+      registrarLog(ss, 'SISTEMA', 0, 0, '', fornFiltro,
+        '🏭 Relatório por fornecedor gerado e enviado — ' + fornFiltro + ' — ' + periodoLabel);
+    } catch (eEmail) {
+      // PDF gerado com sucesso; apenas avisa falha no e-mail
+      return JSON.stringify({
+        sucesso: '✅ PDF gerado, mas falha ao enviar e-mail: ' + eEmail.message,
+        urlPdf: pdf.arquivo.getUrl()
+      });
+    }
+  } else {
+    registrarLog(ss, 'SISTEMA', 0, 0, '', fornFiltro,
+      '🏭 Relatório por fornecedor gerado — ' + fornFiltro + ' — ' + periodoLabel);
+  }
+
+  return JSON.stringify({
+    sucesso: '✅ Relatório de ' + (fornFiltro === 'TODOS' ? 'todos os fornecedores' : '"' + fornFiltro + '"') +
+             ' gerado!\n' + linhas.length + ' lançamento(s) — R$ ' + _fmtVal(acc.vTotal) +
+             (enviarEmailFlag ? '\n📧 Enviado por e-mail.' : ''),
+    urlPdf: pdf.arquivo.getUrl()
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//   BACKUP E RESTAURAÇÃO
+// ════════════════════════════════════════════════════════════
+
+function abrirBackup() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormBackup').setWidth(480).setHeight(380),
+    '💾 Backup e Restauração'
+  );
+}
+
+/** Lê o histórico de backups (mais recente primeiro). Faz fallback pra
+ * aba legada _Backup_Snapshot (instalações de antes da rotação) se o
+ * histórico novo ainda estiver vazio, pra não "perder" um backup antigo
+ * logo após a atualização. */
+function _lerHistoricoBackups() {
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_BACKUP_HISTORICO) || '[]';
+    var hist = JSON.parse(raw);
+    if (hist && hist.length) return hist;
+  } catch (_) {}
+  try {
+    var ss     = getSS();
+    var legado = ss.getSheetByName(BACKUP_ABA_LEGADA);
+    if (legado && legado.getLastRow() >= 2) {
+      var ts = '';
+      try {
+        var tsVal = legado.getRange(2, BACKUP_TOTAL_COL).getValue();
+        ts = tsVal instanceof Date
+          ? Utilities.formatDate(tsVal, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss')
+          : String(tsVal || '');
+      } catch (_) {}
+      return [{ sheetName: BACKUP_ABA_LEGADA, ts: ts, totalLinhas: legado.getLastRow() - 1, resumo: {}, legado: true }];
+    }
+  } catch (_) {}
+  return [];
+}
+
+function infoBackupExistente() {
+  var hist = _lerHistoricoBackups();
+  if (!hist.length) return JSON.stringify({ existe: false });
+  var mais = hist[0];
+  var contagem = mais.resumo || {};
+  // Backup legado (pré-rotação): resumo não fica salvo em Properties —
+  // recalcula lendo a aba diretamente, como o código antigo já fazia.
+  if (mais.legado && !Object.keys(contagem).length) {
+    try {
+      var ss = getSS();
+      var ws = ss.getSheetByName(mais.sheetName);
+      var dados = ws.getRange(2, 1, ws.getLastRow() - 1, BACKUP_TOTAL_COL).getValues();
+      dados.forEach(function(l) {
+        var aba = String(l[0] || '').trim();
+        var nf  = String(l[IDX_NF + 1] || '').trim();
+        if (aba && nf) contagem[aba] = (contagem[aba] || 0) + 1;
+      });
+    } catch (_) {}
+  }
+  return JSON.stringify({ existe: true, data: mais.ts, contagem: contagem });
+}
+
+/** Lista o histórico completo de backups (rotação) pra tela de Backup/Configurações. */
+function listarHistoricoBackups() {
+  var _chk = _exigirModulo('backup', false);
+  if (!_chk.ok) return _chk.resp;
+  var hist = _lerHistoricoBackups();
+  return JSON.stringify({
+    historico: hist.map(function(h, i) {
+      return { indice: i, ts: h.ts, totalLinhas: h.totalLinhas || 0, resumo: h.resumo || {}, legado: !!h.legado };
+    }),
+    mantidos: BACKUPS_MANTIDOS
+  });
+}
+
+/** @param {string} [rotulo] Etiqueta opcional (Painel Admin → Backup manual
+ * com etiqueta). Quando omitido, comportamento 100% igual ao de antes —
+ * mantém compatibilidade com todo chamador existente (FormBackup.html,
+ * reaplicarCoresTodas, _executarBackupAutomatico) que invoca executarBackup()
+ * sem argumentos. */
+function executarBackup(rotulo) {
+  var _chk = _exigirModulo('backup', true);
+  if (!_chk.ok) return _chk.resp;
+  var temRotulo = (typeof rotulo === 'string' && rotulo.trim() !== '');
+  var rotuloLimpo = temRotulo ? rotulo.trim() : '';
+  var ss  = getSS();
+  var tz  = Session.getScriptTimeZone();
+  var agora = new Date();
+
+  var baseNome = BACKUP_PREFIXO + Utilities.formatDate(agora, tz, 'yyyyMMdd_HHmmss');
+  var sheetName = baseNome, suf = 0;
+  while (ss.getSheetByName(sheetName)) { suf++; sheetName = baseNome + '_' + suf; }
+
+  var ws = ss.insertSheet(sheetName);
+  ws.hideSheet();
+
+  var cab = ['Aba Origem',
+    'NFD','Nº NF','Data Entrada','Fornecedor','Tipo','Motivo','Descrição',
+    'Qtd','Vl Unit','Vl Total','Status','Pendente✓','Devolvido✓','Venda✓',
+    'Obs','Responsável','Anexo','Dias Armazenado','Tipo Frete','Valor Frete','Backup em'
+  ];
+  ws.getRange(1, 1, 1, BACKUP_TOTAL_COL)
+    .setValues([cab])
+    .setBackground('#1E3A5F').setFontColor('#FFFFFF').setFontWeight('bold');
+  ws.setFrozenRows(1);
+  ws.setColumnWidth(1, 160);
+
+  var totalLinhas = 0;
+  var resumo = {};
+
+  _getTodasAbas().forEach(function(nomeAba) {
+    var wsAba = ss.getSheetByName(nomeAba);
+    if (!wsAba) return;
+    var ul = obterUltimaLinhaDados(wsAba);
+    if (ul < LINHA_DADOS) return;
+
+    var dados = wsAba.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+    var linhas = [];
+    dados.forEach(function(l) {
+      if (!l[IDX_NF] && !l[IDX_NFD]) return;
+      linhas.push([nomeAba].concat(l).concat([agora]));
+    });
+
+    if (linhas.length) {
+      ws.getRange(ws.getLastRow() + 1, 1, linhas.length, BACKUP_TOTAL_COL)
+        .setValues(linhas);
+      resumo[nomeAba] = linhas.length;
+      totalLinhas += linhas.length;
+    }
+  });
+
+  SpreadsheetApp.flush();
+
+  var dataStr = Utilities.formatDate(agora, tz, 'dd/MM/yyyy HH:mm:ss');
+
+  // Atualiza o histórico rotativo: insere o novo backup na frente e, se
+  // passar de BACKUPS_MANTIDOS, apaga a(s) aba(s) mais antiga(s) da rotação.
+  var hist;
+  try { hist = JSON.parse(PropertiesService.getScriptProperties().getProperty(_KEY_BACKUP_HISTORICO) || '[]'); }
+  catch (_) { hist = []; }
+  var histEntry = { sheetName: sheetName, ts: dataStr, totalLinhas: totalLinhas, resumo: resumo };
+  if (temRotulo) histEntry.rotulo = rotuloLimpo;
+  hist.unshift(histEntry);
+  while (hist.length > BACKUPS_MANTIDOS) {
+    var antigo = hist.pop();
+    try {
+      var wsAntigo = ss.getSheetByName(antigo.sheetName);
+      if (wsAntigo) ss.deleteSheet(wsAntigo);
+    } catch (_) {}
+  }
+  // Migração: se ainda existir a aba legada de antes da rotação, remove —
+  // ela já foi absorvida como o item mais antigo (ou será, nas próximas
+  // execuções) e não faz mais sentido manter as duas convenções juntas.
+  try {
+    var legado = ss.getSheetByName(BACKUP_ABA_LEGADA);
+    if (legado && !hist.some(function(h) { return h.sheetName === BACKUP_ABA_LEGADA; })) {
+      ss.deleteSheet(legado);
+    }
+  } catch (_) {}
+  PropertiesService.getScriptProperties().setProperty(_KEY_BACKUP_HISTORICO, JSON.stringify(hist));
+
+  registrarLog(ss, 'SISTEMA', 0, 0, '', totalLinhas + ' linhas', '💾 Backup realizado em ' + dataStr +
+    (temRotulo ? ' ["' + rotuloLimpo + '"]' : '') + ' (' + hist.length + '/' + BACKUPS_MANTIDOS + ' na rotação)');
+
+  notificarEvento('sistema', '💾 <b>Backup realizado</b> — ' + dataStr +
+    (temRotulo ? ' ["' + rotuloLimpo + '"]' : '') + '\n' + totalLinhas + ' linha(s) salvas. (' + hist.length + '/' + BACKUPS_MANTIDOS + ' na rotação)');
+
+  // Auditoria administrativa só quando a etiqueta foi passada explicitamente
+  // (backup manual pedido no Painel Admin) — o backup automático noturno
+  // (_executarBackupAutomatico) chama executarBackup() sem argumento e não
+  // deve poluir a trilha de auditoria a cada execução silenciosa.
+  if (temRotulo) {
+    try { _registrarAuditoriaAdmin('backup_manual', rotuloLimpo); } catch (_) {}
+  }
+
+  var msg = '✅ Backup concluído em ' + dataStr + (temRotulo ? ' — etiqueta: "' + rotuloLimpo + '"' : '') + '\n\n';
+  Object.keys(resumo).forEach(function(aba) {
+    msg += '• ' + aba + ': ' + resumo[aba] + ' linha(s)\n';
+  });
+  msg += '\nTotal: ' + totalLinhas + ' registro(s) salvos.';
+  msg += '\nMantendo ' + hist.length + ' de ' + BACKUPS_MANTIDOS + ' backups na rotação.';
+  return JSON.stringify({ sucesso: msg, data: dataStr, contagem: resumo, totalBackups: hist.length });
+}
+
+/** @param {number} [indice] Qual backup da rotação restaurar (0 = mais recente, padrão). */
+function executarRestauracao(indice) {
+  var _chk = _exigirModulo('backup', true);
+  if (!_chk.ok) return _chk.resp;
+  var ss   = getSS();
+  var hist = _lerHistoricoBackups();
+  if (!hist.length)
+    return JSON.stringify({ erro: 'Nenhum backup encontrado. Faça um backup antes de reconfigurar.' });
+
+  var idx = parseInt(indice, 10);
+  if (isNaN(idx) || idx < 0 || idx >= hist.length) idx = 0;
+  var alvo = hist[idx];
+  var wsB  = ss.getSheetByName(alvo.sheetName);
+  if (!wsB || wsB.getLastRow() < 2)
+    return JSON.stringify({ erro: 'O backup selecionado (' + (alvo.ts || alvo.sheetName) + ') não foi encontrado na planilha — pode ter sido removido manualmente.' });
+
+  var tz   = Session.getScriptTimeZone();
+  var ul   = wsB.getLastRow();
+  var snap = wsB.getRange(2, 1, ul - 1, BACKUP_TOTAL_COL).getValues();
+
+  var porAba = {};
+  snap.forEach(function(l) {
+    var aba = String(l[0] || '').trim();
+    var nf  = String(l[IDX_NF + 1] || '').trim();
+    if (!aba || !nf) return;
+    if (!porAba[aba]) porAba[aba] = [];
+    porAba[aba].push(l.slice(1, TOTAL_COLUNAS + 1));
+  });
+
+  var totalRestaurados = 0;
+  var resumo = {};
+  var erros  = [];
+
+  Object.keys(porAba).forEach(function(nomeAba) {
+    var ws = ss.getSheetByName(nomeAba);
+    if (!ws) {
+      erros.push('Aba "' + nomeAba + '" não encontrada — execute "Configurar/Reinstalar" primeiro.');
+      return;
+    }
+
+    var linhas = porAba[nomeAba];
+    var dest   = LINHA_DADOS;
+
+    // Valida limite de linhas da aba (MAX_LINHAS_ABA) antes de escrever —
+    // sem essa checagem, um backup com mais itens do que a aba comporta
+    // gravaria além da área formatada/protegida (checkboxes, proteções e
+    // formatação condicional só existem até ULTIMA_LINHA_DADOS), deixando
+    // linhas "soltas" sem checkbox nem proteção correta.
+    if (linhas.length > MAX_LINHAS_ABA) {
+      erros.push('Aba "' + nomeAba + '": backup tem ' + linhas.length +
+        ' itens, acima do limite de ' + MAX_LINHAS_ABA + ' linhas da aba — restauração cancelada para essa aba. ' +
+        'Restaure em outra planilha maior ou reduza os dados do backup antes de tentar novamente.');
+      return;
+    }
+
+    var fmt    = 'R$ #,##0.00;;"";""';
+    var trava  = LockService.getScriptLock();
+    if (!trava.tryLock(15000)) {
+      erros.push('Timeout ao restaurar "' + nomeAba + '". Tente novamente.');
+      return;
+    }
+
+    try {
+      // [P27] Lista proteções 1× fora do loop
+      var protsAba = ws.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+      var protMap  = {};
+      protsAba.forEach(function(p) { protMap[p.getRange().getRow()] = p; });
+
+      linhas.forEach(function(l, idx) {
+        var row = dest + idx;
+        if (protMap[row]) { protMap[row].remove(); _decrementarProtecoes(1); }
+      });
+
+      // [P27] Batch setValues
+      ws.getRange(dest, 1, linhas.length, TOTAL_COLUNAS).setValues(linhas);
+
+      var fmulas = [], fu = [], ft = [], fd = [], cores = [], fdias = [], fmtDias = [];
+      linhas.forEach(function(l, idx) {
+        var row    = dest + idx;
+        var status = String(l[IDX_STATUS] || 'Pendente').trim();
+        fmulas.push([_formulaTotal(row)]);
+        fu.push([fmt]); ft.push([fmt]); fd.push(['dd/mm/yyyy']);
+        cores.push(Array(TOTAL_COLUNAS).fill(corPorStatus(status)));
+        fdias.push([_formulaDiasArmazenado(row)]);
+        fmtDias.push(['0" dias"']);
+      });
+      ws.getRange(dest, COL_VL_TOT,  linhas.length, 1).setFormulas(fmulas);
+      ws.getRange(dest, COL_VL_UNIT, linhas.length, 1).setNumberFormats(fu);
+      ws.getRange(dest, COL_VL_TOT,  linhas.length, 1).setNumberFormats(ft);
+      ws.getRange(dest, COL_DATA,    linhas.length, 1).setNumberFormats(fd);
+      ws.getRange(dest, COL_DIAS_ARMAZ, linhas.length, 1).setFormulas(fdias);
+      ws.getRange(dest, COL_DIAS_ARMAZ, linhas.length, 1).setNumberFormats(fmtDias);
+      ws.getRange(dest, 1, linhas.length, TOTAL_COLUNAS).setBackgrounds(cores);
+
+      linhas.forEach(function(l, idx) {
+        var status = String(l[IDX_STATUS] || 'Pendente').trim();
+        if (status === 'Devolvido' || status === 'Venda') {
+          protegerLinhaConcluida(ss, ws, dest + idx, status);
+        }
+      });
+
+      resumo[nomeAba]  = linhas.length;
+      totalRestaurados += linhas.length;
+    } catch(e) {
+      erros.push('Erro em "' + nomeAba + '": ' + e.toString());
+    } finally {
+      trava.releaseLock();
+    }
+  });
+
+  SpreadsheetApp.flush();
+  _atualizarMetricasDashboard(ss);
+
+  var dataStr = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm:ss');
+  registrarLog(ss, 'SISTEMA', 0, 0, '', totalRestaurados + ' linhas',
+    '🔄 Restauração concluída em ' + dataStr);
+
+  var msg = '✅ Restauração concluída!\n\n';
+  Object.keys(resumo).forEach(function(aba) {
+    msg += '• ' + aba + ': ' + resumo[aba] + ' linha(s) restaurada(s)\n';
+  });
+  msg += '\nTotal: ' + totalRestaurados + ' registro(s).';
+  if (erros.length) msg += '\n\n⚠️ Avisos:\n' + erros.join('\n');
+
+  return JSON.stringify({ sucesso: msg });
+}
+
+// ── Backup automático agendado ────────────────────────────────
+var _KEY_BACKUP_AUTO = 'cdv_backup_auto'; // JSON: { ativo, frequencia:'diario'|'semanal', horario }
+
+/** Liga/desliga e configura o backup automático (trigger de tempo). Chamado
+ * pela tela de Backup/Configurações. */
+function configurarBackupAutomatico(ativo, frequencia, horario) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    ScriptApp.getProjectTriggers().forEach(function(t) {
+      if (t.getHandlerFunction() === '_executarBackupAutomatico') ScriptApp.deleteTrigger(t);
+    });
+
+    var hr   = Math.max(0, Math.min(23, parseInt(horario, 10) || 3));
+    var freq = (frequencia === 'semanal') ? 'semanal' : 'diario';
+
+    if (ativo) {
+      var trig = ScriptApp.newTrigger('_executarBackupAutomatico').timeBased();
+      if (freq === 'semanal') {
+        trig.onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(hr).create();
+      } else {
+        trig.everyDays(1).atHour(hr).create();
+      }
+    }
+
+    PropertiesService.getScriptProperties().setProperty(_KEY_BACKUP_AUTO,
+      JSON.stringify({ ativo: !!ativo, frequencia: freq, horario: hr }));
+
+    return JSON.stringify({ ok: ativo
+      ? ('✅ Backup automático ativado — ' + (freq === 'semanal' ? 'semanal (domingo)' : 'diário') + ' por volta das ' + hr + 'h.')
+      : '✅ Backup automático desativado.' });
+  } catch (e) {
+    registrarErroSistema('configurarBackupAutomatico', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/** Retorna a configuração atual do backup automático pra tela exibir. */
+function obterConfigBackupAutomatico() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_BACKUP_AUTO) || '{}';
+  try {
+    var conf = JSON.parse(raw);
+    return JSON.stringify({
+      ativo: !!conf.ativo,
+      frequencia: conf.frequencia || 'diario',
+      horario: (conf.horario != null ? conf.horario : 3)
+    });
+  } catch (_) { return JSON.stringify({ ativo: false, frequencia: 'diario', horario: 3 }); }
+}
+
+/** Handler do trigger de tempo. Sem usuário ativo — _exigirModulo (dentro de
+ * executarBackup) já libera automaticamente chamadas sem sessão de usuário,
+ * mesma regra usada por _processarEmailsAgendados. */
+function _executarBackupAutomatico() {
+  try {
+    executarBackup();
+  } catch (e) {
+    registrarErroSistema('_executarBackupAutomatico', e.message || e.toString());
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   CONFIGURAÇÕES
+// ════════════════════════════════════════════════════════════
+
+// ─── CONTROLE DE ACESSO ──────────────────────────────────────
+// A área de Configurações (e o Configurar/Reinstalar Sistema) só pode ser
+// acessada pelo dono da planilha e por e-mails cadastrados na lista de
+// administradores (gerenciável dentro da própria tela de Configurações).
+
+/** E-mail do dono da planilha (sempre considerado administrador). */
+function _emailDonoPlanilha() {
+  try {
+    var dono = getSS().getOwner();
+    return dono ? String(dono.getEmail() || '').trim().toLowerCase() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/** Lista de e-mails administradores extras, configurada via PropertiesService. */
+function _obterEmailsAdmin() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ADMINS_CONFIG);
+    var lista = raw ? JSON.parse(raw) : [];
+    return lista.map(function(e) { return String(e || '').trim().toLowerCase(); }).filter(Boolean);
+  } catch (_) {
+    return [];
+  }
+}
+
+/** Retorna true se o usuário atual pode acessar a área de Configurações. */
+function _usuarioEhAdmin() {
+  try {
+    var atual = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+    if (!atual) return false;
+    if (atual === _emailDonoPlanilha()) return true;
+    return _obterEmailsAdmin().indexOf(atual) !== -1;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * [P59] Guard de aplicação SERVER-SIDE para permissões por módulo/cargo.
+ * Até aqui, o bloqueio configurado em Configurações → Controle de Acesso →
+ * Cargos/Usuários só era checado no HTML de cada tela (troca de
+ * document.body.innerHTML) — cosmético: qualquer usuário autenticado no
+ * Web App podia chamar a função de servidor direto (ex.: pelo console do
+ * navegador) e contornar o cargo. Esta função replica a mesma checagem
+ * (via obterPermissoesUsuario) no servidor, onde não dá pra contornar.
+ *
+ * Uso — 1ª linha de toda função de escrita associada a um módulo:
+ *   function minhaFuncao(params) {
+ *     var _chk = _exigirModulo('lancamento', true);
+ *     if (!_chk.ok) return _chk.resp;
+ *     ...
+ *   }
+ *
+ * @param {string} modulo    Chave do módulo (ver _TODOS_MODULOS).
+ * @param {boolean} ehEscrita Quando true, também bloqueia quem está em
+ *                            modo somente-leitura para esse módulo.
+ * @param {string} [_emailParaTeste] Só para os testes automatizados —
+ *                            permite injetar um e-mail sem depender de
+ *                            Session.getActiveUser().
+ */
+function _exigirModulo(modulo, ehEscrita, _emailParaTeste) {
+  try {
+    var emailAtivo = (typeof _emailParaTeste !== 'undefined') ? _emailParaTeste : Session.getActiveUser().getEmail();
+    // Sem usuário ativo = chamada por trigger/tempo (ex.: envio de e-mail
+    // agendado processado por _processarEmailsAgendados). A autorização já
+    // foi validada quando a ação foi originalmente disparada por um
+    // usuário — não há o que checar aqui, e bloquear quebraria o trigger.
+    if (!emailAtivo) return { ok: true };
+
+    var p = JSON.parse(obterPermissoesUsuario(emailAtivo));
+    if (!p.admin && (!p.modulos || p.modulos.indexOf(modulo) === -1)) {
+      try {
+        registrarLog(getSS(), 'SISTEMA', 0, 0, '', emailAtivo,
+          '🔒 Acesso negado ao módulo "' + modulo + '" (fora do cargo)');
+      } catch (_) {}
+      return { ok: false, resp: JSON.stringify({
+        erro: '🔒 Você não tem permissão para acessar este módulo. Contate o administrador.'
+      }) };
+    }
+    if (ehEscrita && p.somenteLeitura) {
+      return { ok: false, resp: JSON.stringify({
+        erro: '🔒 Este módulo está em modo somente-leitura para o seu cargo.'
+      }) };
+    }
+    return { ok: true };
+  } catch (e) {
+    // Uma falha ao resolver permissões não deve travar o sistema inteiro —
+    // mantém o comportamento anterior (aberto) e registra para diagnóstico.
+    try { registrarErroSistema('_exigirModulo', e.message || e.toString()); } catch (_) {}
+    return { ok: true };
+  }
+}
+
+/** Bloqueia e registra no log uma tentativa de acesso não autorizado (telas/diálogos). */
+function _negarAcessoConfig(origem) {
+  try {
+    registrarLog(getSS(), 'SISTEMA', 0, 0, '',
+      Session.getActiveUser().getEmail() || 'desconhecido',
+      '🔒 Acesso negado às Configurações (' + origem + ')');
+  } catch (_) {}
+  var _msg = '🔒 Acesso restrito\n\n' +
+    'Esta área é restrita a usuários autorizados. ' +
+    'Solicite acesso a um administrador do sistema.';
+  try { SpreadsheetApp.getUi().alert(_msg); } catch (_) {}
+  return JSON.stringify({ erro: _msg });
+}
+
+function abrirConfiguracoes() {
+  if (!_usuarioEhAdmin()) { _negarAcessoConfig('Configurações'); return; }
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormConfiguracoes').setWidth(520).setHeight(640),
+    '⚙️ Configurações do Sistema'
+  );
+}
+
+// ─── ADMINISTRADORES ─────────────────────────────────────────
+
+function obterModoSomenteLeitura() {
+  var val = PropertiesService.getScriptProperties().getProperty(_KEY_READONLY) || 'false';
+  return JSON.stringify({ ativo: val === 'true' });
+}
+
+function salvarModoSomenteLeitura(ativo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    PropertiesService.getScriptProperties().setProperty(_KEY_READONLY, ativo ? 'true' : 'false');
+    var ss  = getSS();
+    var msg = ativo ? 'ATIVADO' : 'DESATIVADO';
+    registrarLog(ss, 'SISTEMA', 0, 0, '', msg,
+      '🔒 Modo Somente-Leitura ' + msg + ' por ' + (Session.getActiveUser().getEmail() || 'sistema'));
+    return JSON.stringify({ ok: '✅ Modo somente-leitura ' + msg + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Permissões granulares por módulo ───────────────────────
+// módulos: notas, lancamento, email, frete, configuracoes, auditoria
+// lista vazia = todos têm acesso; lista preenchida = apenas os listados
+function obterConfigVisuais() {
+  var props = PropertiesService.getScriptProperties();
+  var raw   = props.getProperty(_KEY_CORES_STATUS) || '{}';
+  try { var cores = JSON.parse(raw); } catch(_) { var cores = {}; }
+  return JSON.stringify({
+    cores:       cores,
+    logoUrl:     props.getProperty(_KEY_LOGO_URL)     || '',
+    nomeSistema: props.getProperty(_KEY_NOME_SISTEMA) || 'Controle de Devoluções'
+  });
+}
+
+function salvarConfigVisuais(cores, logoUrl, nomeSistema) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var props = PropertiesService.getScriptProperties();
+  if (cores)       props.setProperty(_KEY_CORES_STATUS, JSON.stringify(cores));
+  if (logoUrl)     props.setProperty(_KEY_LOGO_URL, String(logoUrl));
+  if (nomeSistema) props.setProperty(_KEY_NOME_SISTEMA, String(nomeSistema));
+  return JSON.stringify({ ok: '✅ Configurações visuais salvas.' });
+}
+
+function registrarErroSistema(funcao, msg) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_ERROS_RECENTES) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), func: String(funcao||''), msg: String(msg||'') });
+    lista = lista.slice(0, 50);
+    PropertiesService.getScriptProperties().setProperty(_KEY_ERROS_RECENTES, JSON.stringify(lista));
+  } catch(_){}
+}
+
+function obterErrosRecentes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ERROS_RECENTES) || '[]';
+  return raw;
+}
+
+/** Limpa o painel de erros do sistema (admin). Usado pelo painel de erros
+ * em Configurações → Sistema, pra não acumular erros antigos já resolvidos
+ * misturados com os novos. */
+function limparErrosRecentes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().deleteProperty(_KEY_ERROS_RECENTES);
+  return JSON.stringify({ ok: '✅ Painel de erros limpo.' });
+}
+
+// ── Monitoramento de tamanho (item 66) ─────────────────────
+function monitorarTamanhoPlanilha() {
+  try {
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    var file    = DriveApp.getFileById(ss.getId());
+    var sizeMB  = (file.getSize() / 1048576).toFixed(2);
+    var abas    = ss.getSheets().length;
+    var totalLinhas = ss.getSheets().reduce(function(acc, aba) {
+      return acc + aba.getLastRow();
+    }, 0);
+    return JSON.stringify({ sizeMB: sizeMB, abas: abas, totalLinhas: totalLinhas,
+      alerta: parseFloat(sizeMB) > 40 });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Teste de envio de e-mail (item 67) ─────────────────────
+// ── Ping de disponibilidade (item 68) ──────────────────────
+function ping() {
+  return JSON.stringify({ ok: true, ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail() });
+}
+
+function getEmailUsuario() {
+  try {
+    return Session.getActiveUser().getEmail() || '';
+  } catch(_) { return ''; }
+}
+
+function testarEnvioEmail(emailDestino) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    MailApp.sendEmail({
+      to: emailDestino,
+      subject: '✅ Teste de E-mail — Controle de Devoluções',
+      htmlBody: '<p>Este é um e-mail de teste enviado pelo sistema <b>Controle de Devoluções Transben</b>.</p>'
+        +'<p>Se você recebeu este e-mail, a configuração de envio está funcionando corretamente.</p>'
+        +'<p style="color:#888;font-size:11px">Enviado em '+ new Date().toLocaleString('pt-BR')+'</p>'
+    });
+    return JSON.stringify({ ok: '✅ E-mail de teste enviado para ' + emailDestino + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Resumo de conquistas do mês (item 69) ──────────────────
+function obterConquistasMes() {
+  try {
+    var ss   = SpreadsheetApp.getActiveSpreadsheet();
+    var hoje = new Date();
+    var iniMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    var total = 0, devolvidos = 0, comAnexo = 0;
+    _getTodasAbas().forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (!aba) return;
+      var ult = obterUltimaLinhaDados(aba);
+      if (ult < LINHA_DADOS) return;
+      var dados = aba.getRange(LINHA_DADOS, 1, ult - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+      dados.forEach(function(row) {
+        var dt = row[IDX_DATA] ? new Date(row[IDX_DATA]) : null;
+        if (!dt || dt < iniMes) return;
+        total++;
+        if (row[IDX_STATUS] === 'Devolvido') devolvidos++;
+        if (row[IDX_ANEXO]) comAnexo++;
+      });
+    });
+    return JSON.stringify({ total: total, devolvidos: devolvidos, comAnexo: comAnexo,
+      taxaResolucao: total > 0 ? ((devolvidos/total)*100).toFixed(0) : 0 });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterChangelog() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CHANGELOG) || '[]';
+  return raw;
+}
+
+function adicionarChangelog(versao, itens) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_CHANGELOG) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ versao: versao, data: new Date().toLocaleDateString('pt-BR'), itens: itens });
+    lista = lista.slice(0, 20);
+    PropertiesService.getScriptProperties().setProperty(_KEY_CHANGELOG, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Changelog atualizado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function registrarFeedback(tipo, msg, pagina) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_FEEDBACKS) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(),
+      tipo: tipo, msg: msg, pagina: pagina });
+    lista = lista.slice(0, 200);
+    PropertiesService.getScriptProperties().setProperty(_KEY_FEEDBACKS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Feedback registrado. Obrigado!' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterFeedbacks() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_FEEDBACKS) || '[]';
+  return raw;
+}
+
+// ── Biblioteca de modelos de documentos (item 58) ──────────
+function obterModelosDocumentos() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function salvarModeloDocumento(id, nome, corpo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+    var lista = JSON.parse(raw);
+    var idx = -1;
+    for (var i = 0; i < lista.length; i++) { if (lista[i].id === id) { idx = i; break; } }
+    var item = { id: id || ('mdl_'+new Date().getTime()), nome: nome, corpo: corpo };
+    if (idx > -1) lista[idx] = item; else lista.push(item);
+    PropertiesService.getScriptProperties().setProperty(_KEY_MODELOS_DOC, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Modelo salvo.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function excluirModeloDocumento(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_MODELOS_DOC) || '[]';
+    var lista = JSON.parse(raw).filter(function(m){ return m.id !== id; });
+    PropertiesService.getScriptProperties().setProperty(_KEY_MODELOS_DOC, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Modelo excluído.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Aprovação para novos lançamentos (item 57) ─────────────
+function obterConfigAprovacao() {
+  var ativo = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACAO_ATIVA) === '1';
+  var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROVADORES) || '[]';
+  try { var aprovadores = JSON.parse(raw); }
+  catch(_) { var aprovadores = []; }
+  return JSON.stringify({ ativo: ativo, aprovadores: aprovadores });
+}
+
+function salvarConfigAprovacao(ativo, aprovadores) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROVACAO_ATIVA, ativo ? '1' : '0');
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROVADORES,
+    JSON.stringify((aprovadores||[]).map(function(e){ return String(e||'').trim().toLowerCase(); }).filter(Boolean)));
+  return JSON.stringify({ ok: '✅ Configuração de aprovação salva.' });
+}
+
+function submeterParaAprovacao(dadosLancamento) {
+  var _chk = _exigirModulo('lancamento', true);
+  if (!_chk.ok) return _chk.resp;
+  var ativo = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACAO_ATIVA) === '1';
+  if (!ativo) {
+    var resp = salvarLancamentoForm(dadosLancamento); // aprovação desligada — salva direto
+    var respObj = JSON.parse(resp);
+    if (respObj.ok) {
+      notificarEvento('vendas', '📝 <b>Novo lançamento</b> — NF ' + _esc(String(dadosLancamento.nf||'?')) +
+        ' — ' + _esc(String(dadosLancamento.fornecedor || dadosLancamento.abaSelecao || '—')));
+    }
+    return resp;
+  }
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+    var lista = JSON.parse(raw);
+    var id = 'ap_' + new Date().getTime();
+    lista.push({ id: id, dados: dadosLancamento, usuario: Session.getActiveUser().getEmail(), ts: new Date().toISOString(), status: 'pendente' });
+    PropertiesService.getScriptProperties().setProperty(_KEY_APROVACOES_PEND, JSON.stringify(lista));
+    _registrarTrilhaAprovacao(id, dadosLancamento.nf, dadosLancamento.fornecedor || dadosLancamento.abaSelecao,
+      Session.getActiveUser().getEmail(), 'submetido', '', '');
+    _notificarAprovadores(id, dadosLancamento);
+    return JSON.stringify({ ok: '⏳ Lançamento enviado para aprovação.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function _notificarAprovadores(id, dados) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVADORES) || '[]';
+    var aprovadores = JSON.parse(raw);
+    if (!aprovadores.length) return;
+    var assunto = '🔔 Novo lançamento aguarda aprovação — NF ' + (dados.nf||'?');
+    var usuario = Session.getActiveUser().getEmail();
+    var linhaTb = function(lbl, val, mono) {
+      return '<tr><td style="padding:8px 14px;background:#F8FAFD;color:#5B7186;width:110px;font-size:10px;font-weight:bold;letter-spacing:.5px">' + lbl + '</td>' +
+        '<td style="padding:8px 14px;' + (mono ? 'font-family:monospace;' : '') + 'font-weight:bold;color:#0B1526;font-size:12px">' + val + '</td></tr>';
+    };
+    var valorTot = (parseFloat(dados.qtd) || 0) * (parseFloat(dados.valorUnit) || 0);
+    var body =
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F1F4F9" style="background:#F1F4F9;padding:20px 8px"><tr><td align="center">' +
+      '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;font-family:Arial,Helvetica,sans-serif">' +
+      '<tr><td bgcolor="#0B1526" style="background:linear-gradient(135deg,#0B1526,#1E3A5F);border-radius:10px 10px 0 0;padding:18px 22px">' +
+        '<div style="font-size:8.5px;font-weight:bold;color:#9CC1FF;letter-spacing:2px">TRANSBEN · CONTROLE DE DEVOLUÇÕES</div>' +
+        '<div style="color:#fff;font-size:16px;font-weight:bold;margin-top:9px">🔔 Lançamento aguardando sua aprovação</div>' +
+      '</td></tr>' +
+      '<tr><td bgcolor="#D97706" style="background:#D97706;color:#fff;font-size:10px;font-weight:bold;letter-spacing:1px;text-align:center;padding:5px">PENDENTE — SUBMETIDO POR ' + _esc(usuario).toUpperCase() + '</td></tr>' +
+      '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:20px 22px">' +
+        '<p style="margin:0 0 14px;font-size:13px;color:#344256;line-height:1.6">Um novo lançamento de devolução precisa da sua análise:</p>' +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E3E8F2;border-radius:10px;border-collapse:separate;overflow:hidden">' +
+          linhaTb('NF / NFD', _esc(String(dados.nf||'—')) + (dados.nfd ? ' · ' + _esc(String(dados.nfd)) : ''), true) +
+          linhaTb('FORNECEDOR', _esc(String(dados.fornecedor || dados.abaSelecao || '—'))) +
+          linhaTb('TIPO / MOTIVO', _esc(String(dados.tipo||'—')) + ' — ' + _esc(String(dados.motivo||'—'))) +
+          linhaTb('PRODUTO', _esc(String(dados.descricao||'—'))) +
+          linhaTb('QTD / VALOR', _esc(String(dados.qtd||'—')) + ' cxs · R$ ' + _fmtVal(valorTot), true) +
+          linhaTb('ID', _esc(id), true) +
+        '</table>' +
+        '<div style="text-align:center;margin:18px 0 4px">' +
+          '<span style="background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:12px;font-weight:bold;padding:10px 24px;border-radius:9px;display:inline-block">Acesse o sistema para aprovar ou rejeitar</span>' +
+        '</div>' +
+      '</td></tr>' +
+      '<tr><td bgcolor="#F1F4F9" style="background:#F1F4F9;border-radius:0 0 10px 10px;padding:11px 22px" align="center">' +
+        '<div style="font-size:10px;color:#8A9BB0">E-mail automático do <b style="color:#5B7186">Controle de Devoluções · Transben</b>.</div>' +
+      '</td></tr>' +
+      '</table></td></tr></table>';
+    MailApp.sendEmail({ to: aprovadores.join(','), subject: assunto, htmlBody: body });
+  } catch(_){}
+  _tgNotificarAprovacaoPendente(id, dados);
+}
+
+function _tgNotificarAprovacaoPendente(id, dados) {
+  try {
+    var usuario  = Session.getActiveUser().getEmail();
+    var valorTot = (parseFloat(dados.qtd) || 0) * (parseFloat(dados.valorUnit) || 0);
+    var msg = '🔔 <b>Lançamento aguardando aprovação</b>\n' +
+      'NF/NFD: <code>' + _esc(String(dados.nf||'—')) + '</code>' + (dados.nfd ? ' · ' + _esc(String(dados.nfd)) : '') + '\n' +
+      'Fornecedor: <b>' + _esc(String(dados.fornecedor || dados.abaSelecao || '—')) + '</b>\n' +
+      'Tipo/Motivo: ' + _esc(String(dados.tipo||'—')) + ' — ' + _esc(String(dados.motivo||'—')) + '\n' +
+      'Qtd/Valor: ' + _esc(String(dados.qtd||'—')) + ' cxs · R$ ' + _fmtVal(valorTot) + '\n' +
+      'Submetido por: ' + _esc(usuario);
+    var botoes = [[
+      { text: '✅ Aprovar',  callback_data: 'aprov:' + id + ':sim' },
+      { text: '❌ Reprovar', callback_data: 'aprov:' + id + ':nao' }
+    ]];
+    notificarEvento('aprovacoes', msg, { botoes: botoes });
+  } catch(e) { registrarErroSistema('_tgNotificarAprovacaoPendente', e.message || e.toString()); }
+}
+
+function listarAprovacoesPendentes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+  try { return raw; } catch(_) { return '[]'; }
+}
+
+function processarAprovacao(id, aprovado, justificativa) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var revisor = Session.getActiveUser().getEmail() || 'aprovador';
+  return _processarAprovacaoInterno(id, aprovado, justificativa, revisor);
+}
+
+/* Mesma lógica de antes, mas recebe o identificador do revisor em vez de
+   ler Session.getActiveUser() — permite ser chamada pelo doPost do Telegram,
+   onde não existe sessão Google (autorização lá é: estar no grupo). */
+function _processarAprovacaoInterno(id, aprovado, justificativa, revisorLabel) {
+  try {
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    var item;
+    try {
+      var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+      var lista = JSON.parse(raw);
+      var idx   = -1;
+      for (var i = 0; i < lista.length; i++) { if (lista[i].id === id) { idx = i; break; } }
+      if (idx === -1) return JSON.stringify({ erro: 'Aprovação não encontrada.' });
+      item = lista[idx];
+      lista.splice(idx, 1);
+      PropertiesService.getScriptProperties().setProperty(_KEY_APROVACOES_PEND, JSON.stringify(lista));
+    } finally {
+      trava.releaseLock();
+    }
+    if (aprovado) {
+      // [P60] Bug crítico corrigido: antes chamava _gravarLancamento(item.dados) —
+      // a função espera (ss, ws, dados, ulPre, nfsPre), então "dados" chegava
+      // undefined e a gravação sempre falhava com TypeError, DEPOIS que o item
+      // já tinha sido removido da fila de pendentes acima — ou seja, toda
+      // aprovação perdia o lançamento pra sempre. Agora resolve ss/ws de verdade
+      // e, se a gravação falhar por qualquer motivo, devolve o item pra fila em
+      // vez de descartar os dados.
+      try {
+        var ssAp = getSS();
+        var wsAp = ssAp.getSheetByName(item.dados.abaSelecao);
+        if (!wsAp) throw new Error('Aba "' + item.dados.abaSelecao + '" não encontrada.');
+        _gravarLancamento(ssAp, wsAp, item.dados, null, null);
+      } catch (eGrava) {
+        try {
+          var travaReq = LockService.getScriptLock();
+          if (travaReq.tryLock(8000)) {
+            try {
+              var rawReq   = PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]';
+              var listaReq = JSON.parse(rawReq);
+              listaReq.push(item);
+              PropertiesService.getScriptProperties().setProperty(_KEY_APROVACOES_PEND, JSON.stringify(listaReq));
+            } finally { travaReq.releaseLock(); }
+          }
+        } catch (_) {}
+        try { registrarErroSistema('_processarAprovacaoInterno', eGrava.message || eGrava.toString()); } catch (_) {}
+        return JSON.stringify({ erro: '❌ Falha ao gravar o lançamento aprovado — o item foi devolvido para a fila de aprovações pendentes. Detalhe: ' + (eGrava.message || eGrava.toString()) });
+      }
+      notificarEvento('aprovacoes', '✅ <b>Lançamento aprovado</b> — NF ' + _esc(String(item.dados.nf||'?')) +
+        ' por ' + _esc(revisorLabel));
+      _registrarTrilhaAprovacao(item.id, item.dados.nf, item.dados.fornecedor, item.usuario, 'aprovado', revisorLabel, '');
+      return JSON.stringify({ ok: '✅ Lançamento aprovado e gravado.' });
+    } else {
+      try {
+        var bodyRep =
+          '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F1F4F9" style="background:#F1F4F9;padding:20px 8px"><tr><td align="center">' +
+          '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;font-family:Arial,Helvetica,sans-serif">' +
+          '<tr><td bgcolor="#0B1526" style="background:linear-gradient(135deg,#0B1526,#1E3A5F);border-radius:10px 10px 0 0;padding:18px 22px">' +
+            '<div style="font-size:8.5px;font-weight:bold;color:#9CC1FF;letter-spacing:2px">TRANSBEN · CONTROLE DE DEVOLUÇÕES</div>' +
+            '<div style="color:#fff;font-size:16px;font-weight:bold;margin-top:9px">Lançamento não aprovado</div>' +
+          '</td></tr>' +
+          '<tr><td bgcolor="#DC2626" style="background:#DC2626;color:#fff;font-size:10px;font-weight:bold;letter-spacing:1px;text-align:center;padding:5px">REPROVADO — NF ' + _esc(String(item.dados.nf||'?')).toUpperCase() + (item.dados.fornecedor ? ' · ' + _esc(String(item.dados.fornecedor)).toUpperCase() : '') + '</td></tr>' +
+          '<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;padding:20px 22px">' +
+            '<p style="margin:0 0 14px;font-size:13px;color:#344256;line-height:1.6">Seu lançamento foi analisado e <b style="color:#DC2626">reprovado</b> por <b>' + _esc(revisorLabel) + '</b>.</p>' +
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#FEF2F2" style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;border-collapse:separate"><tr><td style="padding:12px 16px">' +
+              '<div style="font-size:9.5px;font-weight:bold;color:#991B1B;letter-spacing:1px;margin-bottom:4px">JUSTIFICATIVA</div>' +
+              '<div style="color:#7F1D1D;font-size:12.5px;line-height:1.6">' + _esc(justificativa||'—') + '</div>' +
+            '</td></tr></table>' +
+            '<p style="margin:14px 0 0;font-size:12px;color:#5B7186;text-align:center">Corrija os dados apontados e reenvie pelo Lançar Devolução.</p>' +
+          '</td></tr>' +
+          '<tr><td bgcolor="#F1F4F9" style="background:#F1F4F9;border-radius:0 0 10px 10px;padding:11px 22px" align="center">' +
+            '<div style="font-size:10px;color:#8A9BB0">E-mail automático do <b style="color:#5B7186">Controle de Devoluções · Transben</b>.</div>' +
+          '</td></tr>' +
+          '</table></td></tr></table>';
+        MailApp.sendEmail({ to: item.usuario, subject: '❌ Lançamento reprovado — NF '+(item.dados.nf||'?'),
+          htmlBody: bodyRep });
+      } catch(_){}
+      notificarEvento('aprovacoes', '❌ <b>Lançamento reprovado</b> — NF ' + _esc(String(item.dados.nf||'?')) +
+        ' por ' + _esc(revisorLabel) + '\nMotivo: ' + _esc(justificativa||'—'));
+      _registrarTrilhaAprovacao(item.id, item.dados.nf, item.dados.fornecedor, item.usuario, 'reprovado', revisorLabel, justificativa);
+      return JSON.stringify({ ok: '✅ Lançamento reprovado. Solicitante notificado.' });
+    }
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterConfiguracaoRetencao() {
+  var dias = PropertiesService.getScriptProperties().getProperty(_KEY_RETENCAO_DIAS) || '730';
+  return JSON.stringify({ dias: parseInt(dias) });
+}
+
+function salvarConfiguracaoRetencao(dias) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().setProperty(_KEY_RETENCAO_DIAS, String(parseInt(dias)||730));
+  return JSON.stringify({ ok: '✅ Retenção configurada para '+(dias||730)+' dias.' });
+}
+
+function registrarExportacao(tipo, qtd) {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_LOG_EXPORTACOES) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(), tipo: tipo, qtd: qtd });
+    lista = lista.slice(0, 100);
+    PropertiesService.getScriptProperties().setProperty(_KEY_LOG_EXPORTACOES, JSON.stringify(lista));
+  } catch(_){}
+}
+
+function obterLogExportacoes() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_LOG_EXPORTACOES) || '[]';
+  return raw;
+}
+
+// ── Integridade do backup (item 54) ────────────────────────
+function verificarIntegridadeBackup() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abas = _getTodasAbas();
+    var totalLinhas = 0;
+    abas.forEach(function(nome) {
+      var aba = ss.getSheetByName(nome);
+      if (aba) totalLinhas += Math.max(0, obterUltimaLinhaDados(aba) - 1);
+    });
+    var drive = DriveApp.getFileById(ss.getId());
+    var sizeMB = (drive.getSize() / 1048576).toFixed(2);
+    var checks = [];
+    checks.push({ label: 'Abas ativas', valor: abas.length, ok: abas.length > 0 });
+    checks.push({ label: 'Total de registros', valor: totalLinhas, ok: totalLinhas >= 0 });
+    checks.push({ label: 'Tamanho do arquivo', valor: sizeMB + ' MB', ok: parseFloat(sizeMB) < 50 });
+    var log = ss.getSheetByName('Log');
+    checks.push({ label: 'Aba Log presente', valor: log ? 'Sim' : 'Não', ok: !!log });
+    return JSON.stringify({ checks: checks, ts: new Date().toISOString() });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Versionamento de configurações (item 51) ───────────────
+function salvarSnapshotConfiguracao(descricao) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props  = PropertiesService.getScriptProperties().getProperties();
+    var raw    = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+    var hist   = JSON.parse(raw);
+    // Remove a própria chave de histórico do snapshot: getProperties() traz
+    // TODAS as propriedades, incluindo _KEY_CONFIG_HISTORICO (que já contém
+    // até 5 snapshots anteriores) — sem este delete, cada novo snapshot
+    // embutiria o histórico inteiro de todos os anteriores, crescendo de
+    // forma exponencial a cada "Salvar Snapshot" até estourar o limite de
+    // tamanho do PropertiesService (9KB por propriedade / 500KB total).
+    delete props[_KEY_CONFIG_HISTORICO];
+    hist.unshift({ ts: new Date().toISOString(), usuario: Session.getActiveUser().getEmail(),
+      descricao: descricao || '', snapshot: props });
+    hist = hist.slice(0, 5); // manter apenas os últimos 5
+    PropertiesService.getScriptProperties().setProperty(_KEY_CONFIG_HISTORICO, JSON.stringify(hist));
+    return JSON.stringify({ ok: '✅ Snapshot salvo.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterHistoricoConfiguracao() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+  try {
+    var hist = JSON.parse(raw).map(function(h) {
+      return { ts: h.ts, usuario: h.usuario, descricao: h.descricao };
+    });
+    return JSON.stringify({ historico: hist });
+  } catch(_) { return JSON.stringify({ historico: [] }); }
+}
+
+function restaurarSnapshotConfiguracao(indice) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_CONFIG_HISTORICO) || '[]';
+    var hist = JSON.parse(raw);
+    if (!hist[indice]) return JSON.stringify({ erro: 'Snapshot não encontrado.' });
+    var snap = hist[indice].snapshot;
+    var props = PropertiesService.getScriptProperties();
+    Object.keys(snap).forEach(function(k) { props.setProperty(k, snap[k]); });
+    return JSON.stringify({ ok: '✅ Configurações restauradas do snapshot de ' + hist[indice].ts + '.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Assinaturas de e-mail (foto Drive) ──────────────────────
+function obterAssinaturas() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+  try { return JSON.stringify({ assinaturas: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ assinaturas: {} }); }
+}
+
+function salvarAssinatura(email, driveFileId) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+    var map = JSON.parse(raw);
+    if (driveFileId) map[email.trim().toLowerCase()] = driveFileId.trim();
+    else delete map[email.trim().toLowerCase()];
+    PropertiesService.getScriptProperties().setProperty(_KEY_ASSINATURAS, JSON.stringify(map));
+    return JSON.stringify({ ok: '✅ Assinatura atualizada.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function _obterHtmlAssinatura() {
+  return '';  // substituído por seleção manual — ver _obterHtmlAssinaturaById
+}
+
+function _obterHtmlAssinaturaById(fileId) {
+  if (!fileId) return '';
+  try {
+    var blob = DriveApp.getFileById(fileId.trim()).getBlob();
+    var dataUrl = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+    return '<div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">'
+      + '<img src="' + dataUrl + '" alt="Assinatura" style="max-height:140px;max-width:480px;object-fit:contain">'
+      + '</div>';
+  } catch(_) { return ''; }
+}
+
+// Lista pública de assinaturas (sem restrição admin) para o seletor no formulário de e-mail
+function obterListaAssinaturasPublico() {
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_ASSINATURAS) || '{}';
+  try {
+    var map   = JSON.parse(raw);
+    var lista = Object.keys(map).map(function(nome) { return { nome: nome, fileId: map[nome] }; });
+    return JSON.stringify({ lista: lista });
+  } catch(_) { return JSON.stringify({ lista: [] }); }
+}
+
+function obterAssinaturaBase64(fileId) {
+  if (!fileId) return '';
+  try {
+    var file = DriveApp.getFileById(fileId.trim());
+    var blob = file.getBlob();
+    var base64 = Utilities.base64Encode(blob.getBytes());
+    var mime = blob.getContentType() || 'image/png';
+    return 'data:' + mime + ';base64,' + base64;
+  } catch(e) { return ''; }
+}
+
+function obterPermissoesModulos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+  try { return JSON.stringify({ permissoes: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ permissoes: {} }); }
+}
+
+function salvarPermissoesModulo(modulo, emails) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES) || '{}';
+    var perm = JSON.parse(raw);
+    if (!emails || !emails.length) { delete perm[modulo]; }
+    else { perm[modulo] = emails.map(function(e){ return String(e||'').trim().toLowerCase(); }).filter(Boolean); }
+    PropertiesService.getScriptProperties().setProperty(_KEY_PERMISSOES, JSON.stringify(perm));
+    return JSON.stringify({ ok: '✅ Permissões atualizadas para módulo: ' + modulo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function verificarAcessoModulo(modulo) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw  = props.getProperty(_KEY_PERMISSOES)    || '{}';
+    var rawRO = props.getProperty(_KEY_PERMISSOES_RO) || '{}';
+    var perm = JSON.parse(raw);
+    var permRO = JSON.parse(rawRO);
+    var ehAdmin = _usuarioEhAdmin();
+    var somenteLeitura = !!permRO[modulo] && !ehAdmin;
+    if (!perm[modulo] || !perm[modulo].length) return JSON.stringify({ acesso: true, somenteLeitura: somenteLeitura });
+    var usuario = (Session.getActiveUser().getEmail() || '').toLowerCase();
+    return JSON.stringify({ acesso: perm[modulo].indexOf(usuario) !== -1 || ehAdmin, somenteLeitura: somenteLeitura });
+  } catch(_) { return JSON.stringify({ acesso: true, somenteLeitura: false }); }
+}
+
+function obterPermissoesROModulos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES_RO) || '{}';
+  try { return JSON.stringify({ permissoes: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ permissoes: {} }); }
+}
+
+function salvarPermissaoROModulo(modulo, ativo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_PERMISSOES_RO) || '{}';
+    var perm = JSON.parse(raw);
+    if (ativo) { perm[modulo] = true; } else { delete perm[modulo]; }
+    PropertiesService.getScriptProperties().setProperty(_KEY_PERMISSOES_RO, JSON.stringify(perm));
+    return JSON.stringify({ ok: '✅ Somente-leitura ' + (ativo ? 'ativado' : 'desativado') + ' para: ' + modulo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── Templates de e-mail por tipo ───────────────────────────
+function obterEmailTemplates() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES) || '{}';
+  try { return JSON.stringify({ templates: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ templates: {} }); }
+}
+
+function salvarEmailTemplate(tipo, assunto, corpo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAIL_TEMPLATES) || '{}';
+    var tpls = JSON.parse(raw);
+    tpls[tipo] = { assunto: assunto, corpo: corpo };
+    PropertiesService.getScriptProperties().setProperty(_KEY_EMAIL_TEMPLATES, JSON.stringify(tpls));
+    return JSON.stringify({ ok: '✅ Template salvo para tipo: ' + tipo });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ── CC/BCC por fornecedor ───────────────────────────────────
+function obterCCFornecedores() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN) || '{}';
+  try { return JSON.stringify({ ccForn: JSON.parse(raw) }); }
+  catch(_) { return JSON.stringify({ ccForn: {} }); }
+}
+
+function salvarCCFornecedor(forn, cc, bcc) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CC_FORN) || '{}';
+    var mapa = JSON.parse(raw);
+    if (cc || bcc) { mapa[forn] = { cc: cc || '', bcc: bcc || '' }; }
+    else { delete mapa[forn]; }
+    PropertiesService.getScriptProperties().setProperty(_KEY_CC_FORN, JSON.stringify(mapa));
+    return JSON.stringify({ ok: '✅ CC/BCC atualizado para ' + forn });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function obterAdminsConfig() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  return JSON.stringify({ dono: _emailDonoPlanilha(), admins: _obterEmailsAdmin() });
+}
+
+function salvarAdminsConfig(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var lista = (params && params.admins ? params.admins : [])
+      .map(function(e) { return String(e || '').trim().toLowerCase(); })
+      .filter(Boolean);
+    PropertiesService.getScriptProperties().setProperty(_KEY_ADMINS_CONFIG, JSON.stringify(lista));
+    var ss = getSS();
+    registrarLog(ss, 'SISTEMA', 0, 0, '', lista.join(';'),
+      '🔐 Lista de administradores atualizada por ' + (Session.getActiveUser().getEmail() || 'desconhecido'));
+    return JSON.stringify({
+      ok: '✅ Lista de administradores salva! ' + lista.length + ' e-mail(s) extra(s) — ' +
+          'além do dono da planilha (' + (_emailDonoPlanilha() || 'não detectado') + '), que sempre tem acesso.'
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: e.toString() });
+  }
+}
+
+// ─── CARGOS ──────────────────────────────────────────────────
+
+function obterCargos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CARGOS) || '[]';
+  return JSON.stringify({ cargos: JSON.parse(raw) });
+}
+
+function salvarCargo(id, nome, modulos, somenteLeitura) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var lista = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    var novoId = id || Date.now().toString(36);
+    var cargo  = {
+      id: novoId,
+      nome: String(nome || '').trim(),
+      modulos: Array.isArray(modulos) ? modulos : [],
+      somenteLeitura: !!somenteLeitura
+    };
+    if (!cargo.nome) return JSON.stringify({ erro: '❌ Nome do cargo é obrigatório.' });
+    var idx = lista.map(function(c){ return c.id; }).indexOf(novoId);
+    if (idx >= 0) { lista[idx] = cargo; } else { lista.push(cargo); }
+    props.setProperty(_KEY_CARGOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Cargo salvo.', id: novoId });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function excluirCargo(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props    = PropertiesService.getScriptProperties();
+    var usuarios = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var em_uso   = usuarios.filter(function(u){ return u.cargoId === id; });
+    if (em_uso.length) {
+      return JSON.stringify({ erro: '⚠️ Cargo em uso por ' + em_uso.length + ' usuário(s). Remova os vínculos antes de excluir.' });
+    }
+    var lista = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    lista = lista.filter(function(c){ return c.id !== id; });
+    props.setProperty(_KEY_CARGOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Cargo excluído.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ─── USUÁRIOS ─────────────────────────────────────────────────
+
+function obterUsuariosCargos() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_USUARIOS) || '[]';
+  return JSON.stringify({ usuarios: JSON.parse(raw) });
+}
+
+function salvarUsuarioCargo(email, cargoId) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var emailNorm = String(email || '').trim().toLowerCase();
+    if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+      return JSON.stringify({ erro: '❌ E-mail inválido.' });
+    }
+    var props = PropertiesService.getScriptProperties();
+    // Verificar se cargoId existe
+    var cargos = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+    if (!cargos.some(function(c){ return c.id === cargoId; })) {
+      return JSON.stringify({ erro: '❌ Cargo não encontrado.' });
+    }
+    var lista = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var idx = lista.map(function(u){ return u.email; }).indexOf(emailNorm);
+    if (idx >= 0) { lista[idx].cargoId = cargoId; } else { lista.push({ email: emailNorm, cargoId: cargoId }); }
+    props.setProperty(_KEY_USUARIOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Usuário vinculado.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+function removerUsuarioCargo(email) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var emailNorm = String(email || '').trim().toLowerCase();
+    var props = PropertiesService.getScriptProperties();
+    var lista = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    lista = lista.filter(function(u){ return u.email !== emailNorm; });
+    props.setProperty(_KEY_USUARIOS, JSON.stringify(lista));
+    return JSON.stringify({ ok: '✅ Vínculo removido.' });
+  } catch(e) { return JSON.stringify({ erro: e.toString() }); }
+}
+
+// ─── RESOLUÇÃO DE PERMISSÕES ──────────────────────────────────
+
+function obterPermissoesUsuario(email) {
+  try {
+    var emailNorm = String(email || Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+
+    // 1. Admin tem acesso total
+    var donoEmail = _emailDonoPlanilha();
+    var adminsList = _obterEmailsAdmin();
+    if (emailNorm === donoEmail || adminsList.indexOf(emailNorm) !== -1) {
+      return JSON.stringify({ admin: true, modulos: _TODOS_MODULOS, somenteLeitura: false });
+    }
+
+    var props = PropertiesService.getScriptProperties();
+
+    // 2. RO global ativado — todos ficam em leitura, exceto admins (já tratado acima)
+    if (props.getProperty(_KEY_READONLY) === 'true') {
+      return JSON.stringify({ admin: false, modulos: _TODOS_MODULOS, somenteLeitura: true });
+    }
+
+    // 3. Usuário tem cargo vinculado?
+    var usuarios = JSON.parse(props.getProperty(_KEY_USUARIOS) || '[]');
+    var vinculo  = null;
+    for (var i = 0; i < usuarios.length; i++) {
+      if (usuarios[i].email === emailNorm) { vinculo = usuarios[i]; break; }
+    }
+    if (vinculo) {
+      var cargos = JSON.parse(props.getProperty(_KEY_CARGOS) || '[]');
+      for (var j = 0; j < cargos.length; j++) {
+        if (cargos[j].id === vinculo.cargoId) {
+          return JSON.stringify({
+            admin: false,
+            modulos: cargos[j].modulos || [],
+            somenteLeitura: !!cargos[j].somenteLeitura
+          });
+        }
+      }
+    }
+
+    // 4. Sem cargo — acesso bloqueado (sem módulos)
+    return JSON.stringify({ admin: false, modulos: [], somenteLeitura: true });
+  } catch(e) {
+    return JSON.stringify({ admin: false, modulos: [], somenteLeitura: true });
+  }
+}
+
+// ─── E-MAILS ─────────────────────────────────────────────────
+
+function obterEmailConfig() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  var props = PropertiesService.getScriptProperties();
+  try {
+    var rawGeral  = props.getProperty(_KEY_EMAILS_GERAL);
+    var rawAlerta = props.getProperty(_KEY_EMAILS_ALERTA);
+    var rawTransf = props.getProperty(_KEY_EMAILS_TRANSF);
+    var alertaDest = props.getProperty(_KEY_ALERTA_DEST) || 'todos';
+    var geral  = rawGeral  ? JSON.parse(rawGeral)  : (EMAILS_DESTINATARIOS || []);
+    var alerta = rawAlerta ? JSON.parse(rawAlerta) : [];
+    var transf = rawTransf ? JSON.parse(rawTransf) : [];
+    return JSON.stringify({ geral: geral, alerta: alerta, alertaDest: alertaDest, transf: transf });
+  } catch (e) {
+    return JSON.stringify({ geral: EMAILS_DESTINATARIOS || [], alerta: [], alertaDest: 'todos', transf: [] });
+  }
+}
+
+function salvarEmailConfig(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  if (!params || !params.geral || !params.geral.length)
+    return JSON.stringify({ erro: 'A lista geral precisa ter ao menos um e-mail.' });
+  try {
+    var props = PropertiesService.getScriptProperties();
+    props.setProperty(_KEY_EMAILS_GERAL,  JSON.stringify(params.geral));
+    props.setProperty(_KEY_EMAILS_ALERTA, JSON.stringify(params.alerta || []));
+    props.setProperty(_KEY_ALERTA_DEST,   params.alertaDest || 'todos');
+    props.setProperty(_KEY_EMAILS_TRANSF, JSON.stringify(params.transf || []));
+    var ss = getSS();
+    registrarLog(ss, 'SISTEMA', 0, 0, '', params.geral.join(';'),
+      '⚙️ E-mails atualizados — alerta: ' + (params.alertaDest || 'todos') +
+      ' — transf: ' + (params.transf || []).length + ' destinatário(s)');
+    return JSON.stringify({
+      ok: '✅ Configurações de e-mail salvas!\n' +
+          'Lista geral: ' + params.geral.length + ' e-mail(s)\n' +
+          'Alertas atraso (+30d): ' + (params.alertaDest === 'cc'
+            ? 'CC — ' + (params.alerta || []).length + ' e-mail(s)'
+            : 'Todos da lista geral') + '\n' +
+          'Alertas transferência vencida: ' + (params.transf || []).length + ' e-mail(s)'
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: e.toString() });
+  }
+}
+
+function _getEmailsGeral() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_EMAILS_GERAL);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return EMAILS_DESTINATARIOS || [];
+}
+
+function _getEmailsAlerta() {
+  try {
+    var props      = PropertiesService.getScriptProperties();
+    var alertaDest = props.getProperty(_KEY_ALERTA_DEST) || 'todos';
+    var rawGeral   = props.getProperty(_KEY_EMAILS_GERAL);
+    var rawAlerta  = props.getProperty(_KEY_EMAILS_ALERTA);
+    var geral  = rawGeral  ? JSON.parse(rawGeral)  : (EMAILS_DESTINATARIOS || []);
+    var alerta = rawAlerta ? JSON.parse(rawAlerta) : [];
+    if (!geral.length) return { to: '', cc: '' };
+    var to = geral[0];
+    var cc = [];
+    if (geral.length > 1) cc = cc.concat(geral.slice(1));
+    if (alertaDest === 'cc') {
+      alerta.forEach(function(e) {
+        if (cc.indexOf(e) === -1 && e !== to) cc.push(e);
+      });
+    }
+    return { to: to, cc: cc.join(',') };
+  } catch (_) {
+    var fb = EMAILS_DESTINATARIOS || [];
+    return { to: fb[0] || '', cc: fb.slice(1).join(',') };
+  }
+}
+
+function _getEmailsTransf() {
+  try {
+    var props  = PropertiesService.getScriptProperties();
+    var raw    = props.getProperty(_KEY_EMAILS_TRANSF);
+    var geral  = _getEmailsGeral();
+    var transf = raw ? JSON.parse(raw) : [];
+    // Se nenhum destinatário de transferência configurado, usa a lista geral
+    var lista  = transf.length ? transf : geral;
+    if (!lista.length) return { to: '', cc: '' };
+    return { to: lista[0], cc: lista.slice(1).join(',') };
+  } catch (_) {
+    var fb = EMAILS_DESTINATARIOS || [];
+    return { to: fb[0] || '', cc: fb.slice(1).join(',') };
+  }
+}
+
+/** Alias de compatibilidade. */
+function _getEmailsDestinatarios() { return _getEmailsGeral(); }
+
+/**
+ * Verifica transferências com agendamento vencido e envia alerta por e-mail separado.
+ * Executado diariamente às 8h via trigger instalado em instalarTriggers().
+ */
+function verificarTransferenciasVencidas() {
+  try {
+    var ss   = getSS();
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (!wsTr || wsTr.getLastRow() < 2) return;
+
+    var tz   = Session.getScriptTimeZone();
+    var hoje = new Date();
+    var vencidas = [];
+
+    wsTr.getRange(2, 1, wsTr.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
+      .forEach(function(l, i) {
+        var stTr  = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+        if (stTr !== 'Em Transferência') return;
+        var agend = l[TRANSF_COL_DATA_AGEND - 1];
+        if (!(agend instanceof Date) || agend >= hoje) return;
+        var diasAtraso = Math.floor((hoje - agend) / 864e5);
+        vencidas.push({
+          linha: i + 2,
+          nf:    String(l[IDX_NF]  || '').trim(),
+          nfd:   String(l[IDX_NFD] || '').trim(),
+          forn:  String(l[IDX_FORN]|| '').trim(),
+          aba:   String(l[TRANSF_COL_ABA_ORIGEM    - 1] || '').trim(),
+          transp:String(l[TRANSF_COL_TRANSPORTADORA - 1] || '').trim(),
+          agend: Utilities.formatDate(agend, tz, 'dd/MM/yyyy'),
+          resp:  String(l[TRANSF_COL_RESP - 1] || '').trim(),
+          diasAtraso: diasAtraso
+        });
+      });
+
+    if (!vencidas.length) return;
+
+    var dest = _getEmailsTransf();
+    if (!dest.to) {
+      console.warn('verificarTransferenciasVencidas: nenhum destinatário configurado.');
+      return;
+    }
+
+    var linhasHtml = vencidas.map(function(v) {
+      return '<tr style="background:' + (v.diasAtraso > 3 ? '#FEE2E2' : '#FFF7ED') + '">' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb;font-family:monospace">' + (v.nfd || v.nf) + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb">' + v.forn + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb">' + (v.transp || '—') + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb">' + v.aba + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb;color:#b91c1c;font-weight:600">' + v.agend + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #e5e7eb;color:#b91c1c;font-weight:700">' + v.diasAtraso + 'd</td>' +
+        '</tr>';
+    }).join('');
+
+    var corpo = '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;max-width:720px;margin:0 auto">' +
+      '<div style="background:#0891B2;color:#fff;padding:18px 24px;border-radius:8px 8px 0 0">' +
+        '<h2 style="margin:0;font-size:16px">⚠️ Alertas — Transferências com Agendamento Vencido</h2>' +
+        '<p style="margin:4px 0 0;font-size:12px;opacity:.85">Gerado em ' + Utilities.formatDate(hoje, tz, 'dd/MM/yyyy HH:mm') + '</p>' +
+      '</div>' +
+      '<div style="background:#f0f9ff;border:1px solid #0891B2;padding:12px 24px">' +
+        '<p style="margin:0;font-size:14px;color:#0e7490"><strong>' + vencidas.length + ' transferência(s)</strong> com data de agendamento vencida aguardam ação.</p>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;margin-top:0">' +
+        '<thead><tr style="background:#0891B2;color:#fff">' +
+          '<th style="padding:8px 10px;text-align:left">NF/NFD</th>' +
+          '<th style="padding:8px 10px;text-align:left">Fornecedor</th>' +
+          '<th style="padding:8px 10px;text-align:left">Transportadora</th>' +
+          '<th style="padding:8px 10px;text-align:left">Aba Origem</th>' +
+          '<th style="padding:8px 10px;text-align:left">Agendado</th>' +
+          '<th style="padding:8px 10px;text-align:left">Atraso</th>' +
+        '</tr></thead><tbody>' + linhasHtml + '</tbody>' +
+      '</table>' +
+      '<p style="font-size:11px;color:#6b7280;margin:12px 0 0">Sistema Transben · Controle de Devoluções</p>' +
+      '</div>';
+
+    var mailOpts = { name: 'Controle de Devoluções · Transben', htmlBody: corpo };
+    if (dest.cc) mailOpts.cc = dest.cc;
+    var _ccAlertaTransf = _getCCBccAlerta('transferencia');
+    if (_ccAlertaTransf.cc)  { mailOpts.cc  = [mailOpts.cc, _ccAlertaTransf.cc].filter(Boolean).join(','); }
+    if (_ccAlertaTransf.bcc) { mailOpts.bcc = _ccAlertaTransf.bcc; }
+
+    GmailApp.sendEmail(dest.to,
+      '⚠️ ' + vencidas.length + ' Transferência(s) Vencida(s) — Controle de Devoluções',
+      vencidas.map(function(v){ return v.nfd||v.nf + ' — ' + v.forn + ' — Vencido: ' + v.agend; }).join('\n'),
+      mailOpts);
+
+    registrarLog(ss, 'SISTEMA', 0, 0, '', vencidas.length + ' vencidas',
+      '📧 Alerta de transferências vencidas enviado para ' + dest.to + ' — ' + vencidas.length + ' item(ns)');
+
+    notificarEvento('transferencias', '⚠️ <b>' + vencidas.length + ' transferência(s) vencida(s)</b>\n' +
+      vencidas.slice(0, 10).map(function(v) {
+        return '• ' + _esc(String(v.nfd || v.nf)) + ' — ' + _esc(v.forn) + ' — vencido em ' + _esc(v.agend);
+      }).join('\n') +
+      (vencidas.length > 10 ? '\n… e mais ' + (vencidas.length - 10) + '.' : ''));
+  } catch (e) {
+    console.error('verificarTransferenciasVencidas: ' + e);
+  }
+}
+
+// ─── CORES ───────────────────────────────────────────────────
+
+function obterCoresSalvas() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_CORES);
+    if (raw) return JSON.stringify({ cores: JSON.parse(raw) });
+    return JSON.stringify({ cores: {
+      pendente:  COR_AZUL,
+      devolvido: COR_VERDE,
+      venda:     COR_LARANJA,
+      alerta:    COR_ALERTA_30DIAS,
+      header:    COR_HEADER
+    }});
+  } catch (_) {
+    return JSON.stringify({ cores: null });
+  }
+}
+
+function salvarCoresEReaplicar(cores) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  if (!cores) return JSON.stringify({ erro: 'Cores não informadas.' });
+  try {
+    PropertiesService.getScriptProperties().setProperty(_KEY_CORES, JSON.stringify(cores));
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_CORES); } catch(_) {}
+    var ss   = getSS();
+    var hoje = new Date();
+
+    _getTodasAbas().forEach(function(nomeAba) {
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) return;
+      if (cores.header) {
+        ws.getRange(1, 1, 1, TOTAL_COLUNAS).setBackground(cores.header);
+        ws.getRange(3, 1, 1, TOTAL_COLUNAS).setBackground(cores.header);
+      }
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+      var bgs   = dados.map(function(l) {
+        if (!l[IDX_NF]) return Array(TOTAL_COLUNAS).fill('#FFFFFF');
+        var st  = String(l[IDX_STATUS] || '');
+        var cor = st === 'Pendente'  ? (cores.pendente  || COR_AZUL)
+                : st === 'Devolvido' ? (cores.devolvido || COR_VERDE)
+                : st === 'Venda'     ? (cores.venda     || COR_LARANJA)
+                : '#FFFFFF';
+        if (st === 'Pendente' && l[IDX_DATA] instanceof Date) {
+          if (Math.floor((hoje - l[IDX_DATA]) / 864e5) > 30)
+            cor = cores.alerta || COR_ALERTA_30DIAS;
+        }
+        return Array(TOTAL_COLUNAS).fill(cor);
+      });
+      ws.getRange(LINHA_DADOS, 1, dados.length, TOTAL_COLUNAS).setBackgrounds(bgs);
+    });
+
+    SpreadsheetApp.flush();
+    registrarLog(ss, 'SISTEMA', 0, 0, '', JSON.stringify(cores), '🎨 Cores atualizadas via configurações');
+    return JSON.stringify({ ok: '✅ Cores salvas e reaplicadas em todas as abas!' });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/** Lista todas as abas operacionais com status do alerta +30d e ocupação (p/ FormConfiguracoes). */
+function obterConfigAbas() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var ss  = getSS();
+    var off = _getAlerta30Off();
+    var abas = _getTodasAbas().map(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      var usado = ws ? Math.max(0, obterUltimaLinhaDados(ws) - LINHA_DADOS + 1) : 0;
+      return {
+        nome:     nome,
+        fixa:     ABAS_OPERACIONAIS.indexOf(nome) !== -1,
+        alerta30: off.indexOf(nome) === -1,
+        usado:    usado
+      };
+    });
+    return JSON.stringify({ abas: abas });
+  } catch (e) {
+    registrarErroSistema('obterConfigAbas', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/** Liga/desliga o alerta de +30 dias de uma aba. params = {nome, ligado}. */
+function salvarAlerta30Aba(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var nome   = String(params.nome || '').trim();
+    var ligado = !!params.ligado;
+    if (!nome) return JSON.stringify({ erro: 'Aba não informada.' });
+    if (_getTodasAbas().indexOf(nome) === -1)
+      return JSON.stringify({ erro: 'Aba "' + nome + '" não é uma aba operacional.' });
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      var off = _getAlerta30Off();
+      var idx = off.indexOf(nome);
+      if (ligado  && idx !== -1) off.splice(idx, 1);
+      if (!ligado && idx === -1) off.push(nome);
+      _setAlerta30Off(off);
+    } finally {
+      trava.releaseLock();
+    }
+
+    registrarLog(getSS(), 'SISTEMA', 0, 0, '', nome,
+      (ligado ? '🔔' : '🔕') + ' Alerta +30 dias ' + (ligado ? 'ativado' : 'desativado') + ' — aba ' + nome);
+    return JSON.stringify({ ok: (ligado ? '🔔 Alerta ativado' : '🔕 Alerta desativado') + ' para "' + nome + '".' });
+  } catch (e) {
+    registrarErroSistema('salvarAlerta30Aba', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+/** Exclui aba extra (nunca fixa): apaga a sheet e remove dos registros.
+ *  params = {nome, confirmado}. Se a aba tem dados e confirmado=false,
+ *  retorna {confirmar:true, usado:N} para o frontend pedir confirmação. */
+function excluirAbaExtra(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var nome = String(params.nome || '').trim();
+    if (!nome) return JSON.stringify({ erro: 'Aba não informada.' });
+
+    var extras = _getAbasExtras();
+    if (extras.indexOf(nome) === -1)
+      return JSON.stringify({ erro: 'Aba "' + nome + '" não é uma aba extra — abas padrão não podem ser excluídas.' });
+
+    var ss = getSS();
+    var usado = 0;
+
+    var trava = LockService.getScriptLock();
+    if (!trava.tryLock(8000)) return JSON.stringify({ erro: 'Sistema ocupado. Tente novamente.' });
+    try {
+      extras = _getAbasExtras();
+      if (extras.indexOf(nome) === -1)
+        return JSON.stringify({ erro: 'Aba "' + nome + '" não é uma aba extra — abas padrão não podem ser excluídas.' });
+
+      // Bloqueia exclusão se houver transferências em andamento com origem nesta aba
+      // (a NF já foi movida para Transferências e não conta no "usado" da aba de origem;
+      // excluir a aba quebraria darBaixaTransferencia/cancelamento — "Aba de origem não encontrada").
+      var wsTrChk = ss.getSheetByName(ABA_TRANSFERENCIAS);
+      if (wsTrChk && wsTrChk.getLastRow() >= 2) {
+        var qtdTransfAbertas = 0;
+        wsTrChk.getRange(2, 1, wsTrChk.getLastRow() - 1, TRANSF_TOTAL_COL).getValues()
+          .forEach(function(l) {
+            var stTr  = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+            var abaOr = String(l[TRANSF_COL_ABA_ORIGEM - 1] || '').trim();
+            if (abaOr === nome && stTr === 'Em Transferência') qtdTransfAbertas++;
+          });
+        if (qtdTransfAbertas > 0)
+          return JSON.stringify({ erro: '🚚 A aba "' + nome + '" tem ' + qtdTransfAbertas +
+            ' transferência(s) em andamento. Dê baixa ou cancele antes de excluir.' });
+      }
+
+      var ws = ss.getSheetByName(nome);
+      usado = ws ? Math.max(0, obterUltimaLinhaDados(ws) - LINHA_DADOS + 1) : 0;
+      if (usado > 0 && !params.confirmado)
+        return JSON.stringify({ confirmar: true, usado: usado });
+
+      if (ws) ss.deleteSheet(ws);
+
+      extras.splice(extras.indexOf(nome), 1);
+      PropertiesService.getScriptProperties().setProperty('cdv_abas_extras', JSON.stringify(extras));
+
+      var off = _getAlerta30Off();
+      var idx = off.indexOf(nome);
+      if (idx !== -1) { off.splice(idx, 1); _setAlerta30Off(off); }
+    } finally {
+      trava.releaseLock();
+    }
+
+    registrarLog(ss, 'SISTEMA', 0, 0, '', nome,
+      '🗑️ Aba extra excluída: ' + nome + (usado > 0 ? ' (' + usado + ' lançamentos apagados)' : ''));
+
+    try { CacheService.getScriptCache().remove(_CACHE_KEY_DASH); } catch(_) {}
+    _atualizarMetricasDashboard(ss);
+
+    return JSON.stringify({ ok: '🗑️ Aba "' + nome + '" excluída.' });
+  } catch (e) {
+    registrarErroSistema('excluirAbaExtra', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+// ─── NOVO FORNECEDOR ─────────────────────────────────────────
+
+function criarNovoFornecedor(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  var nome  = String(params.nome || '').trim();
+  var fixar = !!params.fixar;
+  if (!nome) return JSON.stringify({ erro: 'Nome não informado.' });
+
+  var ss = getSS();
+  if (ss.getSheetByName(nome))
+    return JSON.stringify({ erro: 'Já existe uma aba com o nome "' + nome + '".' });
+
+  try {
+    garantirAba(ss, nome, nome);
+    var raw    = PropertiesService.getScriptProperties().getProperty('cdv_abas_extras') || '[]';
+    var extras = JSON.parse(raw);
+    if (extras.indexOf(nome) === -1) extras.push(nome);
+    PropertiesService.getScriptProperties().setProperty('cdv_abas_extras', JSON.stringify(extras));
+    registrarLog(ss, 'SISTEMA', 0, 0, '', nome, '🏭 Nova aba criada: ' + nome);
+    return JSON.stringify({
+      ok: '✅ Aba "' + nome + '" criada com sucesso! ' +
+          'Já disponível nos lançamentos e com alerta de +30 dias ativado.'
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+// ─── DIAGNÓSTICO ─────────────────────────────────────────────
+
+function obterDiagnostico() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  try {
+    var ss    = getSS();
+    var props = PropertiesService.getScriptProperties();
+
+    var concl  = parseInt(props.getProperty(_PROP_KEY_CONCLUIDOS) || '0', 10);
+    var prots  = parseInt(props.getProperty(_PROP_KEY_PROTECOES)  || '0', 10);
+    var backup = props.getProperty('cdv_ultimo_backup') || 'Nunca realizado';
+
+    var abas = _getTodasAbas().map(function(nome) {
+      var ws    = ss.getSheetByName(nome);
+      var usado = ws ? Math.max(0, obterUltimaLinhaDados(ws) - LINHA_DADOS + 1) : 0;
+      return { nome: nome, usado: usado };
+    });
+
+    var triggers = ScriptApp.getProjectTriggers().map(function(t) {
+      return { func: t.getHandlerFunction(), tipo: t.getTriggerSource().toString() };
+    });
+
+    var rawGeral   = props.getProperty(_KEY_EMAILS_GERAL);
+    var rawAlerta  = props.getProperty(_KEY_EMAILS_ALERTA);
+    var alertaDest = props.getProperty(_KEY_ALERTA_DEST) || 'todos';
+    var emailsGeral  = rawGeral  ? JSON.parse(rawGeral)  : (EMAILS_DESTINATARIOS || []);
+    var emailsAlerta = rawAlerta ? JSON.parse(rawAlerta) : [];
+
+    return JSON.stringify({
+      versao:             'v6.2',
+      ultimoBackup:       backup,
+      contConcluidos:     concl,
+      contProtecoes:      prots,
+      abas:               abas,
+      triggers:           triggers,
+      totalEmailsGeral:   emailsGeral.length,
+      totalEmailsAlerta:  emailsAlerta.length,
+      alertaDest:         alertaDest
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: e.toString() });
+  }
+}
+
+// ─── LIMPEZA DO LOG ──────────────────────────────────────────
+
+function executarLimpezaLog(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  var meses = parseInt(params.meses || 6, 10);
+  var acao  = String(params.acao || 'arquivar');
+
+  var ss    = getSS();
+  var wsLog = ss.getSheetByName('_Log');
+  if (!wsLog) return JSON.stringify({ erro: '_Log não encontrado.' });
+
+  var tz     = ss.getSpreadsheetTimeZone();
+  var hoje   = new Date();
+  var limite = new Date(hoje);
+  limite.setMonth(hoje.getMonth() - meses);
+  var limiteISO = String(limite.getFullYear()) +
+    String(limite.getMonth()+1).padStart(2,'0') +
+    String(limite.getDate()).padStart(2,'0');
+
+  try {
+    var ul = wsLog.getMaxRows();
+    if (ul < 2) return JSON.stringify({ ok: '✅ Log vazio, nada a limpar.' });
+
+    var dadosAll = wsLog.getRange(2, 1, ul - 1, 8).getValues();
+    var antigos  = [];
+    var recentes = [];
+
+    dadosAll.forEach(function(l) {
+      if (!l[0]) return;
+      var s = String(l[0]).trim();
+      var compact = '';
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+        compact = s.slice(6,10) + s.slice(3,5) + s.slice(0,2);
+      } else {
+        var d = new Date(s);
+        if (!isNaN(d)) compact = String(d.getFullYear()) +
+          String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+      }
+      if (compact && compact < limiteISO) antigos.push(l);
+      else recentes.push(l);
+    });
+
+    if (!antigos.length) {
+      var limStr = Utilities.formatDate(limite, tz, 'dd/MM/yyyy');
+      return JSON.stringify({ ok: '✅ Nenhum registro anterior a ' + limStr + '. Log está limpo.' });
+    }
+
+    if (acao === 'arquivar') {
+      var wsArq = ss.getSheetByName('_Log_Arquivo');
+      if (!wsArq) {
+        wsArq = ss.insertSheet('_Log_Arquivo');
+        wsArq.hideSheet();
+        wsArq.getRange(1,1,1,8).setValues([
+          ['Data/Hora','Usuário','Aba','Linha','Coluna','Valor Anterior','Novo Valor','Ação']
+        ]).setBackground('#444444').setFontColor('#FFFFFF').setFontWeight('bold');
+      }
+      var nextRow = wsArq.getLastRow() + 1;
+      wsArq.getRange(nextRow, 1, antigos.length, 8).setValues(antigos);
+    }
+
+    wsLog.getRange(2, 1, ul - 1, 8).clearContent();
+    if (recentes.length) wsLog.getRange(2, 1, recentes.length, 8).setValues(recentes);
+
+    SpreadsheetApp.flush();
+    registrarLog(ss, 'SISTEMA', 0, 0, '', antigos.length + ' registros', '🗂️ Limpeza de log — ' + acao);
+
+    return JSON.stringify({
+      ok: '✅ Limpeza concluída!\n' +
+          antigos.length + ' registro(s) ' +
+          (acao === 'arquivar' ? 'movidos para _Log_Arquivo' : 'apagados') + '.\n' +
+          recentes.length + ' registro(s) mantidos no _Log.'
+    });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}
+
+// ─── LIMPEZA DO DRIVE ─────────────────────────────────────────
+
+function previewLimpezaDrive(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  var tipo    = String(params.tipo    || 'relatorios');
+  var periodo = parseInt(params.periodo || 0, 10);
+  var pastas  = _pastasParaLimpar(tipo);
+  if (!pastas.length)
+    return JSON.stringify({ erro: 'Nenhuma pasta configurada para o tipo selecionado.' });
+
+  var tz       = getSS().getSpreadsheetTimeZone();
+  var corte    = periodo > 0 ? new Date(Date.now() - periodo * 864e5) : null;
+  var arquivos = [];
+
+  pastas.forEach(function(p) {
+    try {
+      var files = DriveApp.getFolderById(p.id).getFiles();
+      while (files.hasNext() && arquivos.length < 200) {
+        var f = files.next();
+        if (corte && f.getDateCreated() > corte) continue;
+        arquivos.push({
+          nome: f.getName(),
+          data: Utilities.formatDate(f.getDateCreated(), tz, 'dd/MM/yyyy')
+        });
+      }
+    } catch (e) { console.warn('previewLimpezaDrive — ' + p.label + ': ' + e); }
+  });
+
+  return JSON.stringify({ arquivos: arquivos });
+}
+
+function executarLimpezaDrive(params) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito a usuários autorizados.' });
+  var tipo    = String(params.tipo    || 'relatorios');
+  var periodo = parseInt(params.periodo || 0, 10);
+  var pastas  = _pastasParaLimpar(tipo);
+  if (!pastas.length)
+    return JSON.stringify({ erro: 'Nenhuma pasta configurada.' });
+
+  var tz    = getSS().getSpreadsheetTimeZone();
+  var corte = periodo > 0 ? new Date(Date.now() - periodo * 864e5) : null;
+  var total = 0;
+  var erros = [];
+
+  pastas.forEach(function(p) {
+    try {
+      var files = DriveApp.getFolderById(p.id).getFiles();
+      while (files.hasNext()) {
+        var f = files.next();
+        try {
+          if (corte && f.getDateCreated() > corte) continue;
+          f.setTrashed(true);
+          total++;
+        } catch (ef) { erros.push(f.getName() + ': ' + ef.message); }
+      }
+    } catch (ep) { erros.push(p.label + ': ' + ep.message); }
+  });
+
+  registrarLog(getSS(), 'SISTEMA', 0, 0, '',
+    total + ' arquivos', '🗑️ Limpeza Drive — tipo: ' + tipo);
+
+  var msg = '✅ ' + total + ' arquivo(s) movido(s) para a lixeira.\n' +
+            'Podem ser restaurados pelo Drive em até 30 dias.';
+  if (erros.length) msg += '\n⚠️ ' + erros.length + ' erro(s): ' + erros.slice(0,3).join('; ');
+  return JSON.stringify({ ok: msg });
+}
+
+
+
+
+
+// ════════════════════════════════════════════════════════════
+//   PAINEL ADMIN (Configurações → aba "Admin")
+//
+//   Conjunto de utilitários administrativos avançados, todos restritos a
+//   _usuarioEhAdmin(). Cada bloco abaixo corresponde a um cartão da nova
+//   aba "Admin" em FormConfiguracoes.html (tela mantida por outra frente
+//   de trabalho — aqui só o backend).
+// ════════════════════════════════════════════════════════════
+
+// ─── 2) Auditoria de ações administrativas ─────────────────────
+// Trilha própria do Painel Admin (não confundir com o _Log geral da
+// planilha, que já registra ações operacionais de todas as telas).
+
+/** Uso interno — não exposta ao cliente. Chamada por toda função abaixo
+ * que muda algum estado administrativo (flags, gatilhos, backup
+ * etiquetado, importação de configuração, implantação, modo manutenção). */
+function _registrarAuditoriaAdmin(acao, detalhes) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_AUDITORIA_ADMIN) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({
+      ts:       new Date().toISOString(),
+      usuario:  Session.getActiveUser().getEmail() || 'sistema',
+      acao:     String(acao || ''),
+      detalhes: String(detalhes || '')
+    });
+    lista = lista.slice(0, 200);
+    PropertiesService.getScriptProperties().setProperty(_KEY_AUDITORIA_ADMIN, JSON.stringify(lista));
+  } catch (_) {}
+}
+
+function obterAuditoriaAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_AUDITORIA_ADMIN) || '[]';
+  try { return JSON.stringify({ registros: JSON.parse(raw) }); }
+  catch (_) { return JSON.stringify({ registros: [] }); }
+}
+
+function limparAuditoriaAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  PropertiesService.getScriptProperties().deleteProperty(_KEY_AUDITORIA_ADMIN);
+  return JSON.stringify({ ok: '✅ Trilha de auditoria administrativa limpa.' });
+}
+
+// ─── 1) Gatilhos agendados (ver/pausar/retomar) ────────────────
+// Rótulos amigáveis pros handlers de gatilho já conhecidos do sistema —
+// qualquer outro handler cai no fallback (mostra o nome bruto da função).
+var _ROTULOS_GATILHOS_ADMIN = {
+  '_executarBackupAutomatico':     'Backup automático (Painel Backup)',
+  '_enviarResumoDiarioAdmin':      'Resumo diário automático (Telegram)',
+  '_processarEmailsAgendados':     'Envio de e-mails agendados',
+  'verificarTransferenciasVencidas': 'Verificação de transferências vencidas',
+  'verificarAtrasosEEnviarAlerta': 'Verificação de atrasos e alertas',
+  'reaplicarCoresTodas':           'Reaplicação de cores das abas'
+};
+
+/** Só sabe reconstruir de verdade os gatilhos que o próprio sistema cria
+ * via tela (backup e resumo diário) — para esses, guarda os parâmetros
+ * atuais (lidos das configs já salvas) para permitir retomar depois. */
+function _paramsGatilhoAdminConhecido(handler) {
+  try {
+    if (handler === '_executarBackupAutomatico') return JSON.parse(obterConfigBackupAutomatico());
+    if (handler === '_enviarResumoDiarioAdmin')  return JSON.parse(obterConfigResumoAutomatico());
+  } catch (_) {}
+  return null;
+}
+
+function obterGatilhosAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var gatilhos = ScriptApp.getProjectTriggers().map(function(t) {
+      var fn = t.getHandlerFunction();
+      var tipo = 'desconhecido';
+      try { tipo = String(t.getEventType()); } catch (_) {}
+      return {
+        id:      t.getUniqueId(),
+        funcao:  fn,
+        tipo:    tipo,
+        detalhe: _ROTULOS_GATILHOS_ADMIN[fn] || fn
+      };
+    });
+    return JSON.stringify({ gatilhos: gatilhos, max: 20 });
+  } catch (e) {
+    registrarErroSistema('obterGatilhosAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+/** O Apps Script não tem "pausar" nativo para gatilhos — a única forma é
+ * excluir e, se possível, recriar depois. Guarda um snapshot em
+ * _KEY_GATILHOS_PAUSADOS antes de excluir, para permitir retomarGatilhoAdmin
+ * nos casos em que sabemos reconstruir o gatilho (backup e resumo diário). */
+function pausarGatilhoAdmin(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    var alvo = null;
+    for (var i = 0; i < triggers.length; i++) {
+      if (triggers[i].getUniqueId() === id) { alvo = triggers[i]; break; }
+    }
+    if (!alvo) return JSON.stringify({ erro: 'Gatilho não encontrado (pode já ter sido removido ou disparado).' });
+
+    var handler = alvo.getHandlerFunction();
+    var label   = _ROTULOS_GATILHOS_ADMIN[handler] || handler;
+    var params  = _paramsGatilhoAdminConhecido(handler);
+
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_GATILHOS_PAUSADOS) || '[]';
+    var pausados = JSON.parse(raw);
+    pausados.unshift({ id: id, handler: handler, label: label, params: params, ts: new Date().toISOString() });
+    PropertiesService.getScriptProperties().setProperty(_KEY_GATILHOS_PAUSADOS, JSON.stringify(pausados));
+
+    ScriptApp.deleteTrigger(alvo);
+    _registrarAuditoriaAdmin('gatilho_pausado', label + ' (id ' + id + ')');
+    return JSON.stringify({ ok: '✅ Gatilho pausado — "' + label + '".' });
+  } catch (e) {
+    registrarErroSistema('pausarGatilhoAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+/** Recria de verdade apenas os gatilhos que o sistema sabe reconstruir
+ * (backup e resumo diário, via as próprias telas de configuração deles).
+ * Para qualquer outro handler, não há como recriar com segurança a partir
+ * daqui — retorna erro pedindo recriação manual, em vez de tentar adivinhar
+ * a configuração original (frequência, dia da semana etc.). */
+function retomarGatilhoAdmin(id) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(_KEY_GATILHOS_PAUSADOS) || '[]';
+    var pausados = JSON.parse(raw);
+    var idx = -1;
+    for (var i = 0; i < pausados.length; i++) { if (pausados[i].id === id) { idx = i; break; } }
+    if (idx === -1) return JSON.stringify({ erro: 'Registro de gatilho pausado não encontrado.' });
+
+    var reg = pausados[idx];
+    var resultado;
+    if (reg.handler === '_executarBackupAutomatico' && reg.params) {
+      resultado = JSON.parse(configurarBackupAutomatico(true, reg.params.frequencia, reg.params.horario));
+    } else if (reg.handler === '_enviarResumoDiarioAdmin' && reg.params) {
+      resultado = JSON.parse(configurarResumoAutomatico(true, reg.params.horario));
+    } else {
+      return JSON.stringify({ erro: '⚠️ O gatilho "' + reg.label + '" não pode ser recriado automaticamente por aqui — recrie-o manualmente pela tela correspondente.' });
+    }
+    if (resultado.erro) return JSON.stringify(resultado);
+
+    pausados.splice(idx, 1);
+    PropertiesService.getScriptProperties().setProperty(_KEY_GATILHOS_PAUSADOS, JSON.stringify(pausados));
+    _registrarAuditoriaAdmin('gatilho_retomado', reg.label);
+    return JSON.stringify({ ok: '✅ Gatilho retomado — "' + reg.label + '".' });
+  } catch (e) {
+    registrarErroSistema('retomarGatilhoAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 3) Monitor de cotas do Google ──────────────────────────────
+function obterCotasAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var emailRestante  = MailApp.getRemainingDailyQuota();
+    var gatilhosAtivos = ScriptApp.getProjectTriggers().length;
+    return JSON.stringify({ emailRestante: emailRestante, gatilhosAtivos: gatilhosAtivos, gatilhosMax: 20 });
+  } catch (e) {
+    registrarErroSistema('obterCotasAdmin', e.message || e.toString());
+    return JSON.stringify({ emailRestante: 0, gatilhosAtivos: 0, gatilhosMax: 20 });
+  }
+}
+
+// ─── 4) Modo manutenção + flags consolidados ────────────────────
+// (o toggle de somente-leitura e o de aprovação obrigatória já existem —
+// obterModoSomenteLeitura/salvarModoSomenteLeitura e
+// obterConfigAprovacao/salvarConfigAprovacao — aqui só consolidamos os 3
+// num único painel de leitura, mais o novo modo manutenção.)
+
+function obterFlagsAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var ro   = JSON.parse(obterModoSomenteLeitura());
+    var ap   = JSON.parse(obterConfigAprovacao());
+    var manut = PropertiesService.getScriptProperties().getProperty(_KEY_MODO_MANUTENCAO) === 'true';
+    return JSON.stringify({ somenteLeitura: !!ro.ativo, aprovacaoAtiva: !!ap.ativo, modoManutencao: manut });
+  } catch (e) {
+    registrarErroSistema('obterFlagsAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+/** Liga/desliga o modo manutenção. Quando ativo, doGet() bloqueia usuários
+ * não-admin com uma página simples — ver hook em doGet() mais abaixo. */
+function salvarModoManutencao(ativo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    PropertiesService.getScriptProperties().setProperty(_KEY_MODO_MANUTENCAO, ativo ? 'true' : 'false');
+    var ss  = getSS();
+    var msg = ativo ? 'ATIVADO' : 'DESATIVADO';
+    registrarLog(ss, 'SISTEMA', 0, 0, '', msg,
+      '🔧 Modo Manutenção ' + msg + ' por ' + (Session.getActiveUser().getEmail() || 'sistema'));
+    _registrarAuditoriaAdmin('modo_manutencao', ativo ? 'ativado' : 'desativado');
+    return JSON.stringify({ ok: '✅ Modo de manutenção ' + msg + '.' });
+  } catch (e) {
+    registrarErroSistema('salvarModoManutencao', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 5) Informações de implantação ──────────────────────────────
+function obterInfoImplantacaoAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_DEPLOY_INFO) || '{}';
+    var info = JSON.parse(raw);
+    return JSON.stringify({
+      urlWebApp:    _getWebAppExecUrl(),
+      publicadoEm:  info.publicadoEm  || '',
+      publicadoPor: info.publicadoPor || '',
+      nota:         info.nota         || ''
+    });
+  } catch (e) {
+    registrarErroSistema('obterInfoImplantacaoAdmin', e.message || e.toString());
+    return JSON.stringify({ urlWebApp: '', publicadoEm: '', publicadoPor: '', nota: '' });
+  }
+}
+
+function marcarImplantacaoPublicada(nota) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var info = {
+      publicadoEm:  new Date().toISOString(),
+      publicadoPor: Session.getActiveUser().getEmail() || 'sistema',
+      nota:         String(nota || '')
+    };
+    PropertiesService.getScriptProperties().setProperty(_KEY_DEPLOY_INFO, JSON.stringify(info));
+    _registrarAuditoriaAdmin('implantacao_publicada', info.nota);
+    return JSON.stringify({ ok: '✅ Implantação marcada como publicada.' });
+  } catch (e) {
+    registrarErroSistema('marcarImplantacaoPublicada', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 7) Usuários e acessos (último acesso ao Web App) ───────────
+// IMPORTANTE: "ativo" aqui significa só "visto pela última vez em" — Web
+// Apps do Apps Script são stateless (sem sessão do lado do servidor) e não
+// existe forma de forçar logout de uma sessão Google a partir daqui. Não
+// implementar nem expor nenhuma função de "encerrar sessão".
+
+/** Uso interno — chamada por doGet() a cada requisição com e-mail
+ * identificado. Best-effort: qualquer falha aqui nunca deve interromper o
+ * carregamento normal da página. */
+function _registrarAcessoAdmin(email) {
+  try {
+    var emailNorm = String(email || '').trim().toLowerCase();
+    if (!emailNorm) return;
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_ACESSOS_USUARIOS) || '{}';
+    var mapa = JSON.parse(raw);
+    var agora = new Date().toISOString();
+    if (mapa[emailNorm]) {
+      mapa[emailNorm].ultimoAcesso = agora;
+      mapa[emailNorm].contagem = (mapa[emailNorm].contagem || 0) + 1;
+    } else {
+      mapa[emailNorm] = { ultimoAcesso: agora, contagem: 1 };
+    }
+    // Limite de ~200 e-mails distintos, pra não deixar a Property crescer
+    // sem controle — descarta o(s) menos recentemente visto(s).
+    var emails = Object.keys(mapa);
+    if (emails.length > 200) {
+      emails.sort(function(a, b) { return new Date(mapa[a].ultimoAcesso) - new Date(mapa[b].ultimoAcesso); });
+      var excedente = emails.length - 200;
+      for (var i = 0; i < excedente; i++) delete mapa[emails[i]];
+    }
+    PropertiesService.getScriptProperties().setProperty(_KEY_ACESSOS_USUARIOS, JSON.stringify(mapa));
+  } catch (_) {
+    // Nunca deve travar doGet por causa disso.
+  }
+}
+
+function obterUsuariosAtivosAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var raw  = PropertiesService.getScriptProperties().getProperty(_KEY_ACESSOS_USUARIOS) || '{}';
+    var mapa = JSON.parse(raw);
+    var usuarios = Object.keys(mapa).map(function(email) {
+      return { email: email, ultimoAcesso: mapa[email].ultimoAcesso, contagem: mapa[email].contagem || 0 };
+    }).sort(function(a, b) { return new Date(b.ultimoAcesso) - new Date(a.ultimoAcesso); });
+    return JSON.stringify({ usuarios: usuarios });
+  } catch (e) {
+    registrarErroSistema('obterUsuariosAtivosAdmin', e.message || e.toString());
+    return JSON.stringify({ usuarios: [] });
+  }
+}
+
+// ─── 8) Simular como usuário (introspecção, não impersonação) ──
+/** Retorna as permissões que `emailAlvo` teria, reaproveitando
+ * obterPermissoesUsuario (mesma função usada por _exigirModulo). É SOMENTE
+ * leitura/inspeção — não muda como nenhuma chamada de servidor é executada
+ * para o e-mail informado. "Virar" o outro usuário de verdade exigiria
+ * passar esse e-mail como _emailParaTeste em cada _exigirModulo(...);
+ * esse parâmetro existe só como porta de teste automatizado (ver
+ * Testes.gs) e não deve ser exposto aqui, pois contornaria
+ * Session.getActiveUser() em chamadas reais de escrita/leitura. */
+function obterSimulacaoAdmin(emailAlvo) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var email = String(emailAlvo || '').trim();
+  if (!email) return JSON.stringify({ erro: 'Informe um e-mail para simular.' });
+  return obterPermissoesUsuario(email); // já vem stringificado — repassa direto, sem reembrulhar
+}
+
+// ─── 9) Alertas de capacidade das abas ──────────────────────────
+/** Mesma lógica de ocupação já usada em verificarSaudeSistema (item
+ * "Capacidade das abas" — usadas/MAX_LINHAS_ABA), mas devolvendo o detalhe
+ * por aba em vez de só um resumo textual, para o card do Painel Admin. */
+function obterAlertasCapacidadeAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var ss = getSS();
+    var abas = [];
+    _getTodasAbas().forEach(function(nome) {
+      var ws = ss.getSheetByName(nome);
+      if (!ws) return;
+      var ul      = obterUltimaLinhaDados(ws);
+      var linhas  = Math.max(0, ul - LINHA_DADOS + 1);
+      abas.push({ nome: nome, linhas: linhas, max: MAX_LINHAS_ABA, pct: Math.round((linhas / MAX_LINHAS_ABA) * 100) });
+    });
+
+    // "Transferencias" tem cabeçalho/offset diferente (1 linha de cabeçalho,
+    // dados a partir da linha 2 — ver nota em executarBusca/_coletarLinhas)
+    // e não compartilha o mesmo teto fixo de MAX_LINHAS_ABA das abas de
+    // fornecedor. Reporta as linhas ocupadas mesmo assim, mas com
+    // max/pct nulos em vez de comparar contra um limite que não existe
+    // de fato para essa aba.
+    var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+    if (wsTr) {
+      var ulTr     = wsTr.getLastRow();
+      var linhasTr = Math.max(0, ulTr - 1);
+      abas.push({ nome: ABA_TRANSFERENCIAS, linhas: linhasTr, max: null, pct: null });
+    }
+
+    abas.sort(function(a, b) { return (b.pct || 0) - (a.pct || 0); });
+    return JSON.stringify({ abas: abas });
+  } catch (e) {
+    registrarErroSistema('obterAlertasCapacidadeAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 10) Checagem de integridade de dados ───────────────────────
+function verificarIntegridadeDadosAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var ss = getSS();
+    var problemas = [];
+    var totalVerificado = 0;
+    var LIMITE_PROBLEMAS = 200;
+    var statusValidos = ['Pendente', 'Devolvido', 'Venda', 'Em Transferência'];
+
+    _getTodasAbas().forEach(function(nomeAba) {
+      if (problemas.length >= LIMITE_PROBLEMAS) return;
+      var ws = ss.getSheetByName(nomeAba);
+      if (!ws) return;
+      var ul = obterUltimaLinhaDados(ws);
+      if (ul < LINHA_DADOS) return;
+      var dados = ws.getRange(LINHA_DADOS, 1, ul - LINHA_DADOS + 1, TOTAL_COLUNAS).getValues();
+      dados.forEach(function(l, i) {
+        if (problemas.length >= LIMITE_PROBLEMAS) return;
+        var linha = LINHA_DADOS + i;
+        var nf    = String(l[IDX_NF]  || '').trim();
+        var nfd   = String(l[IDX_NFD] || '').trim();
+        var valor = parseFloat(l[IDX_VL_TOT]) || 0;
+        var desc  = String(l[IDX_DESC] || '').trim();
+        if (!nf && !nfd && !valor && !desc) return; // linha realmente vazia — não conta
+
+        totalVerificado++;
+
+        if (nf && !valor) {
+          problemas.push({ aba: nomeAba, linha: linha, descricao: 'NF preenchida ("' + nf + '") sem valor total lançado.' });
+        }
+        if (!nf && !nfd && valor) {
+          problemas.push({ aba: nomeAba, linha: linha, descricao: 'Valor total lançado sem NF/NFD associada.' });
+        }
+
+        var status = String(l[IDX_STATUS] || '').trim();
+        if (!status || statusValidos.indexOf(status) === -1) {
+          problemas.push({ aba: nomeAba, linha: linha, descricao: 'Status inválido ou em branco: "' + (status || '(vazio)') + '".' });
+        }
+      });
+    });
+
+    // Transferências: status próprio (Em Transferência | Concluída |
+    // Cancelada), diferente do das abas de fornecedor — checado à parte.
+    // A checagem de "par origem/destino ausente" pedida no escopo original
+    // foi deixada de fora de propósito: a aba guarda 1 linha por lote de
+    // transferência (colunas 21-30 = controle da própria linha, não um
+    // registro separado de origem + outro de destino), então não existe
+    // hoje um "par" para verificar sem uma reestruturação maior do modelo
+    // de dados — sinalizar isso aqui geraria falso-positivo.
+    if (problemas.length < LIMITE_PROBLEMAS) {
+      var statusValidosTransf = ['Em Transferência', 'Concluída', 'Cancelada'];
+      var wsTr = ss.getSheetByName(ABA_TRANSFERENCIAS);
+      if (wsTr) {
+        var ulTr = wsTr.getLastRow();
+        if (ulTr >= 2) {
+          var dadosTr = wsTr.getRange(2, 1, ulTr - 1, TRANSF_COL_LOTE_ID).getValues();
+          dadosTr.forEach(function(l, i) {
+            if (problemas.length >= LIMITE_PROBLEMAS) return;
+            var linha = 2 + i;
+            var nf  = String(l[IDX_NF]  || '').trim();
+            var nfd = String(l[IDX_NFD] || '').trim();
+            if (!nf && !nfd) return;
+            totalVerificado++;
+            var status = String(l[TRANSF_COL_STATUS - 1] || '').trim();
+            if (!status || statusValidosTransf.indexOf(status) === -1) {
+              problemas.push({ aba: ABA_TRANSFERENCIAS, linha: linha, descricao: 'Status de transferência inválido ou em branco: "' + (status || '(vazio)') + '".' });
+            }
+          });
+        }
+      }
+    }
+
+    return JSON.stringify({ problemas: problemas, totalVerificado: totalVerificado });
+  } catch (e) {
+    registrarErroSistema('verificarIntegridadeDadosAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 11) Status das integrações externas ────────────────────────
+/** E-mail: cota diária restante (MailApp). Telegram: reaproveita a mesma
+ * checagem já usada na aba Telegram de Configurações (getWebhookInfo via
+ * obterStatusWebhookTelegram) — essa checagem não distingue "bot
+ * configurado" de "webhook registrado" como campos separados, então
+ * reportamos os dois combinados num único campo `telegram` em vez de
+ * forçar uma separação {telegram, webhook} que a lógica existente não
+ * oferece com segurança. */
+function obterStatusIntegracoesAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var email;
+    try {
+      var restante = MailApp.getRemainingDailyQuota();
+      email = { ok: restante > 0, detalhe: restante + ' e-mail(s) restante(s) hoje' };
+    } catch (eMail) {
+      email = { ok: false, detalhe: 'Falha ao consultar cota: ' + (eMail.message || eMail.toString()) };
+    }
+
+    var telegram;
+    try {
+      var infoTg = JSON.parse(obterStatusWebhookTelegram());
+      if (infoTg.erro) {
+        telegram = { ok: false, detalhe: infoTg.erro };
+      } else {
+        telegram = {
+          ok: !!infoTg.registrado && !infoTg.divergente,
+          detalhe: infoTg.registrado
+            ? (infoTg.divergente ? 'Webhook registrado, mas com URL divergente da implantação atual.' : 'Webhook ativo e íntegro.')
+            : 'Bot configurado, mas sem webhook registrado.'
+        };
+      }
+    } catch (eTg) {
+      telegram = { ok: false, detalhe: eTg.message || eTg.toString() };
+    }
+
+    return JSON.stringify({ email: email, telegram: telegram });
+  } catch (e) {
+    registrarErroSistema('obterStatusIntegracoesAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 6) Exportação em massa (erros + auditoria + cargos + flags) ─
+function exportarDadosAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var dados = {
+      erros:        JSON.parse(obterErrosRecentes()),
+      auditoria:    JSON.parse(obterAuditoriaAdmin()).registros,
+      cargos:       JSON.parse(obterCargos()).cargos,
+      retencaoDias: JSON.parse(obterConfiguracaoRetencao()),
+      flags:        JSON.parse(obterFlagsAdmin()),
+      exportadoEm:  new Date().toISOString(),
+      exportadoPor: Session.getActiveUser().getEmail() || 'sistema'
+    };
+    return JSON.stringify({ ok: true, dados: dados });
+  } catch (e) {
+    registrarErroSistema('exportarDadosAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 14) Importar/exportar configuração completa ────────────────
+// Chaves de configuração incluídas — deliberadamente restrito a
+// preferências "de configuração" (cores, nome do sistema, cargos,
+// retenção, aprovação, somente-leitura, modo manutenção, e-mails
+// gerais/alerta e templates). EXCLUÍDAS de propósito, e por quê:
+//  • _KEY_WEBHOOK_CONF — contém o token do bot do Telegram e o segredo do
+//    webhook (credenciais; nunca deve sair da planilha via export).
+//  • _KEY_ADMINS_CONFIG, _KEY_USUARIOS, _KEY_PERMISSOES, _KEY_PERMISSOES_RO
+//    — mapeamentos de controle de acesso por e-mail; importar de um
+//    arquivo externo poderia conceder/revogar acesso de forma silenciosa.
+//  • _KEY_ASSINATURAS — IDs de arquivo do Drive vinculados a usuários
+//    específicos, não uma preferência do sistema.
+//  • _KEY_BACKUP_AUTO, _KEY_RESUMO_AUTO — dependem de um gatilho real do
+//    Apps Script (ScriptApp trigger); sobrescrever só a Property deixaria
+//    o texto salvo dessincronizado do gatilho de fato configurado.
+//  • _KEY_BACKUP_HISTORICO, _KEY_ERROS_RECENTES, _KEY_CHANGELOG,
+//    _KEY_FEEDBACKS, _KEY_CONFIG_HISTORICO, _KEY_LOG_EXPORTACOES,
+//    _KEY_APROVACOES_PEND, _KEY_APROV_AGUARDANDO_MOTIVO,
+//    _KEY_AUDITORIA_ADMIN, _KEY_TRILHA_APROVACOES, _KEY_ACESSOS_USUARIOS,
+//    _KEY_GATILHOS_PAUSADOS, _KEY_DEPLOY_INFO — histórico/estado
+//    operacional, não configuração para restaurar em outra planilha.
+var _CONFIG_ADMIN_CHAVES = {
+  cores:            _KEY_CORES_STATUS,
+  logoUrl:          _KEY_LOGO_URL,
+  nomeSistema:      _KEY_NOME_SISTEMA,
+  cargos:           _KEY_CARGOS,
+  retencaoDias:     _KEY_RETENCAO_DIAS,
+  aprovacaoAtiva:   _KEY_APROVACAO_ATIVA,
+  aprovadores:      _KEY_APROVADORES,
+  somenteLeitura:   _KEY_READONLY,
+  modoManutencao:   _KEY_MODO_MANUTENCAO,
+  emailsGeral:      _KEY_EMAILS_GERAL,
+  emailsAlerta:     _KEY_EMAILS_ALERTA,
+  alertaDestino:    _KEY_ALERTA_DEST,
+  emailsTransf:     _KEY_EMAILS_TRANSF,
+  emailTemplates:   _KEY_EMAIL_TEMPLATES,
+  modelosDocumento: _KEY_MODELOS_DOC
+};
+
+function exportarConfiguracaoCompletaAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var props  = PropertiesService.getScriptProperties();
+    var config = {};
+    Object.keys(_CONFIG_ADMIN_CHAVES).forEach(function(campo) {
+      var raw = props.getProperty(_CONFIG_ADMIN_CHAVES[campo]);
+      if (raw === null) { config[campo] = null; return; }
+      try { config[campo] = JSON.parse(raw); } catch (_) { config[campo] = raw; }
+    });
+    return JSON.stringify({ ok: true, config: config, exportadoEm: new Date().toISOString() });
+  } catch (e) {
+    registrarErroSistema('exportarConfiguracaoCompletaAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+function importarConfiguracaoCompletaAdmin(configJson) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    var config = (typeof configJson === 'string') ? JSON.parse(configJson) : configJson;
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+      return JSON.stringify({ erro: '❌ Configuração inválida — esperado um objeto JSON.' });
+    }
+    var chavesValidas   = Object.keys(_CONFIG_ADMIN_CHAVES);
+    var chavesPresentes = Object.keys(config).filter(function(k) { return chavesValidas.indexOf(k) !== -1; });
+    if (!chavesPresentes.length) {
+      return JSON.stringify({ erro: '❌ Nenhuma chave de configuração reconhecida no arquivo importado.' });
+    }
+
+    // Tudo-ou-nada: validação acima primeiro; só depois criamos o backup de
+    // segurança e gravamos — nada é escrito se a validação falhar.
+    var respBackup = JSON.parse(executarBackup('antes de importar configuração'));
+    if (respBackup.erro) {
+      return JSON.stringify({ erro: '❌ Importação cancelada — falha ao criar backup de segurança: ' + respBackup.erro });
+    }
+
+    var props = PropertiesService.getScriptProperties();
+    chavesPresentes.forEach(function(campo) {
+      var valor     = config[campo];
+      var chaveProp = _CONFIG_ADMIN_CHAVES[campo];
+      if (valor === null || valor === undefined) { props.deleteProperty(chaveProp); return; }
+      var raw = (typeof valor === 'string') ? valor : JSON.stringify(valor);
+      props.setProperty(chaveProp, raw);
+    });
+
+    _registrarAuditoriaAdmin('config_importada', 'chaves: ' + chavesPresentes.join(','));
+    return JSON.stringify({ ok: '✅ Configuração importada (' + chavesPresentes.length + ' chave(s)).' });
+  } catch (e) {
+    registrarErroSistema('importarConfiguracaoCompletaAdmin', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+// ─── 15) Trilha de aprovações ────────────────────────────────────
+/** Uso interno — chamada por submeterParaAprovacao (decisao='submetido')
+ * e por _processarAprovacaoInterno (decisao='aprovado'/'reprovado'). */
+function _registrarTrilhaAprovacao(idAprovacao, nf, fornecedor, usuarioSolicitante, decisao, revisor, justificativa) {
+  try {
+    var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_TRILHA_APROVACOES) || '[]';
+    var lista = JSON.parse(raw);
+    lista.unshift({
+      ts:                 new Date().toISOString(),
+      idAprovacao:        String(idAprovacao || ''),
+      nf:                 String(nf || ''),
+      fornecedor:         String(fornecedor || ''),
+      usuarioSolicitante: String(usuarioSolicitante || ''),
+      decisao:            String(decisao || ''),
+      revisor:            revisor || '',
+      justificativa:      justificativa || ''
+    });
+    lista = lista.slice(0, 200);
+    PropertiesService.getScriptProperties().setProperty(_KEY_TRILHA_APROVACOES, JSON.stringify(lista));
+  } catch (_) {}
+}
+
+function obterTrilhaAprovacoesAdmin() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_TRILHA_APROVACOES) || '[]';
+  try { return JSON.stringify({ registros: JSON.parse(raw) }); }
+  catch (_) { return JSON.stringify({ registros: [] }); }
+}
+
+// ─── 16) Resumo diário automático (Telegram apenas) ─────────────
+function configurarResumoAutomatico(ativo, horario) {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    ScriptApp.getProjectTriggers().forEach(function(t) {
+      if (t.getHandlerFunction() === '_enviarResumoDiarioAdmin') ScriptApp.deleteTrigger(t);
+    });
+
+    var hr = Math.max(0, Math.min(23, parseInt(horario, 10) || 7));
+    if (ativo) {
+      ScriptApp.newTrigger('_enviarResumoDiarioAdmin').timeBased().everyDays(1).atHour(hr).create();
+    }
+
+    PropertiesService.getScriptProperties().setProperty(_KEY_RESUMO_AUTO,
+      JSON.stringify({ ativo: !!ativo, horario: hr }));
+
+    _registrarAuditoriaAdmin('resumo_automatico', ativo ? ('ativado às ' + hr + 'h') : 'desativado');
+    return JSON.stringify({ ok: ativo
+      ? ('✅ Resumo diário automático ativado — por volta das ' + hr + 'h, via Telegram.')
+      : '✅ Resumo diário automático desativado.' });
+  } catch (e) {
+    registrarErroSistema('configurarResumoAutomatico', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+function obterConfigResumoAutomatico() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  var raw = PropertiesService.getScriptProperties().getProperty(_KEY_RESUMO_AUTO) || '{}';
+  try {
+    var conf = JSON.parse(raw);
+    return JSON.stringify({ ativo: !!conf.ativo, horario: (conf.horario != null ? conf.horario : 7) });
+  } catch (_) { return JSON.stringify({ ativo: false, horario: 7 }); }
+}
+
+/** Núcleo do resumo diário, compartilhado pelo handler do gatilho
+ * (_enviarResumoDiarioAdmin, sem sessão de usuário) e pelo disparo manual
+ * (enviarResumoAgora, chamado pelo admin pra testar). Reaproveita
+ * _coletarLinhas — a mesma função já usada pelos relatórios
+ * semanal/mensal — filtrando pelo dia de hoje, em vez de duplicar a
+ * varredura das abas. Envia SOMENTE por Telegram (notificarEvento não
+ * manda e-mail) — não adicionar envio de e-mail aqui. */
+function _resumoDiarioAdminNucleo() {
+  var ss  = getSS();
+  var tz  = Session.getScriptTimeZone();
+  var hoje = new Date();
+  var inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0);
+  var fimHoje    = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
+
+  var linhasHoje = _coletarLinhas(ss, tz, inicioHoje, fimHoje);
+
+  var errosHoje = 0;
+  try {
+    var todosErros = JSON.parse(PropertiesService.getScriptProperties().getProperty(_KEY_ERROS_RECENTES) || '[]');
+    errosHoje = todosErros.filter(function(er) {
+      var dtErro = new Date(er.ts);
+      return dtErro >= inicioHoje && dtErro <= fimHoje;
+    }).length;
+  } catch (_) {}
+
+  var pendentes = 0;
+  try {
+    pendentes = JSON.parse(PropertiesService.getScriptProperties().getProperty(_KEY_APROVACOES_PEND) || '[]').length;
+  } catch (_) {}
+
+  var dataStr = Utilities.formatDate(hoje, tz, 'dd/MM/yyyy');
+  var msg = '📊 <b>Resumo do dia</b> — ' + dataStr + '\n' +
+    '📝 Lançamentos hoje: ' + linhasHoje.length + '\n' +
+    '⚠️ Erros do sistema hoje: ' + errosHoje + '\n' +
+    '⏳ Aprovações pendentes: ' + pendentes;
+
+  var resultado = notificarEvento('sistema', msg);
+  if (resultado === null) {
+    throw new Error('Notificações via Telegram não estão ativas/configuradas — resumo não enviado.');
+  }
+  return { lancamentos: linhasHoje.length, erros: errosHoje, pendentes: pendentes };
+}
+
+/** Handler do trigger de tempo — sem sessão de usuário ativa, mesma
+ * observação de _executarBackupAutomatico (a autorização já foi dada
+ * quando o admin configurou o gatilho pela tela). */
+function _enviarResumoDiarioAdmin() {
+  try {
+    _resumoDiarioAdminNucleo();
+  } catch (e) {
+    registrarErroSistema('_enviarResumoDiarioAdmin', e.message || e.toString());
+  }
+}
+
+/** Disparo manual, pro admin testar o resumo sem esperar o horário
+ * agendado. */
+function enviarResumoAgora() {
+  if (!_usuarioEhAdmin()) return JSON.stringify({ erro: '🔒 Acesso restrito.' });
+  try {
+    _resumoDiarioAdminNucleo();
+    return JSON.stringify({ ok: 'Resumo enviado.' });
+  } catch (e) {
+    registrarErroSistema('enviarResumoAgora', e.message || e.toString());
+    return JSON.stringify({ erro: '❌ ' + (e.message || e.toString()) });
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   AUDITORIA E HISTÓRICO
+//
+//  Formulário unificado que substitui:
+//  • abrirHistoricoNF    (absorvida aqui)
+//  • abrirHistoricoEmails (absorvida aqui)
+//
+//  O FormAuditoria.html exibe abas: Histórico de NF | E-mails Enviados
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Abre o painel unificado de Auditoria e Histórico.
+ * Substitui as antigas abrirHistoricoNF() e abrirHistoricoEmails().
+ * Requer o arquivo FormAuditoria.html no projeto.
+ */
+function abrirAuditoria() {
+  SpreadsheetApp.getUi().showModalDialog(
+    _htmlComEstilos_('FormAuditoria').setWidth(700).setHeight(560),
+    '🔍 Auditoria e Histórico'
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+//   MENU — v6.0
+// ════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+//   [P45] WEB APP — doGet (acesso por link/URL, fora do Sheets)
+// ════════════════════════════════════════════════════════════
+// Cada item do antigo menu "📦 Devoluções" virou uma página própria do Web App.
+// As páginas (arquivos "Web*.html") chamam exatamente as mesmas funções de
+// servidor que os diálogos originais (FormX.html) já chamavam via google.script.run —
+// nenhuma lógica de negócio foi duplicada ou reescrita.
+function _getWebAppExecUrl() {
+  try { return ScriptApp.getService().getUrl(); } catch(e) { return ''; }
+}
+
+// ════════════════════════════════════════════════════════════
+//   DESIGN SYSTEM v12 — injeção central de Styles.html
+// ════════════════════════════════════════════════════════════
+// Styles.html contém os tokens/animações v12 e é injetado logo
+// antes de </head> de cada página (Web App e diálogos do Sheets).
+// Como vem DEPOIS do bloco cdv-v10 local de cada form, os tokens
+// v12 vencem — reskin global sem editar form por form.
+function _injetarDesignSystem_(html) {
+  try {
+    if (html.indexOf('id="cdv-styles"') !== -1) return html; // já injetado
+    var ds = HtmlService.createHtmlOutputFromFile('Styles').getContent();
+    var i = html.toLowerCase().indexOf('</head>');
+    if (i === -1) return ds + html;
+    return html.slice(0, i) + ds + html.slice(i);
+  } catch (_) { return html; }
+}
+
+/** createHtmlOutputFromFile + design system v12 (para diálogos do Sheets). */
+function _htmlComEstilos_(arquivo) {
+  var html = HtmlService.createHtmlOutputFromFile(arquivo).getContent();
+  return HtmlService.createHtmlOutput(_injetarDesignSystem_(html));
+}
+
+function _cdvGetSidebarHtml_(execUrl, activePage) {
+  // Badge de transferências (vencidas em vermelho, total em ciano)
+  var badgeHtml = '';
+  try {
+    var badgeData = JSON.parse(obterBadgeCount());
+    if (badgeData.total > 0) {
+      var bgBadge = badgeData.vencidas > 0 ? '#C62025' : '#0891B2';
+      badgeHtml = '<span class="cdv-badge" style="background:' + bgBadge + '">' +
+        (badgeData.vencidas > 0 ? badgeData.vencidas : badgeData.total) + '</span>';
+    }
+  } catch (_) {}
+
+  // Ícones Lucide inline (o sprite de Styles.html pode não existir em página standalone)
+  var IC = {
+    'layout-grid':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>',
+    'plus-circle':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>',
+    'list':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>',
+    'search':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+    'mail':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+    'truck':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 18.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>',
+    'arrow-left-right':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>',
+    'file-check':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></svg>',
+    'banknote':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+    'rotate-ccw':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+    'bar-chart-3':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
+    'home':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+    'database':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>',
+    'history':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>',
+    'settings':'<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>' };
+
+  // Menu Principal no TOPO (antes de Lançamentos), conforme item M
+  var groups = [
+    {s:'Menu', links:[
+      {p:'Dashboard',  ic:'layout-grid', l:'Dashboard', badge:''}
+    ]},
+    {s:'Lançamentos', links:[
+      {p:'Lancamento',  ic:'plus-circle', l:'Lançar / Excluir'},
+      {p:'Notas',       ic:'list', l:'Notas Lançadas'},
+      {p:'Busca',       ic:'search', l:'Buscar NF / Fornecedor'},
+      {p:'Email',       ic:'mail', l:'E-mail de Devolução'}
+    ]},
+    {s:'Operações', links:[
+      {p:'Frete',          ic:'truck', l:'Programar Devolução',  badge:''},
+      {p:'Transferencias', ic:'arrow-left-right', l:'Transferências',       badge:badgeHtml},
+      {p:'BaixaDevolucao', ic:'file-check', l:'Gerar PDF Devolução',  badge:''},  // renomeado (item N)
+      {p:'BaixaVenda',     ic:'banknote', l:'Baixa p/ Venda',       badge:''},
+      {p:'Reabertura',     ic:'rotate-ccw', l:'Reabrir Devoluções',   badge:''}
+    ]},
+    {s:'Relatórios', links:[
+      {p:'Relatorios', ic:'bar-chart-3', l:'Relatórios (PDF)', badge:''}
+    ]},
+    {s:'Sistema', links:[
+      {p:'Index',         ic:'home', l:'Menu Principal',        badge:''},
+      {p:'Backup',        ic:'database', l:'Backup / Restauração',  badge:''},
+      {p:'Auditoria',     ic:'history', l:'Auditoria e Histórico', badge:''},
+      {p:'Configuracoes', ic:'settings', l:'Configurações',         badge:''}
+    ]}
+  ];
+  var nav = '';
+  groups.forEach(function(g) {
+    nav += '<div class="ng"><div class="ns">' + g.s + '</div>';
+    g.links.forEach(function(k) {
+      var active = k.p === activePage;
+      nav += '<a class="ni' + (active ? ' on' : '') + '" href="' + execUrl + '?page=' + k.p +
+             '" data-label="' + k.l + '" title="' + k.l + '" aria-label="' + k.l + '">' +
+             '<span class="ic" aria-hidden="true">' + IC[k.ic] + (k.badge || '') + '</span>' +
+             '<span class="nl">' + k.l + '</span></a>';
+    });
+    nav += '</div>';
+  });
+
+  return '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">'
+    + '<style>'
+    + ':root{--w:248px;--wc:64px;--font:"Plus Jakarta Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;'
+    +   '--sb-grad:linear-gradient(150deg,#0B1226 0%,#14224A 58%,#1B2F69 100%);'
+    +   '--sb-text:rgba(255,255,255,.72);--sb-dim:rgba(255,255,255,.56);--sb-hover:rgba(255,255,255,.08);'
+    +   '--sb-active:rgba(39,67,154,.32);--sb-line:#27439A}'
+    + 'html.col{--w:var(--wc)}'
+    + 'body{margin:0;font-family:var(--font)}'
+    + '#sb{position:fixed;top:0;left:0;height:100vh;width:var(--w);background:var(--sb-grad);color:#fff;display:flex;flex-direction:column;transition:width .22s cubic-bezier(.2,0,0,1);overflow:hidden;z-index:9999;box-shadow:2px 0 16px rgba(11,18,38,.28)}'
+    + '.br{display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,.12);min-height:56px;flex-shrink:0}'
+    + '#tog{background:none;border:none;border-right:1px solid rgba(255,255,255,.1);color:#fff;cursor:pointer;height:56px;width:56px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}'
+    + '#tog:hover{background:rgba(255,255,255,.1)}'
+    + '.bi{padding:0 14px;white-space:nowrap;overflow:hidden}'
+    + '.bt{font:700 14px/1.1 var(--font);display:block}'
+    + '.bv{font:500 10px/1.3 var(--font);opacity:.4;display:block}'
+    + '#nav{padding:6px 0;flex:1;overflow-y:auto;overflow-x:hidden}'
+    + '.ns{padding:12px 16px 4px;font:800 9px/1 var(--font);text-transform:uppercase;letter-spacing:.1em;color:var(--sb-dim);white-space:nowrap;overflow:hidden}'
+    + '.ni{display:flex;align-items:center;gap:11px;width:100%;padding:9px 16px;text-decoration:none;color:var(--sb-text);font:600 12.5px/1.2 var(--font);border:none;border-left:3px solid transparent;background:transparent;cursor:pointer;white-space:nowrap;text-align:left;transition:background .14s,transform .14s}'
+    + '.ni:hover{background:var(--sb-hover);transform:translateX(2px)}'
+    + '.on{background:var(--sb-active)!important;border-left-color:var(--sb-line)!important;color:#fff!important;font-weight:700}'
+    + '.ic{position:relative;display:inline-flex;width:18px;height:18px;flex-shrink:0}'
+    + '.ic svg{width:18px;height:18px;stroke:currentColor;fill:none}'
+    + '.nl{overflow:hidden;text-overflow:ellipsis}'
+    + '.cdv-badge{position:absolute;top:-6px;right:-8px;min-width:15px;height:15px;padding:0 4px;border-radius:999px;font:700 9px/15px var(--font);text-align:center;color:#fff}'
+    + '.ft{padding:10px 16px;border-top:1px solid rgba(255,255,255,.1);font:500 10px/1.4 var(--font);color:rgba(255,255,255,.3);white-space:nowrap;overflow:hidden;flex-shrink:0}'
+    + '.pw{margin-left:var(--w);transition:margin-left .2s}'
+    + '#cdv-nav-webapp{display:none!important}'
+    + 'html.col .ns,html.col .nl,html.col .bi,html.col .ft{display:none}'
+    + 'html.col .ni{padding:9px 0;justify-content:center;position:relative}'
+    + 'html.col .ni::after{content:attr(data-label);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;background:#fff;color:#161C26;font:600 12px/1 var(--font);padding:7px 10px;border-radius:10px;box-shadow:0 8px 24px rgba(11,18,38,.28);opacity:0;pointer-events:none;transition:opacity .12s}'
+    + 'html.col .ni:hover::after,html.col .ni:focus-visible::after{opacity:1}'
+    + '</style>'
+    + '<div id="sb">'
+    + '<div class="br"><button id="tog" onclick="cdvT()" title="Recolher/expandir">&#9776;</button>'
+    + '<div class="bi"><span class="bt">Devoluções</span><span class="bv">Transben · v7.0</span></div></div>'
+    + '<nav id="nav">' + nav + '</nav>'
+    + '<div class="ft">Sistema Transben</div>'
+    + '</div>'
+    + '<script>(function(){'
+    + 'if(localStorage.getItem("cdv-sc")==="1")document.documentElement.classList.add("col");'
+    + '})();'
+    + 'function cdvT(){var c=document.documentElement.classList.toggle("col");localStorage.setItem("cdv-sc",c?"1":"0");}'
+    + '</script>';
+}
+
+function _getPageContent(page) {
+  var pagina = _WEBAPP_PAGINAS[page];
+  if (!pagina) return JSON.stringify({ erro: 'Página "' + page + '" não encontrada.' });
+  if (pagina === 'FormConfiguracoes' && !_usuarioEhAdmin()) {
+    _negarAcessoConfig('Web App — Configurações');
+    return JSON.stringify({
+      html: '<html><body style="font-family:Arial,sans-serif;text-align:center;padding:60px 24px;color:#374151">'
+          + '<div style="font-size:40px;margin-bottom:10px">🔒</div>'
+          + '<h2 style="margin:0 0 8px;font-size:16px">Acesso restrito</h2>'
+          + '<p style="font-size:13px">Esta área é restrita a usuários autorizados.</p>'
+          + '</body></html>',
+      page: page
+    });
+  }
+  try {
+    var pgCache = CacheService.getScriptCache();
+    var pgKey   = 'pg_html_v13a_' + pagina;
+    var cachedHtml = pgCache.get(pgKey);
+    if (cachedHtml) return JSON.stringify({ html: cachedHtml, page: page });
+    var html = _injetarDesignSystem_(HtmlService.createHtmlOutputFromFile(pagina).getContent());
+    // TTL curto: deploy novo aparece em <=10 min sem precisar limpar cache manualmente
+    try { pgCache.put(pgKey, html, 600); } catch(_) {}
+    return JSON.stringify({ html: html, page: page });
+  } catch(e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString(), page: page });
+  }
+}
+
+// Limpa o cache de HTML das páginas do Web App (rodar após publicar mudanças de UI)
+function limparCachePaginas() {
+  var cache = CacheService.getScriptCache();
+  var keys = Object.keys(_WEBAPP_PAGINAS).map(function(p){ return 'pg_html_v13a_' + _WEBAPP_PAGINAS[p]; });
+  try { cache.removeAll(keys); } catch(_) {}
+  try { SpreadsheetApp.getActiveSpreadsheet().toast('Cache de páginas limpo ✓', '📦 Devoluções', 4); } catch(_) {}
+}
+
+/* Valida se o secret recebido na URL do webhook bate com o configurado. */
+function _tgSecretValido(conf, secretRecebido) {
+  var esperado = (conf && conf.webhookSecret) || '';
+  return !!esperado && secretRecebido === esperado;
+}
+
+function doPost(e) {
+  try {
+    var conf = JSON.parse(PropertiesService.getScriptProperties().getProperty(_KEY_WEBHOOK_CONF) || '{}');
+    var secretRecebido = (e.parameter && e.parameter.secret) || '';
+    if (!_tgSecretValido(conf, secretRecebido)) {
+      return ContentService.createTextOutput('');
+    }
+    var update = JSON.parse(e.postData.contents);
+    if (update.callback_query) {
+      _tgProcessarCallback(conf, update.callback_query);
+    } else if (update.message && update.message.reply_to_message) {
+      _tgProcessarReply(conf, update.message);
+    }
+    return ContentService.createTextOutput('');
+  } catch(err) {
+    registrarErroSistema('doPost', err.message || err.toString());
+    return ContentService.createTextOutput('');
+  }
+}
+
+/* Preenchido na Task 4 (aprovar) e Task 5 (reprovar). */
+function _tgProcessarCallback(conf, callback) {
+  var data = String(callback.data || '');
+  var partes = data.split(':'); // ['aprov', id, 'sim'|'nao']
+  if (partes[0] !== 'aprov' || partes.length !== 3) return;
+  var id      = partes[1];
+  var decisao = partes[2];
+  var chatId    = callback.message.chat.id;
+  var messageId = callback.message.message_id;
+  var token     = conf.telegram.token;
+
+  if (decisao === 'sim') {
+    var resp = JSON.parse(_processarAprovacaoInterno(id, true, null, _tgNomeUsuario(callback.from)));
+    var texto = resp.ok
+      ? '✅ <b>Aprovado</b> por ' + _esc(_tgNomeUsuario(callback.from))
+      : '⚠️ ' + _esc(resp.erro || 'Erro ao processar.');
+    _tgApi(token, 'editMessageText', { chat_id: chatId, message_id: messageId, text: texto, parse_mode: 'HTML' });
+    _tgApi(token, 'answerCallbackQuery', { callback_query_id: callback.id });
+  } else if (decisao === 'nao') {
+    var textoPedido = '✍️ <b>Responda esta mensagem</b> com o motivo da reprovação.';
+    _tgApi(token, 'editMessageText', { chat_id: chatId, message_id: messageId, text: textoPedido, parse_mode: 'HTML' });
+    _tgApi(token, 'answerCallbackQuery', { callback_query_id: callback.id });
+    _tgSalvarPendenteMotivo(id, chatId, messageId);
+  }
+}
+
+function _tgNomeUsuario(from) {
+  if (!from) return 'alguém';
+  if (from.username) return '@' + from.username;
+  return String(from.first_name || 'alguém');
+}
+
+function _tgSalvarPendenteMotivo(aprovacaoId, chatId, messageId) {
+  var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROV_AGUARDANDO_MOTIVO) || '[]';
+  var lista = JSON.parse(raw).filter(function(p){ return p.aprovacaoId !== aprovacaoId; });
+  lista.push({ aprovacaoId: aprovacaoId, chatId: chatId, messageId: messageId });
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROV_AGUARDANDO_MOTIVO, JSON.stringify(lista));
+}
+
+function _tgAcharPendenteMotivo(replyToMessageId) {
+  var raw   = PropertiesService.getScriptProperties().getProperty(_KEY_APROV_AGUARDANDO_MOTIVO) || '[]';
+  var lista = JSON.parse(raw);
+  for (var i = 0; i < lista.length; i++) {
+    if (String(lista[i].messageId) === String(replyToMessageId)) return { item: lista[i], lista: lista, idx: i };
+  }
+  return null;
+}
+
+function _tgRemoverPendenteMotivo(lista, idx) {
+  lista.splice(idx, 1);
+  PropertiesService.getScriptProperties().setProperty(_KEY_APROV_AGUARDANDO_MOTIVO, JSON.stringify(lista));
+}
+
+function _tgProcessarReply(conf, message) {
+  var achado = _tgAcharPendenteMotivo(message.reply_to_message.message_id);
+  if (!achado) return;
+  var motivo = String(message.text || '').trim();
+  if (!motivo) return;
+
+  var revisorLabel = _tgNomeUsuario(message.from);
+  var resp  = JSON.parse(_processarAprovacaoInterno(achado.item.aprovacaoId, false, motivo, revisorLabel));
+  var texto = resp.ok
+    ? '❌ <b>Reprovado</b> por ' + _esc(revisorLabel) + '\nMotivo: ' + _esc(motivo)
+    : '⚠️ ' + _esc(resp.erro || 'Erro ao processar.');
+
+  _tgApi(conf.telegram.token, 'editMessageText', {
+    chat_id: achado.item.chatId, message_id: achado.item.messageId, text: texto, parse_mode: 'HTML'
+  });
+  _tgRemoverPendenteMotivo(achado.lista, achado.idx);
+}
+
+function doGet(e) {
+  // [Painel Admin] Registro de acesso (item 7) e bloqueio por modo
+  // manutenção (item 4) — doGet roda em TODA abertura do Web App, então
+  // qualquer falha aqui precisa ficar contida e cair para o comportamento
+  // normal (fail-open), do mesmo jeito que _exigirModulo já faz.
+  try {
+    var _emailAcesso = Session.getActiveUser().getEmail();
+    if (_emailAcesso) _registrarAcessoAdmin(_emailAcesso);
+  } catch (_) {}
+
+  try {
+    var _manutencaoAtiva = PropertiesService.getScriptProperties().getProperty(_KEY_MODO_MANUTENCAO) === 'true';
+    if (_manutencaoAtiva && !_usuarioEhAdmin()) {
+      return HtmlService.createHtmlOutput(
+        '<div style="font-family:Arial,Helvetica,sans-serif;text-align:center;padding:70px 24px;color:#344256">' +
+        '<div style="font-size:44px">🔧</div>' +
+        '<h2 style="margin:16px 0 6px;color:#0B1526">Sistema em manutenção</h2>' +
+        '<p style="color:#5B7186;font-size:14px">Estamos realizando ajustes no Controle de Devoluções.<br>Volte em breve.</p>' +
+        '</div>'
+      ).setTitle('🔧 Manutenção — Transben');
+    }
+  } catch (_) {}
+
+  // Design system v13: o shell também recebe a injeção de Styles.html (mesma
+  // fonte única dos 15 forms). _injetarDesignSystem_ tem guard anti-dupla.
+  var _shellHtml = _injetarDesignSystem_(HtmlService.createHtmlOutputFromFile('Index').getContent());
+  return HtmlService.createHtmlOutput(_shellHtml)
+    .setTitle('📦 Devoluções — Transben')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// [P06] reaplicarCores só quando cache de 1h expirou
+function onOpen() {
+  try {
+    var cache = CacheService.getScriptCache();
+    if (!cache.get(_CACHE_KEY_CORES)) {
+      var ss = getSS();
+      _getTodasAbas().forEach(function(nome) {
+        reaplicarCoresAba(ss.getSheetByName(nome));
+      });
+      cache.put(_CACHE_KEY_CORES, '1', _CORES_TTL_SEG);
+    }
+  } catch (_) {}
+
+  SpreadsheetApp.getUi().createMenu('📦 Devoluções')
+    .addSeparator()
+    .addItem('➕ Lançar / Excluir Devolução',    'abrirFormularioLancamento')
+    .addItem('🔍 Buscar NF / Fornecedor',        'abrirBusca')
+    .addItem('📨 Enviar E-mail de Devolução',    'abrirEmailDevolucao')
+    .addSeparator()
+    .addItem('🚚 Programar Devolução',           'abrirProgramarFrete')
+    .addItem('📋 Painel de Transferências',      'abrirFormTransferencias')
+    .addItem('📄 Gerar PDF Devolução',           'abrirFormularioExportarPDF')
+    .addItem('🛒 Dar Baixa para Venda',          'abrirFormularioVenda')
+    .addItem('🔓 Reabrir Devoluções',            'desfazerConclusao')
+    .addSeparator()
+    .addItem('📊 Relatórios (Mensal / Semanal / Diário / Fornecedor)', 'abrirRelatorios')
+    .addItem('🔔 Verificar Atrasos Agora',       'verificarAtrasosEEnviarAlerta')
+    .addItem('🚛 Verificar Transferências Vencidas', 'verificarTransferenciasVencidas')
+    .addSeparator()
+    .addItem('📦 Forçar Arquivamento Manual',    'arquivarItensConcluidos')
+    .addItem('💾 Backup e Restauração',           'abrirBackup')
+    .addSeparator()
+    .addItem('🔍 Auditoria e Histórico',         'abrirAuditoria')
+    // [Acesso restrito] O item aparece para todos, mas só quem é dono da
+    // planilha ou administrador cadastrado consegue efetivamente abrir —
+    // ver _usuarioEhAdmin() em abrirConfiguracoes()/configurarPlanilha().
+    // (Não condicionamos a própria exibição do menu a isso porque onOpen
+    // roda em modo restrito, e SpreadsheetApp...getOwner() não pode ser
+    // chamado nesse modo — faria o menu inteiro falhar ao montar.)
+    .addItem('⚙️ Configurações do Sistema',       'abrirConfiguracoes')
+    .addItem('🔧 Configurar/Reinstalar Sistema', 'configurarPlanilha')
+    .addItem('🧹 Limpar Cache do Web App',       'limparCachePaginas')
+    .addSeparator()
+    .addItem('🌐 Abrir Web App (link)',          'abrirLinkWebApp')
+    .addToUi();
+
+  _avisarAberturaViaSite_();
+}
+
+/* Avisa (uma vez a cada _POPUP_SITE_TTL_SEG por usuário) que o sistema tem
+   uma versão Web App com navegação mais rápida, e mostra o link pra abrir. */
+function _avisarAberturaViaSite_() {
+  try {
+    var ucache = CacheService.getUserCache();
+    if (!ucache || ucache.get(_CACHE_KEY_POPUP_SITE)) return;
+    ucache.put(_CACHE_KEY_POPUP_SITE, '1', _POPUP_SITE_TTL_SEG);
+    abrirLinkWebApp();
+  } catch (_) {}
+}
+
+/** Mostra o link do Web App publicado (menu → fora do Sheets). */
+function abrirLinkWebApp() {
+  var url;
+  try { url = ScriptApp.getService().getUrl(); } catch (_) { url = null; }
+  if (!url) {
+    SpreadsheetApp.getUi().alert('🌐 Web App ainda não publicado.\n\nNo editor de Apps Script: Implantar → Nova implantação → Tipo: App da Web.');
+    return;
+  }
+  var html = HtmlService.createHtmlOutput(
+    '<div style="font-family:Arial,sans-serif;padding:14px">' +
+    '<p style="margin:0 0 10px">🌐 Link do Web App:</p>' +
+    '<input style="width:100%;padding:8px;font-size:13px" value="' + url + '" onclick="this.select()" readonly>' +
+    '<p style="margin-top:12px"><a href="' + url + '" target="_blank">Abrir em nova aba ↗</a></p>' +
+    '</div>'
+  ).setWidth(420).setHeight(160);
+  SpreadsheetApp.getUi().showModalDialog(html, '🌐 Web App — Devoluções');
+}
+
+// ════════════════════════════════════════════════════════════
+//   BUSCA DE LOG DO SISTEMA (para FormAuditoria)
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Retorna registros do _Log filtrados por período (dataIni/dataFim ISO).
+ * Chamada pelo FormAuditoria.html — tela Log do Sistema.
+ */
+function buscarLogSistema(params) {
+  var _chk = _exigirModulo('auditoria', false);
+  if (!_chk.ok) return _chk.resp;
+  try {
+    var ss    = getSS();
+    var wsLog = ss.getSheetByName('_Log');
+    if (!wsLog) return JSON.stringify({ registros: [] });
+
+    var ul = wsLog.getLastRow();
+    if (ul < 2) return JSON.stringify({ registros: [] });
+
+    var tz      = ss.getSpreadsheetTimeZone();
+    var dataIni = String(params.dataIni || '').replace(/-/g, '');
+    var dataFim = String(params.dataFim || '').replace(/-/g, '');
+
+    var dados = wsLog.getRange(2, 1, ul - 1, 8).getValues();
+    var registros = [];
+
+    dados.forEach(function(l) {
+      if (!l[0]) return;
+      var s = String(l[0]).trim();
+      var compact = '';
+      // "dd/MM/yyyy HH:mm:ss"
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+        compact = s.slice(6,10) + s.slice(3,5) + s.slice(0,2);
+      } else {
+        var d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          compact = String(d.getFullYear()) +
+            String(d.getMonth()+1).padStart(2,'0') +
+            String(d.getDate()).padStart(2,'0');
+        }
+      }
+
+      // Filtro por período (servidor — segurança)
+      if (dataIni && compact && compact < dataIni) return;
+      if (dataFim && compact && compact > dataFim) return;
+
+      registros.push({
+        data:     s,
+        usuario:  String(l[1] || ''),
+        aba:      String(l[2] || ''),
+        linha:    String(l[3] || ''),
+        coluna:   String(l[4] || ''),
+        anterior: String(l[5] || ''),
+        novo:     String(l[6] || ''),
+        acao:     String(l[7] || '')
+      });
+    });
+
+    return JSON.stringify({ registros: registros });
+  } catch (e) {
+    return JSON.stringify({ erro: '❌ ' + e.toString() });
+  }
+}

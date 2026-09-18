@@ -1,0 +1,3225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* --c-pend/-t, --c-dev/-t, --c-venda/-t, --c-tr/-t, --c-teal vêm de Styles.html
+       (status fixos, não seguem --accent — corrigido na Fase 2). Aqui só o que falta no kit. */
+    :root{
+      --c-hdr:var(--navy);
+      --c-alert:var(--danger-bg);--c-alert-t:var(--danger-fg);
+    }
+    body.dark th{background:#1B2740!important;color:#CBD5E1}
+    body.dark tr:nth-child(even) td{background:#1B2740}
+    body.dark tr:hover td{background:#1B2E55!important}
+    body.dark .modal-box{background:#172033;border:1px solid #263350}
+    body.dark .modal-hdr{background:#152040;border-bottom:1px solid #263350}
+    body.dark input,body.dark select,body.dark textarea{background:#0D1526!important;color:#EFF3FA;border-color:#374D6E}
+    body.dark .filter-bar{background:#101828;border-color:#1E293B}
+    body.dark .filter-bar select,body.dark .filter-bar input{background:#0D1526!important;color:#EFF3FA;border-color:#374D6E}
+    .filter-bar{transition:max-height .25s ease,padding .25s ease,opacity .2s ease;overflow:hidden}
+    .filter-bar.minimizado{max-height:0!important;padding-top:0!important;padding-bottom:0!important;margin-bottom:0!important;border-width:0!important;opacity:0}
+    body.dark .toolbar-topo{background:#152040}
+    body.dark .kpi-card{background:#172033;border-color:#263350}
+    body.dark .kpi-strip{background:transparent}
+    body.dark .btn-dark-toggle{background:#263350;color:#EFF3FA}
+    /* ── Context menu ── */
+    /* ── Menu de contexto (redesign: sensível ao status) ── */
+    #ctx-menu{display:none;position:fixed;background:var(--surface);border:1.5px solid var(--border-def);border-radius:14px;box-shadow:0 16px 44px rgba(11,21,38,.28);z-index:9999;width:252px;overflow:hidden;animation:popIn .18s var(--rd-spring) both;transform-origin:top left}
+    #ctx-nf-label{padding:10px 13px;background:var(--grad-hero);color:#fff}
+    #ctx-nf-label .cnf{font-family:var(--mono);font-size:12.5px;font-weight:700}
+    #ctx-nf-label .cfo{font-size:10px;color:#8FA6C8;margin-top:2px}
+    #ctx-nf-label .clin{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+    #ctx-nf-label .cst{display:inline-flex;border-radius:99px;padding:2px 10px;font-size:10px;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff}
+    #ctx-nf-label .cvl{font-family:var(--mono);font-size:11px;font-weight:700;color:#9CC1FF}
+    .ctx-grp{font-size:8.5px;font-weight:800;color:var(--text-faint);letter-spacing:.1em;text-transform:uppercase;padding:8px 13px 3px}
+    .ctx-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 13px;text-align:left;border:none;background:none;font-family:var(--font);font-size:12px;cursor:pointer;color:var(--text-body);transition:background .12s;font-weight:600}
+    .ctx-item:hover{background:var(--navy-50)}
+    .ctx-item:disabled{opacity:.45;cursor:not-allowed}
+    .ctx-item:disabled:hover{background:none}
+    .ctx-perigo{border-top:1px solid var(--border);margin-top:4px}
+    .ctx-perigo .ctx-item{color:var(--red)}
+    .ctx-perigo .ctx-item:not(:disabled):hover{background:var(--red-bg)}
+    #ctx-excluir-btn:not(:disabled):hover{background:var(--red-bg);color:var(--red)}
+    body.dark #ctx-menu{background:var(--surface);border-color:var(--border-def)}
+    body.dark .ctx-item:hover{background:var(--navy-50)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);font-size:13px;background:var(--bg);color:var(--text);
+         display:flex;flex-direction:column;height:100vh;overflow:hidden}
+    ::-webkit-scrollbar{width:7px;height:7px}
+    ::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:8px}
+
+    /* nav bar */
+    #cdv-nav-webapp{display:none;background:#0E1B30;color:#fff;padding:7px 14px;
+      align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0}
+    #cdv-nav-webapp a{color:#9CC1FF;text-decoration:none;font-weight:bold}
+
+    /* header — .rd-hero/.rd-ghost vêm do design system central (Styles.html) */
+    .btn-sm{padding:5px 12px;border:none;border-radius:var(--r-sm);font-size:12px;
+            font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font);
+            transition:opacity .15s var(--ease);height:28px;display:inline-flex;align-items:center;gap:5px}
+    .btn-prim{background:linear-gradient(135deg,#3B76F6,#2563EB 55%,#1E40AF);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.32)}
+    .btn-prim:hover{opacity:.9;box-shadow:0 4px 14px rgba(37,99,235,.42)}
+    .btn-succ{background:var(--green);color:#fff}
+    .btn-succ:hover{opacity:.88}
+    .btn-danger{background:var(--red);color:#fff}
+    .btn-danger:hover{opacity:.88}
+    .btn-orange{background:var(--amber);color:#fff}
+    .btn-orange:hover{opacity:.88}
+    .btn-gray{background:var(--border);color:var(--text-body);transition:background .15s;border:1px solid var(--border-def)}
+    .btn-gray:hover{background:var(--border-def)}
+    .btn-teal{background:var(--cyan);color:#fff}
+    .btn-teal:hover{opacity:.88}
+    button:disabled{opacity:.45;cursor:not-allowed}
+
+    /* Timeline de histórico (visual "det-tl" do redesign) */
+    .det-tl{position:relative;padding-left:20px}
+    .det-tl::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--border-def);border-radius:2px}
+    .det-tl .it{position:relative;padding-bottom:12px;font-size:11.5px}
+    .det-tl .it:last-child{padding-bottom:0}
+    .det-tl .it::before{
+      content:'';position:absolute;left:-17px;top:4px;width:8px;height:8px;border-radius:99px;
+      background:var(--surface);border:2.5px solid var(--navy);
+    }
+    .det-tl .it.email::before{border-color:var(--cyan)}
+    .det-tl .it .q{font-weight:700;color:var(--text)}
+    .det-tl .it .w{color:var(--text-muted);font-size:10.5px;margin-top:1px}
+    .det-tl .it .w b{font-family:var(--mono);color:var(--text-body)}
+    .det-tl .vazio{color:#9CA3AF;font-size:11px;padding:8px 0}
+
+    /* KPI strip — cards clicáveis (visual "kpis-row" do redesign) */
+    .kpi-strip{background:transparent;display:flex;gap:9px;flex-shrink:0;padding:12px 12px 4px;align-items:stretch;flex-wrap:wrap}
+    .kpi-card{flex:1;min-width:120px;padding:11px 13px;cursor:pointer;position:relative;text-align:left;
+              background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);
+              box-shadow:var(--sh);overflow:hidden;
+              transition:box-shadow .18s var(--ease),transform .18s var(--ease),border-color .18s,background .18s}
+    .kpi-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px);border-color:var(--border-def)}
+    .kpi-card.ativo{border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:5px;display:flex;align-items:center}
+    .kpi-val{font-size:22px;font-weight:900;color:var(--c-hdr);line-height:1;letter-spacing:-.03em}
+    .kpi-sub{font-size:10px;color:var(--text-muted);margin-top:3px}
+    .kpi-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;flex-shrink:0}
+
+    /* filter bar — card flutuante */
+    .filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+                margin:0 12px 8px;padding:9px 12px;box-shadow:var(--sh);
+                display:flex;gap:7px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+    .filter-bar select,.filter-bar input[type=text],.filter-bar input[type=date]{
+      height:32px;padding:0 10px;border:1.5px solid var(--border);border-radius:8px;
+      font-size:12px;background:var(--input-bg);font-family:var(--font);color:var(--text);
+      transition:border-color .15s,box-shadow .15s,background .15s}
+    .filter-bar select:hover,.filter-bar input:hover{border-color:var(--border-def)}
+    .filter-bar select:focus,.filter-bar input:focus{
+      outline:none;border-color:var(--navy);background:var(--surface);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .filter-bar label{display:flex;align-items:center;gap:5px;font-size:12px;height:32px;
+                      padding:0 10px;border:1.5px solid var(--border);border-radius:8px;
+                      background:var(--input-bg);color:var(--text-body);cursor:pointer;user-select:none;
+                      transition:border-color .15s,background .15s}
+    .filter-bar label:hover{border-color:var(--navy);background:var(--navy-50)}
+    .filter-bar label input[type=checkbox]{accent-color:var(--navy)}
+    .busca-wrap{position:relative;min-width:200px;flex:1;max-width:320px;display:flex;align-items:center}
+    .busca-wrap svg{position:absolute;left:10px;width:13px;height:13px;stroke:var(--text-faint);pointer-events:none}
+    #f-busca{width:100%;min-width:0;padding-left:30px!important}
+    .sep{color:var(--text-faint);font-size:14px}
+    .btn-limpar-f{height:32px;padding:0 12px;border:1.5px solid var(--border);border-radius:8px;
+      background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;font-family:var(--font);
+      cursor:pointer;transition:border-color .15s,color .15s,background .15s;display:inline-flex;align-items:center;gap:4px}
+    .btn-limpar-f:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+
+    /* bulk action bar */
+    .bulk-bar{background:#1D4ED8;color:#fff;padding:7px 14px;display:none;
+              align-items:center;gap:8px;font-size:12px;flex-shrink:0;flex-wrap:wrap}
+    .bulk-bar .cnt-sel{font-weight:bold;margin-right:4px}
+    .bulk-warn{background:rgba(254,243,199,.9);color:#92400E;padding:3px 8px;
+               border-radius:3px;font-size:11px}
+
+    /* table area — card */
+    .table-wrap{flex:1;overflow:auto;position:relative;margin:0 12px 10px;
+                background:var(--surface);border:1px solid var(--border);border-radius:12px;
+                box-shadow:var(--sh)}
+    body.apresentacao .table-wrap{margin:0;border-radius:0;border:none}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead th{background:var(--slate-100);color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:700;text-transform:uppercase;letter-spacing:.07em;font-size:9.5px;padding:8px 10px;text-align:left;
+             position:sticky;top:0;z-index:2;white-space:nowrap;font-size:11px;font-weight:700}
+    thead th.sortable{cursor:pointer;user-select:none}
+    body.apresentacao .filter-bar,body.apresentacao .bulk-bar{display:none!important}
+    body.apresentacao .kpi-strip{border:none}
+    body.apresentacao .toolbar-topo{padding:4px 12px}
+    .resize-handle{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;
+                   background:transparent;z-index:1}
+    .resize-handle:hover{background:rgba(255,255,255,.3)}
+    thead th{position:relative}
+    thead th:first-child{width:36px;text-align:center;padding-left:12px}
+    tbody tr{transition:background .08s}
+    tbody tr:nth-child(even){background:var(--slate-50,#F8FAFD)}
+    tbody tr:hover td{background:var(--navy-50) !important}
+    tbody tr.cursor-ptr{cursor:pointer}
+    td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+    td:first-child{text-align:center;padding-left:12px}
+    body.density-compact td,body.density-compact th{padding-top:3px!important;padding-bottom:3px!important;font-size:11px}
+    body.density-comfortable td,body.density-comfortable th{padding-top:11px!important;padding-bottom:11px!important;font-size:13px}
+
+    /* badges de status extras */
+    .b-alert{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA}
+
+    /* badges — pill v12 (mesmo formato de .rd-pill do Styles.html) */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;
+           font-size:10px;font-weight:700;white-space:nowrap;border:1px solid transparent;
+           transition:filter .15s}
+    .b-p{background:var(--c-pend);color:var(--c-pend-t);border-color:rgba(29,78,216,.22)}
+    .b-tr{background:var(--c-tr);color:var(--c-tr-t);border-color:rgba(8,145,178,.22)}
+    .b-d{background:var(--c-dev);color:var(--c-dev-t);border-color:rgba(21,128,61,.22)}
+    .b-v{background:var(--c-venda);color:var(--c-venda-t);border-color:rgba(146,64,14,.22)}
+    .dias-chip{display:inline-block;padding:1px 7px;border-radius:99px;
+               font-size:10px;font-weight:bold;border:1px solid transparent}
+    .dias-ok{background:#D1FAE5;color:#065F46;border-color:rgba(6,95,70,.18)}
+    .dias-warn{background:#FEF3C7;color:#92400E;border-color:rgba(146,64,14,.18)}
+    .dias-crit{background:#FEE2E2;color:#991B1B;border-color:rgba(153,27,27,.18)}
+
+    /* icons */
+    .ico-cell{font-size:13px;line-height:1;letter-spacing:1px}
+    .nf-main{font-weight:bold;color:var(--c-hdr);font-size:12px}
+    .nf-sub{font-size:10px;color:#9CA3AF;margin-top:1px}
+
+    .empty-state{padding:48px;text-align:center;color:#9CA3AF}
+    .loading-bar{display:none;padding:16px;text-align:center;font-size:12px;color:#6B7280}
+
+    /* pagination */
+    .paginacao{display:none;align-items:center;gap:6px;padding:8px 14px;margin:0 12px 10px;
+               border:1px solid var(--border);border-radius:12px;background:var(--surface);
+               box-shadow:var(--sh);flex-shrink:0;flex-wrap:wrap}
+    .pag-info{font-size:11px;color:var(--text-muted);margin-right:4px;white-space:nowrap}
+    .pag-btns{display:flex;gap:3px;align-items:center}
+    .pag-btn{min-width:28px;height:26px;padding:0 6px;border:1px solid var(--border-def);border-radius:5px;
+             background:var(--surface);font-size:11px;cursor:pointer;font-family:var(--font);
+             transition:background .1s,border-color .1s;color:var(--text-body)}
+    .pag-btn:hover:not(:disabled){background:var(--navy-50);border-color:#A5B4FC}
+    .pag-btn.pag-cur{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+    .pag-btn:disabled{opacity:.4;cursor:not-allowed}
+    .pag-ellipsis{font-size:11px;color:var(--text-faint);padding:0 2px}
+    .pag-size{height:26px;padding:0 6px;border:1px solid var(--border-def);border-radius:5px;
+              font-size:11px;font-family:var(--font);margin-left:8px;cursor:pointer}
+    tr.row-focus td{background:#EEF2FF!important;box-shadow:inset 2px 0 0 var(--navy)}
+
+    /* priority */
+    .prio-dot{display:inline-block;width:9px;height:9px;border-radius:50%;cursor:pointer;
+              margin-right:5px;vertical-align:middle;flex-shrink:0;transition:transform .1s}
+    .prio-dot:hover{transform:scale(1.4)}
+    .prio-none {background:#E5E7EB}
+    .prio-alta {background:#EF4444}
+    .prio-media{background:#F59E0B}
+    .prio-baixa{background:#3B82F6}
+
+    /* undo bar */
+    .undo-bar{background:#1E293B;color:#fff;padding:9px 16px;display:none;align-items:center;
+              gap:10px;font-size:12px;border-top:1px solid #334155;flex-shrink:0;flex-wrap:wrap}
+    .undo-msg{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .undo-btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);
+              border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;font-family:var(--font);
+              transition:background .12s;white-space:nowrap}
+    .undo-btn:hover{background:rgba(255,255,255,.28)}
+    .undo-close{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;
+                font-size:14px;padding:0 4px;line-height:1;transition:color .12s}
+    .undo-close:hover{color:#fff}
+    .undo-countdown{font-size:11px;color:rgba(255,255,255,.45);white-space:nowrap}
+
+    /* Overlay / Modals */
+    .overlay{position:fixed;inset:0;background:rgba(10,18,40,.52);display:flex;
+             align-items:center;justify-content:center;z-index:50;display:none;backdrop-filter:blur(2px)}
+    .modal-box{background:var(--surface);border-radius:var(--r);box-shadow:0 20px 60px rgba(0,0,0,.28);
+               display:flex;flex-direction:column;max-height:92vh;overflow:hidden}
+    .modal-hdr{background:var(--grad-hero);color:#fff;padding:13px 16px;display:flex;
+               align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-hdr h3{font-size:14px;font-weight:800;letter-spacing:-.02em}
+    .modal-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;
+                 line-height:1;padding:2px 7px;border-radius:7px;transition:background .15s,transform .12s;
+                 width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center}
+    .modal-close:hover{background:rgba(255,255,255,.28)}
+    .modal-body{padding:16px;overflow-y:auto;flex:1}
+    .modal-footer{border-top:1px solid var(--border);padding:12px 16px;display:flex;
+                  gap:8px;justify-content:flex-end;flex-shrink:0;background:var(--slate-100)}
+    /* nav circular (prev/próxima NF no modal detalhe) — mesmo padrão visual do det-nav do redesign */
+    #det-prev,#det-next{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.18)!important;
+      color:#fff!important;border-radius:7px!important;width:26px;height:26px;display:inline-flex;
+      align-items:center;justify-content:center;transition:background .15s}
+    #det-prev:hover,#det-next:hover{background:rgba(255,255,255,.24)!important}
+
+    /* Detail modal */
+    #modal-detalhe .modal-box{width:860px;max-width:98vw}
+    .detalhe-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:700px){.detalhe-grid{grid-template-columns:1fr}}
+    /* abas da coluna direita do detalhe (Histórico/Comentários/Fotos/Fornecedor) */
+    .det-tabs{display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap}
+    .det-tab{border:1.5px solid var(--border-def);background:var(--surface);border-radius:99px;
+             padding:5px 13px;font-size:11px;font-weight:700;color:var(--text-muted);
+             cursor:pointer;font-family:var(--font);transition:all .15s}
+    .det-tab.on{background:var(--rd-grad-btn);border-color:transparent;color:#fff}
+    .det-pane{display:none}
+    .det-pane.on{display:block;animation:fadeUp .2s both}
+    @media(max-width:600px){
+      .kpi-strip{flex-wrap:wrap}
+      .kpi-card{min-width:45%;border-right:none;border-bottom:1px solid #E5E7EB}
+      .filter-bar{gap:5px}
+      .filter-bar select,.filter-bar input{font-size:11px;padding:4px 6px}
+      #f-busca{min-width:120px;flex:1}
+      .toolbar-topo{flex-wrap:wrap;gap:4px}
+      .toolbar-topo h1{font-size:14px}
+      thead th:nth-child(n+6){display:none}
+      td.col-valor,td.col-frete{display:none}
+      .bulk-bar{flex-wrap:wrap;gap:4px;font-size:11px}
+      .paginacao{flex-wrap:wrap;gap:4px;justify-content:center}
+    }
+    .campo-edit{margin-bottom:10px}
+    .campo-edit label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);
+                      text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+    .campo-edit input,.campo-edit textarea,.campo-edit select{
+      width:100%;padding:7px 9px;border:1px solid var(--border-def);border-radius:var(--r-sm);
+      font-size:12px;background:var(--surface);font-family:var(--font)}
+    .campo-edit input:focus,.campo-edit textarea:focus,.campo-edit select:focus{
+      outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,65,154,.12)}
+    .campo-edit .val-static{font-size:12px;color:#111827;padding:7px 0}
+    .section-lbl{font-size:10px;font-weight:bold;text-transform:uppercase;
+                 letter-spacing:.06em;color:#6B7280;margin-bottom:8px;padding-bottom:4px;
+                 border-bottom:1px solid #E5E7EB}
+    .hist-item{padding:7px 0;border-bottom:1px solid #F3F4F6;font-size:11px}
+    .hist-item:last-child{border-bottom:none}
+    .hist-date{color:#9CA3AF;font-size:10px}
+    .hist-text{color:#374151;margin-top:2px}
+
+    /* Confirm modal */
+    #modal-confirm .modal-box{width:560px;max-width:96vw}
+    .sim-lista{max-height:280px;overflow-y:auto;border:1px solid #E5E7EB;
+               border-radius:4px;padding:6px;font-size:11px}
+    .sim-item{padding:4px 6px;border-radius:3px;margin-bottom:2px;display:flex;gap:6px}
+    .sim-ok{background:#F0FDF4;color:#15803D}
+    .sim-skip{background:#FFF7ED;color:#92400E}
+    .sim-item b{flex:0 0 auto}
+    .aviso-lote{background:#FEF3C7;border:1px solid #FCD34D;border-radius:4px;
+                padding:9px 12px;font-size:12px;color:#92400E;margin-top:10px}
+
+    /* Frete modal */
+    #modal-frete .modal-box{width:440px;max-width:96vw}
+    .frete-opcoes{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+    .frete-radio{display:flex;align-items:flex-start;gap:8px;background:#F9FAFB;
+                 border:1px solid #D1D5DB;border-radius:5px;padding:8px 10px;cursor:pointer}
+    .frete-radio:hover{border-color:var(--c-teal)}
+    .frete-radio.sel{border-color:var(--c-teal);background:#ECFEFF}
+    .frete-radio input{margin-top:2px;accent-color:var(--c-teal)}
+    .frete-radio .txt strong{display:block;font-size:12px;color:var(--c-hdr)}
+    .frete-radio .txt small{font-size:11px;color:#6B7280}
+    #frcampo-valor,#frcampo-data{display:none;margin-bottom:8px}
+
+    /* Toast */
+    .toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:6px;
+           font-size:12px;z-index:300;display:none;max-width:420px;line-height:1.5;
+           box-shadow:0 4px 16px rgba(0,0,0,.2)}
+    .toast.ok{background:#065F46;color:#fff}
+    .toast.err{background:#991B1B;color:#fff}
+    .toast.info{background:#1D4ED8;color:#fff}
+
+    /* Message inline */
+    .msg-inline{padding:8px 10px;border-radius:4px;font-size:12px;margin-top:8px;display:none}
+    .msg-ok{background:#ECFDF5;color:#047857;border:1px solid #A7F3D0}
+    .msg-err{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+    .msg-warn{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D}
+    /* column picker */
+    .col-pick-wrap{position:relative;display:inline-block}
+    .col-dropdown{position:absolute;right:0;top:calc(100% + 4px);background:var(--surface);
+                  border:1px solid var(--border-def);border-radius:6px;color:var(--text);
+                  box-shadow:0 4px 12px rgba(0,0,0,.12);padding:8px 6px;
+                  min-width:170px;z-index:200;display:none}
+    .col-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;
+              cursor:pointer;font-size:12px;user-select:none}
+    .col-item:hover{background:#F3F4F6}
+    .col-item input[type=checkbox]{cursor:pointer;width:14px;height:14px;accent-color:var(--navy)}
+    .col-item.disabled{opacity:.45;pointer-events:none}
+  </style>
+  <style id="cdv-v10">
+/* tokens vêm de Styles.html (injetado) */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+body{background:var(--bg);color:var(--text);font-family:var(--font);transition:background .22s,color .22s}
+thead tr{background:var(--slate-100)}
+thead th{background:var(--slate-100);color:var(--text-muted);font-weight:700;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+body.dark thead th{background:#16233A!important;color:#A9BDD6}
+thead th.sortable:hover{background:var(--navy-50)!important;color:var(--navy)}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--navy-50)}
+input,select,textarea{background:var(--input-bg);border-radius:var(--r-sm);transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(37,99,235,.12);outline:none}
+button{font-family:inherit;cursor:pointer;transition:transform .1s,box-shadow .12s,opacity .12s}
+.link-pdf,.link-doc{text-decoration:none;transition:transform .15s,box-shadow .15s}
+.link-pdf:hover,.link-doc:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.3)}
+.msg-ok,.msg-erro,.msg-aviso,#msg{animation:fadeIn .2s both;border-radius:var(--r-sm)}
+.spinner{color:var(--navy)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-def);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--navy)}
+.bulk-bar{background:linear-gradient(135deg,#05101D 0%,var(--navy) 100%);box-shadow:0 4px 20px rgba(37,99,235,.3);animation:slideDown .2s both}
+.bulk-bar .btn-sm{transition:background .12s,transform .1s}
+.bulk-bar .btn-sm:hover{transform:translateY(-1px)}
+#filter-card,.filter-bar{animation:fadeUp .2s both}
+/* ── KPI accent (barra superior via --kac no ::before do card) ── */
+.kpi-card{animation:fadeUp .22s both}
+.kpi-card:nth-child(1){animation-delay:.04s}
+.kpi-card:nth-child(2){animation-delay:.08s}
+.kpi-card:nth-child(3){animation-delay:.12s}
+.kpi-card:nth-child(4){animation-delay:.16s}
+.kpi-card:nth-child(5){animation-delay:.20s}
+.kpi-card:nth-child(6){animation-delay:.24s}
+#kpi-pend{--kac:var(--c-pend-t)}
+#kpi-tr{--kac:var(--c-tr-t)}
+#kpi-dev{--kac:var(--c-dev-t)}
+#kpi-venda{--kac:var(--c-venda-t)}
+#kpi-total{--kac:var(--navy)}
+#kpi-cxs{--kac:var(--cyan)}
+.kpi-val{font-size:24px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint)}
+.btn-prim{transition:transform .12s,box-shadow .15s,opacity .12s}
+.btn-prim:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(37,99,235,.38);opacity:1}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+  <style id="col-style"></style>
+</head>
+<body data-area="analise">
+
+<div id="cdv-nav-webapp">
+  <a href="?page=Index">🏠 Menu Principal</a>
+  <span style="opacity:.6">📦 Devoluções · Transben</span>
+</div>
+<script>
+try {
+  google.script.run
+    .withSuccessHandler(function(_execUrl) {
+      if (!_execUrl) return;
+      var _nav = document.getElementById('cdv-nav-webapp');
+      if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+      try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+    })
+    ._getWebAppExecUrl();
+} catch(_e) {}
+</script>
+
+<!-- Header -->
+<div class="rd-hero" style="margin:12px 12px 0;border-radius:var(--r);flex-shrink:0">
+  <div class="rd-hero-top">
+    <h1 tabindex="-1"><svg class="ic"><use href="#i-list"/></svg> Notas Lançadas</h1>
+    <div class="rd-hero-actions">
+      <button class="rd-ghost" onclick="exportarCSV()"><svg class="ic ic-sm"><use href="#i-download"/></svg> CSV</button>
+      <button class="rd-ghost" onclick="exportarPDF()"><svg class="ic ic-sm"><use href="#i-file-check"/></svg> PDF</button>
+      <div class="col-pick-wrap">
+        <button class="rd-ghost" onclick="toggleColDropdown(event)"><svg class="ic ic-sm"><use href="#i-settings"/></svg> Colunas</button>
+        <div id="col-dropdown" class="col-dropdown"></div>
+      </div>
+
+      <!-- REMOVE MODO COMPACTO
+
+      <select id="sel-density" onchange="setDensity(this.value)" title="Densidade da tabela"
+        style="font-size:11px;padding:2px 6px;border:1px solid rgba(255,255,255,.3);background:transparent;
+               color:#fff;border-radius:4px;cursor:pointer;font-family:var(--font)">
+        <option value="">⇕ Normal</option>
+        <option value="compact">⇕ Compacta</option>
+        <option value="comfortable">⇕ Confortável</option>
+      </select>
+
+      -->
+
+      <button class="rd-ghost" id="btn-dark" onclick="toggleDark()" title="Modo escuro (D)">🌙</button>
+      <button class="rd-ghost" onclick="abrirAjudaAtalhos()" title="Atalhos de teclado">⌨️</button>
+
+      <!-- REMOVE MODO APRESENTAÇÃO
+
+      <button class="rd-ghost" id="btn-apresentacao" onclick="toggleApresentacao()" title="Modo apresentação (F11)">🖥️</button>
+
+      -->
+
+      <button class="rd-ghost" onclick="iniciarTourNotas()" title="Tour guiado deste módulo">❓</button>
+      <button class="rd-ghost" onclick="carregar()">🔄 Atualizar</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip" id="kpi-strip">
+  <div class="kpi-card" onclick="filtrarRapido('Pendente')" id="kpi-pend">
+    <div class="kpi-lbl"><span class="kpi-dot" style="background:var(--c-pend-t)"></span>Pendente</div>
+    <div class="kpi-val" id="kv-pend">—</div>
+    <div class="kpi-sub" id="ks-pend">R$ —</div>
+  </div>
+  <div class="kpi-card" onclick="filtrarRapido('Em Transferência')" id="kpi-tr">
+    <div class="kpi-lbl"><span class="kpi-dot" style="background:var(--c-tr-t)"></span>Em Transferência</div>
+    <div class="kpi-val" id="kv-tr" style="color:var(--c-tr-t)">—</div>
+    <div class="kpi-sub" id="ks-tr">R$ —</div>
+  </div>
+  <div class="kpi-card" onclick="filtrarRapido('Devolvido')" id="kpi-dev">
+    <div class="kpi-lbl"><span class="kpi-dot" style="background:var(--c-dev-t)"></span>Devolvido</div>
+    <div class="kpi-val" id="kv-dev">—</div>
+    <div class="kpi-sub" id="ks-dev">R$ —</div>
+  </div>
+  <div class="kpi-card" onclick="filtrarRapido('Venda')" id="kpi-venda">
+    <div class="kpi-lbl"><span class="kpi-dot" style="background:var(--c-venda-t)"></span>Venda</div>
+    <div class="kpi-val" id="kv-venda">—</div>
+    <div class="kpi-sub" id="ks-venda">R$ —</div>
+  </div>
+  <div class="kpi-card" onclick="filtrarRapido('')" id="kpi-total">
+    <div class="kpi-lbl">📊 Total filtrado</div>
+    <div class="kpi-val" id="kv-total">—</div>
+    <div class="kpi-sub" id="ks-total">R$ —</div>
+  </div>
+  <div class="kpi-card" id="kpi-cxs" style="cursor:default">
+    <div class="kpi-lbl">📦 Total Cxs</div>
+    <div class="kpi-val" id="kv-cxs" style="color:var(--cyan)">—</div>
+    <div class="kpi-sub" id="ks-cxs">unidades filtradas</div>
+  </div>
+  <div style="padding:6px 8px;display:flex;align-items:center;position:relative">
+    <button class="btn-sm btn-gray" onclick="toggleKpiConfig()" title="Configurar KPIs" style="font-size:10px;padding:2px 6px">⚙️</button>
+    <div id="kpi-config-menu" style="display:none;position:absolute;top:calc(100% + 2px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 8px;z-index:200;white-space:nowrap;font-size:11px;box-shadow:var(--sh)">
+      <div style="font-weight:700;margin-bottom:4px">KPIs visíveis</div>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-pend" checked onchange="toggleKpiVis('kpi-pend',this.checked)"> Pendente</label>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-tr" checked onchange="toggleKpiVis('kpi-tr',this.checked)"> Em Transferência</label>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-dev" checked onchange="toggleKpiVis('kpi-dev',this.checked)"> Devolvido</label>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-venda" checked onchange="toggleKpiVis('kpi-venda',this.checked)"> Venda</label>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-total" checked onchange="toggleKpiVis('kpi-total',this.checked)"> Total</label>
+      <label style="display:block;padding:2px 0;cursor:pointer"><input type="checkbox" id="kpi-vis-cxs" checked onchange="toggleKpiVis('kpi-cxs',this.checked)"> Total Cxs</label>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Toggle Strip -->
+<div id="filter-toggle-strip" style="padding:2px 14px 4px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+  <span id="filtro-resumo" style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-faint)">Filtros</span>
+  <button id="btn-toggle-filtros" onclick="toggleFiltros()"
+    style="background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:11px;color:var(--text-muted);
+           padding:3px 11px;border-radius:99px;transition:background .15s,color .15s,border-color .15s;font-family:var(--font);font-weight:600"
+    onmouseover="this.style.borderColor='var(--navy)';this.style.color='var(--navy)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'"
+    title="Mostrar/ocultar filtros">▲ Ocultar filtros</button>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar" id="filter-bar">
+  <select id="f-status" onchange="aplicarFiltros()">
+    <option value="">Todos status</option>
+    <option value="Pendente">Pendente</option>
+    <option value="Em Transferência">Em Transferência</option>
+    <option value="Devolvido">Devolvido</option>
+    <option value="Venda">Venda</option>
+  </select>
+  <select id="f-aba" onchange="aplicarFiltros()">
+    <option value="">Todas as abas</option>
+  </select>
+  <input type="date" id="f-de" onchange="aplicarFiltros()" title="Data de entrada a partir de">
+  <span class="sep">→</span>
+  <input type="date" id="f-ate" onchange="aplicarFiltros()" title="Data de entrada até">
+  <label><input type="checkbox" id="f-sem-frete" onchange="aplicarFiltros()"> Sem frete</label>
+  <div class="busca-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="f-busca" placeholder="/ Buscar NF, fornecedor..." oninput="aplicarFiltros()" tabindex="1" aria-label="Buscar NF ou fornecedor">
+  </div>
+  <button class="btn-limpar-f" onclick="limparFiltros()">✕ Limpar</button>
+  <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+    <select id="sel-filtros-salvos" onchange="restaurarFiltroSalvo(this.value)"
+      style="font-size:11px;height:32px;padding:0 8px;border:1.5px solid var(--border);border-radius:8px;
+             background:var(--input-bg);color:var(--text);cursor:pointer" title="Filtros salvos">
+      <option value="">⭐ Filtros salvos</option>
+    </select>
+    <button class="btn-limpar-f" onclick="salvarFiltroAtual()" title="Salvar filtro atual" style="padding:0 10px">💾</button>
+  </div>
+  <span style="font-size:11px;color:#9CA3AF" id="info-filtro"></span>
+</div>
+
+<!-- Bulk Action Bar -->
+<div class="bulk-bar" id="bulk-bar">
+  <span class="cnt-sel" id="bulk-cnt">0 sel.</span>
+  <span id="bulk-warn" class="bulk-warn" style="display:none"></span>
+  <button class="btn-sm btn-succ" onclick="exportarPDFSelecionados()">✅ Baixa Dev.</button>
+  <button class="btn-sm btn-orange" onclick="baixaVendaSelecionados()">🛒 Baixa Venda</button>
+  <button class="btn-sm btn-teal" onclick="abrirFreteModal()">🚚 Prog. Frete</button>
+  <button class="btn-sm" id="btn-exp-pdf" onclick="exportarPDFSelecionados()"
+    style="display:none;background:#2563EB;color:#fff">📄 Exportar PDF</button>
+  <button class="btn-sm" onclick="gerarDocCarga()" title="Gerar documentação de carga com as NFDs selecionadas"
+    style="background:#7C3AED;color:#fff">📄 Doc. Carga</button>
+  <button class="btn-sm" onclick="abrirEmailBulk()" title="Enviar e-mail de devolução com as NFDs selecionadas"
+    style="background:#0F766E;color:#fff">📧 E-mail Dev.</button>
+  <button class="btn-sm btn-gray" style="margin-left:auto" onclick="limparSelecao()">✕ Limpar seleção</button>
+</div>
+
+<!-- Loading -->
+<div class="loading-bar" id="loading">⏳ Carregando notas...</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table id="tabela" style="display:none">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="chk-all" onchange="toggleTodos(this.checked)"></th>
+        <th>NF / NFD</th>
+        <th>Fornecedor</th>
+        <th class="col-tipo">Tipo</th>
+        <th class="col-desc">Descrição</th>
+        <th class="col-qtd" style="text-align:center">Qtd</th>
+        <th class="col-data">Data Entrada</th>
+        <th class="col-valor" style="text-align:right">Valor Total</th>
+        <th>Status</th>
+        <th class="sortable" id="th-dias" onclick="ordenarPor('diasArm')" title="Clique para ordenar">Dias ↕</th>
+        <th class="col-frete">Frete</th>
+        <th class="col-icons">📎📧</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty-state" class="empty-state" style="display:none">
+    <svg class="ic ic-sm"><use href="#i-list"/></svg> Nenhuma nota encontrada para os filtros atuais.
+  </div>
+</div>
+<div class="paginacao" id="paginacao"></div>
+<div class="undo-bar" id="undo-bar">
+  <span class="undo-msg" id="undo-msg"></span>
+  <button class="undo-btn" onclick="desfazerAcao()"><svg class="ic ic-sm"><use href="#i-rotate-ccw"/></svg> Desfazer</button>
+  <span class="undo-countdown" id="undo-countdown"></span>
+  <button class="undo-close" onclick="fecharUndoBar()" title="Fechar">✕</button>
+</div>
+
+<!-- ═══════════ MODAL DETALHE ═══════════ -->
+<div class="overlay" id="modal-detalhe" onclick="if(event.target===this)fecharDetalhe()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-sm" id="det-prev" onclick="navDetalhe(-1)" style="padding:2px 8px;font-size:13px" title="NF anterior (←)">‹</button>
+        <h3 id="det-titulo" style="margin:0">NF —</h3>
+        <button class="btn-sm" id="det-next" onclick="navDetalhe(1)" style="padding:2px 8px;font-size:13px" title="Próxima NF (→)">›</button>
+        <span id="det-pos" style="font-size:11px;color:#9CA3AF;margin-left:4px"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn-sm btn-gray" onclick="abrirEtiqueta()" title="Etiqueta de caixa" style="font-size:11px">🏷️</button>
+        <button class="btn-sm btn-gray" onclick="abrirQRCode()" title="QR Code" style="font-size:11px">▦</button>
+        <button class="modal-close" onclick="fecharDetalhe()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="detalhe-grid">
+        <!-- Coluna 1: Dados + Edição -->
+        <div>
+          <div class="section-lbl">Dados da NF</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="campo-edit"><label>NF</label><input type="text" id="d-nf" placeholder="Número da NF"></div>
+            <div class="campo-edit"><label>NFD</label><input type="text" id="d-nfd" placeholder="Número da NFD"></div>
+            <div class="campo-edit"><label>Fornecedor</label><input type="text" id="d-forn"></div>
+            <div class="campo-edit"><label>Data Entrada</label><input type="date" id="d-data"></div>
+            <div class="campo-edit">
+              <label>Status</label>
+              <select id="d-status">
+                <option value="Pendente">Pendente</option>
+                <option value="Em Transferência">Em Transferência</option>
+                <option value="Devolvido">Devolvido</option>
+                <option value="Venda">Venda</option>
+              </select>
+            </div>
+            <div class="campo-edit"><label>Dias Armazenado</label><div class="val-static" id="d-dias"></div></div>
+          </div>
+          <div class="campo-edit">
+            <label>Tipo de Devolução</label>
+            <input type="text" id="d-tipo" placeholder="Ex: Avaria, Vencimento...">
+          </div>
+          <div class="campo-edit">
+            <label>Motivo</label>
+            <input type="text" id="d-motivo">
+          </div>
+          <div class="campo-edit">
+            <label>Descrição do Produto</label>
+            <input type="text" id="d-desc">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="campo-edit"><label>Qtd</label><input type="number" id="d-qtd" min="0" step="1"></div>
+            <div class="campo-edit"><label>Vlr Unitário (R$)</label><input type="number" id="d-vlunit" min="0" step="0.01"></div>
+          </div>
+          <div class="campo-edit">
+            <label>Frete Programado</label>
+            <div class="val-static" id="d-frete"></div>
+          </div>
+          <div class="campo-edit">
+            <label>Anexo</label>
+            <div class="val-static" id="d-anexo"></div>
+          </div>
+          <div class="campo-edit">
+            <label>Obs</label>
+            <textarea id="d-obs" rows="2"></textarea>
+          </div>
+          <div class="campo-edit">
+            <label>Responsável</label>
+            <input type="text" id="d-resp">
+          </div>
+          <div class="msg-inline" id="det-msg"></div>
+          <button class="btn-sm btn-teal" style="width:100%;padding:8px;margin-top:4px"
+            onclick="salvarEdicao()">💾 Salvar Alterações</button>
+          <button class="btn-sm" id="btn-forn-receb"
+            onclick="confirmarRecebFornecedor()"
+            style="width:100%;padding:8px;margin-top:6px;background:#059669;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-family:var(--font);display:none">
+            🏭 Confirmar Recebimento pelo Fornecedor</button>
+          <div id="forn-receb-msg" style="font-size:11px;margin-top:4px;display:none"></div>
+        </div>
+        <!-- Coluna 2: abas (Histórico / Comentários / Fotos / Fornecedor) -->
+        <div>
+          <div class="det-tabs">
+            <button class="det-tab on" onclick="detTab(this,'hist')">🕒 Histórico</button>
+            <button class="det-tab" onclick="detTab(this,'coment')">💬 Comentários</button>
+            <button class="det-tab" onclick="detTab(this,'fotos')">📸 Fotos</button>
+            <button class="det-tab" onclick="detTab(this,'forn')">🏭 Fornecedor</button>
+          </div>
+
+          <div class="det-pane on" id="dpane-hist">
+            <div class="det-tl" id="hist-tl" style="max-height:340px;overflow-y:auto">
+              <div class="vazio">Sem histórico disponível.</div>
+            </div>
+          </div>
+
+          <div class="det-pane" id="dpane-coment">
+            <textarea id="det-comentario" rows="3"
+              style="width:100%;padding:6px 8px;border:1px solid var(--border-def);border-radius:4px;
+                     font-size:11px;font-family:var(--font);resize:vertical;background:var(--surface);color:var(--text)"
+              placeholder="Adicionar um comentário..."></textarea>
+            <button class="btn-sm" onclick="salvarComentario()"
+              style="width:100%;margin-top:4px;padding:5px;font-size:11px">💾 Salvar comentário</button>
+            <div id="coment-lista" style="margin-top:6px;max-height:220px;overflow-y:auto"></div>
+          </div>
+
+          <div class="det-pane" id="dpane-fotos">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span class="section-lbl" style="margin:0;padding:0;border:none">📸 Fotos de Avaria</span>
+              <button class="btn-sm" onclick="abrirGaleria()"
+                style="font-size:10px;padding:2px 8px;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:var(--font)">
+                🖼️ Ver Galeria</button>
+            </div>
+            <input type="file" id="avaria-file" accept="image/*" multiple
+              style="font-size:11px;margin-bottom:4px;width:100%" onchange="previewAvariaFoto(this)">
+            <div id="avaria-thumbs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+            <button class="btn-sm" onclick="enviarFotoAvaria()"
+              style="width:100%;padding:5px;font-size:11px;background:var(--c-teal);color:#fff;border:none;border-radius:4px;cursor:pointer">
+              📤 Enviar foto(s) para Drive</button>
+            <div id="avaria-msg" style="font-size:10px;color:#6B7280;margin-top:4px"></div>
+            <div id="avaria-lista" style="margin-top:6px"></div>
+          </div>
+
+          <div class="det-pane" id="dpane-forn">
+            <div class="section-lbl">📩 Respostas do Fornecedor</div>
+            <textarea id="det-respforn" rows="2"
+              style="width:100%;padding:6px 8px;border:1px solid var(--border-def);border-radius:4px;
+                     font-size:11px;font-family:var(--font);resize:vertical;background:var(--surface);color:var(--text)"
+              placeholder="Cole ou digite a resposta do fornecedor..."></textarea>
+            <button class="btn-sm" onclick="salvarRespostaForn()"
+              style="width:100%;margin-top:4px;padding:5px;font-size:11px">💾 Registrar resposta</button>
+            <div id="lista-respostas-forn" style="margin-top:6px;max-height:220px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL GALERIA DE FOTOS ═══════════ -->
+<div class="overlay" id="modal-galeria" onclick="if(event.target===this)fecharModal('modal-galeria')">
+  <div class="modal-box" style="width:700px;max-width:98vw">
+    <div class="modal-hdr">
+      <h3 id="gal-titulo">🖼️ Galeria de Fotos</h3>
+      <button class="modal-close" onclick="fecharModal('modal-galeria')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="gal-loading" style="text-align:center;color:#9CA3AF;padding:24px;font-size:12px">⏳ Carregando arquivos...</div>
+      <div id="gal-empty" style="display:none;text-align:center;color:#9CA3AF;padding:24px;font-size:12px">Nenhum arquivo encontrado para esta NF.</div>
+      <div id="gal-grid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:4px 0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL CONFIRMAÇÃO (simulação) ═══════════ -->
+<div class="overlay" id="modal-confirm" onclick="if(event.target===this)fecharModal('modal-confirm')">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="conf-titulo">Confirmar Ação em Lote</h3>
+      <button class="modal-close" onclick="fecharModal('modal-confirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#374151;margin-bottom:10px" id="conf-desc"></p>
+      <div class="sim-lista" id="sim-lista"></div>
+      <div id="conf-aviso" style="display:none" class="aviso-lote"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-gray" onclick="fecharModal('modal-confirm')">✖ Cancelar</button>
+      <button class="btn-sm" id="conf-btn" onclick="executarAcao()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL FRETE EM LOTE ═══════════ -->
+<div class="overlay" id="modal-frete" onclick="if(event.target===this)fecharModal('modal-frete')">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3>🚚 Programar Frete em Lote</h3>
+      <button class="modal-close" onclick="fecharModal('modal-frete')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#6B7280;margin-bottom:8px" id="frete-desc"></p>
+      <div id="frete-agrup-info" style="display:none;margin-bottom:10px;padding:8px 10px;border-radius:6px;font-size:11px"></div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:bold;color:#374151;display:block;margin-bottom:4px">Nº do Pedido <span style="color:#DC2626">*</span></label>
+        <input type="text" id="fr-pedido" placeholder="Número do pedido de transporte"
+          style="width:100%;padding:7px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px;font-family:var(--font)">
+      </div>
+      <div class="section-lbl">Tipo de Frete</div>
+      <div class="frete-opcoes" id="frete-opcoes">
+        <label class="frete-radio" data-tipo="Tabela">
+          <input type="radio" name="fr-tipo" value="Tabela" onchange="onFrTipoChange()">
+          <span class="txt"><strong>Tabela</strong><small>Calculado pelo TMS/CTe — sem valor</small></span>
+        </label>
+        <label class="frete-radio" data-tipo="Valor + ICMS">
+          <input type="radio" name="fr-tipo" value="Valor + ICMS" onchange="onFrTipoChange()">
+          <span class="txt"><strong>Valor + ICMS</strong><small>Informe o valor com ICMS</small></span>
+        </label>
+        <label class="frete-radio" data-tipo="Valor">
+          <input type="radio" name="fr-tipo" value="Valor" onchange="onFrTipoChange()">
+          <span class="txt"><strong>Valor</strong><small>Informe o valor do frete (sem ICMS)</small></span>
+        </label>
+        <label class="frete-radio" data-tipo="Cortesia">
+          <input type="radio" name="fr-tipo" value="Cortesia" onchange="onFrTipoChange()">
+          <span class="txt"><strong>Cortesia</strong><small>Sem custo — R$ 0,00</small></span>
+        </label>
+      </div>
+      <div id="frcampo-valor">
+        <label style="font-size:11px;font-weight:bold;color:#374151;display:block;margin-bottom:4px">Valor do Frete (R$) *</label>
+        <input type="text" id="fr-valor" placeholder="0,00"
+          style="width:100%;padding:7px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px">
+      </div>
+      <div id="frcampo-data">
+        <label style="font-size:11px;font-weight:bold;color:#374151;display:block;margin-bottom:4px">📅 Data de Agendamento (opcional)</label>
+        <input type="date" id="fr-data"
+          style="width:100%;padding:7px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px">
+      </div>
+      <div style="margin-top:8px">
+        <label style="font-size:11px;font-weight:bold;color:#374151;display:block;margin-bottom:4px">Obs (opcional)</label>
+        <textarea id="fr-obs" rows="2"
+          style="width:100%;padding:7px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px;resize:vertical"></textarea>
+      </div>
+      <div class="msg-inline" id="fr-msg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-gray" onclick="fecharModal('modal-frete')">Cancelar</button>
+      <button class="btn-sm btn-teal" onclick="confirmarFrete()">Avançar →</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-atalhos" onclick="if(event.target===this)fecharModal('modal-atalhos')" style="display:none">
+  <div class="modal-box" style="width:440px;max-width:96vw">
+    <div class="modal-hdr">
+      <h3>⌨️ Atalhos de Teclado</h3>
+      <button class="modal-close" onclick="fecharModal('modal-atalhos')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:12px 16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;font-size:12px">
+        <div style="font-weight:700;color:#6B7280;margin-bottom:4px;grid-column:1/-1">Navegação</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">↑ ↓</kbd></div><div>Mover foco na tabela</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">← →</kbd></div><div>NF anterior / próxima (modal)</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">PgUp/PgDn</kbd></div><div>Trocar página</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">Enter</kbd></div><div>Abrir detalhe da NF focada</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">Espaço</kbd></div><div>Selecionar / desselecionar linha</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">Esc</kbd></div><div>Fechar modal / limpar seleção</div>
+        <div style="font-weight:700;color:#6B7280;margin:8px 0 4px;grid-column:1/-1">Busca e Filtros</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">/</kbd></div><div>Focar campo de busca</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">Ctrl+A</kbd></div><div>Selecionar todos filtrados</div>
+        <div style="font-weight:700;color:#6B7280;margin:8px 0 4px;grid-column:1/-1">Interface</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">D</kbd></div><div>Modo escuro</div>
+        <div><kbd style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px">?</kbd></div><div>Este painel de atalhos</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Visualizador PDF Inline -->
+<div class="overlay" id="modal-pdf-inline" onclick="if(event.target===this)fecharModal('modal-pdf-inline')" style="display:none">
+  <div class="modal-box" style="width:min(1020px,96vw);max-height:92vh;display:flex;flex-direction:column">
+    <div class="modal-hdr">
+      <h3 id="modal-pdf-titulo">📄 Visualizador</h3>
+      <div style="display:flex;gap:6px">
+        <button onclick="imprimirPdfInline()" style="background:#1E3A5F;color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:700">🖨️ Imprimir</button>
+        <button class="modal-close" onclick="fecharModal('modal-pdf-inline')">✕</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow:hidden">
+      <iframe id="iframe-pdf-inline" style="width:100%;height:72vh;border:none"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Etiqueta -->
+<div class="overlay" id="modal-etiqueta" onclick="if(event.target===this)fecharModal('modal-etiqueta')" style="display:none">
+  <div class="modal-box" style="width:420px;max-width:96vw">
+    <div class="modal-hdr">
+      <h3>🏷️ Etiqueta de Caixa (100×100 mm)</h3>
+      <button class="modal-close" onclick="fecharModal('modal-etiqueta')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:12px 16px">
+      <div id="etiqueta-preview" style="display:flex;justify-content:center;margin-bottom:12px"></div>
+      <button class="btn-teal" onclick="imprimirEtiqueta()" style="width:100%">🖨️ Imprimir Etiqueta</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ JAVASCRIPT ═══════════ -->
+<script>
+// ── State ──────────────────────────────────────────────────
+var _itens      = [];
+var _filtrados  = [];
+var _sel        = [];
+var _sortCol    = 'diasArm';
+var _sortAsc    = false;
+var _acaoPend   = '';
+var _itensPend  = [];
+var _detItem    = null;
+var _detIdx     = -1;
+var _page       = 1;
+var _pageSize   = 50;
+var _rowFocus   = -1;
+var _ultimaAcao = null;
+var _undoTimer  = null;
+var _prio       = {};
+
+// ── Load ───────────────────────────────────────────────────
+var _carregandoCompleto = false;
+
+function carregar() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('tabela').style.display  = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+  _itens = []; _filtrados = []; _sel = [];
+  atualizarBulkBar();
+  _carregandoCompleto = false;
+
+  // Etapa 1: primeiros 200 itens para mostrar rápido
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('loading').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { toast('❌ '+r.erro,'err'); return; }
+        _itens = r.itens || [];
+        popularAbasDropdown(r.abas || []);
+        aplicarFiltros();
+        // Etapa 2: carregar restante se houver mais
+        if (r.temMais) _carregarRestante(r.abas);
+      } catch(e){ toast('❌ Erro ao processar dados: '+e.message,'err'); }
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('loading').style.display = 'none';
+      toast('❌ '+e.message,'err');
+    })
+    .obterNotasParaTabela({ limite: 200 });
+}
+
+function _carregarRestante(abas) {
+  if (_carregandoCompleto) return;
+  _carregandoCompleto = true;
+  toast('⏳ Carregando registros restantes...', 'info');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      _carregandoCompleto = false;
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro || !r.itens) return;
+        if (r.itens.length > _itens.length) {
+          _itens = r.itens;
+          popularAbasDropdown(r.abas || abas || []);
+          aplicarFiltros();
+          toast('✅ Todos os registros carregados ('+r.itens.length+').', 'ok');
+        }
+      } catch(_) {}
+    })
+    .withFailureHandler(function() { _carregandoCompleto = false; })
+    .obterNotasParaTabela({});
+}
+
+function popularAbasDropdown(abas) {
+  var sel = document.getElementById('f-aba');
+  var val = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  abas.forEach(function(a){
+    var opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    sel.appendChild(opt);
+  });
+  if (val) sel.value = val;
+}
+
+// ── Filtering ──────────────────────────────────────────────
+function aplicarFiltros() {
+  var filtStatus   = document.getElementById('f-status').value;
+  var filtAba      = document.getElementById('f-aba').value;
+  var filtDe       = document.getElementById('f-de').value;
+  var filtAte      = document.getElementById('f-ate').value;
+  var filtSemFrete = document.getElementById('f-sem-frete').checked;
+  var filtBusca    = (document.getElementById('f-busca').value || '').toLowerCase().trim();
+  var dtDe  = filtDe  ? parseDtISO(filtDe)  : null;
+  var dtAte = filtAte ? parseDtISO(filtAte) : null;
+
+  _filtrados = _itens.filter(function(it) {
+    if (filtStatus   && it.status !== filtStatus) return false;
+    if (filtAba      && it.aba    !== filtAba)    return false;
+    if (filtSemFrete && it.freteTipo)             return false;
+    if (dtDe) { var d = parseDtBR(it.data); if (!d || d < dtDe) return false; }
+    if (dtAte){ var d = parseDtBR(it.data); if (!d || d > dtAte) return false; }
+    if (filtBusca) {
+      var hay = _normFonetico((it.nf+it.nfd+it.forn+it.tipo+it.motivo+it.desc).toLowerCase());
+      if (hay.indexOf(_normFonetico(filtBusca)) === -1) return false;
+    }
+    return true;
+  });
+
+  _page = 1;
+  _rowFocus = -1;
+  ordenarFiltrados();
+  _sel = new Array(_filtrados.length).fill(false);
+  document.getElementById('chk-all').checked = false;
+  atualizarBulkBar();
+  atualizarKPIs();
+  renderTabela();
+
+  document.getElementById('info-filtro').textContent =
+    _filtrados.length + ' de ' + _itens.length + ' nota(s)';
+  _atualizarFiltroResumo();
+}
+
+function limparFiltros() {
+  document.getElementById('f-status').value   = '';
+  document.getElementById('f-aba').value      = '';
+  document.getElementById('f-de').value       = '';
+  document.getElementById('f-ate').value      = '';
+  document.getElementById('f-sem-frete').checked = false;
+  document.getElementById('f-busca').value    = '';
+  aplicarFiltros();
+}
+
+function filtrarRapido(status) {
+  document.getElementById('f-status').value = status;
+  ['kpi-pend','kpi-tr','kpi-dev','kpi-venda','kpi-total'].forEach(function(id){
+    document.getElementById(id).classList.remove('ativo');
+  });
+  if (!status)                       document.getElementById('kpi-total').classList.add('ativo');
+  else if(status==='Pendente')       document.getElementById('kpi-pend').classList.add('ativo');
+  else if(status==='Em Transferência') document.getElementById('kpi-tr').classList.add('ativo');
+  else if(status==='Devolvido')      document.getElementById('kpi-dev').classList.add('ativo');
+  else                               document.getElementById('kpi-venda').classList.add('ativo');
+  aplicarFiltros();
+}
+
+// ── Sorting ────────────────────────────────────────────────
+function ordenarPor(col) {
+  if (_sortCol === col) _sortAsc = !_sortAsc;
+  else { _sortCol = col; _sortAsc = false; }
+  document.getElementById('th-dias').textContent = 'Dias ' + (_sortAsc ? '↑' : '↓');
+  _page = 1;
+  _rowFocus = -1;
+  ordenarFiltrados();
+  renderTabela();
+}
+
+function ordenarFiltrados() {
+  _filtrados.sort(function(a,b){
+    var av = a[_sortCol] != null ? a[_sortCol] : -Infinity;
+    var bv = b[_sortCol] != null ? b[_sortCol] : -Infinity;
+    return _sortAsc ? av - bv : bv - av;
+  });
+}
+
+// ── KPIs ───────────────────────────────────────────────────
+function atualizarKPIs() {
+  var p={c:0,v:0}, tr={c:0,v:0}, d={c:0,v:0}, ve={c:0,v:0}, totalCxs=0;
+  _filtrados.forEach(function(it){
+    if (it.status==='Pendente'         ){ p.c++;  p.v  += it.vlTot||0; }
+    if (it.status==='Em Transferência' ){ tr.c++; tr.v += it.vlTot||0; }
+    if (it.status==='Devolvido'        ){ d.c++;  d.v  += it.vlTot||0; }
+    if (it.status==='Venda'            ){ ve.c++; ve.v += it.vlTot||0; }
+    totalCxs += (it.qtd || 0);
+  });
+  function fmt(n){ return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+  document.getElementById('kv-pend').textContent  = p.c;
+  document.getElementById('ks-pend').textContent  = fmt(p.v);
+  document.getElementById('kv-tr').textContent    = tr.c;
+  document.getElementById('ks-tr').textContent    = fmt(tr.v);
+  document.getElementById('kv-dev').textContent   = d.c;
+  document.getElementById('ks-dev').textContent   = fmt(d.v);
+  document.getElementById('kv-venda').textContent = ve.c;
+  document.getElementById('ks-venda').textContent = fmt(ve.v);
+  document.getElementById('kv-total').textContent = _filtrados.length;
+  document.getElementById('ks-total').textContent = fmt(p.v+tr.v+d.v+ve.v);
+  document.getElementById('kv-cxs').textContent   = totalCxs.toLocaleString('pt-BR');
+}
+
+// ── Table rendering ────────────────────────────────────────
+function renderTabela() {
+  var tbody = document.getElementById('tbody');
+  var pag   = document.getElementById('paginacao');
+  if (!_filtrados.length) {
+    document.getElementById('tabela').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    pag.style.display = 'none';
+    return;
+  }
+
+  var totalPags = Math.ceil(_filtrados.length / _pageSize);
+  if (_page > totalPags) _page = totalPags;
+  if (_page < 1) _page = 1;
+  var start = (_page - 1) * _pageSize;
+  var paginaItens = _filtrados.slice(start, start + _pageSize);
+
+  document.getElementById('tabela').style.display = 'table';
+  document.getElementById('empty-state').style.display = 'none';
+
+  tbody.innerHTML = paginaItens.map(function(it, localIdx) {
+    var idx = start + localIdx;
+    var cls = 'cursor-ptr';
+    var badge = it.status==='Pendente'
+      ? '<span class="badge b-p">Pendente</span>'
+      : it.status==='Em Transferência'
+        ? '<span class="badge b-tr">Em Transferência</span>'
+        : it.status==='Devolvido'
+          ? '<span class="badge b-d">Devolvido</span>'
+          : '<span class="badge b-v">Venda</span>';
+    var diasCls = it.diasArm > 30 ? 'dias-crit' : it.diasArm > 15 ? 'dias-warn' : 'dias-ok';
+    var diasChip = '<span class="dias-chip '+diasCls+'">'+it.diasArm+'d</span>';
+    var freteStr = it.freteTipo
+      ? (it.freteTipo + (it.freteValor > 0 ? ' · R$'+Math.round(it.freteValor) : ''))
+      : '<span style="color:#D1D5DB">—</span>';
+    var icons = '';
+    if (it.temAnexo)    icons += '<span title="Tem anexo">📎</span>';
+    if (it.emailEnviado) icons += '<span title="E-mail enviado">📧</span>';
+    var vrStr = (it.vlTot||0) > 0
+      ? '<span style="font-family:monospace">R$ '+it.vlTot.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</span>'
+      : '—';
+
+    var rowCls = cls + (idx === _rowFocus ? ' row-focus' : '');
+    return '<tr id="row-'+idx+'" class="'+rowCls+'" onclick="setRowFocus('+idx+')"'
+      +     ' ondblclick="onRowClick(event,'+idx+')" title="Duplo clique / Enter para abrir detalhes">'
+      + '<td onclick="event.stopPropagation()"><input type="checkbox"'
+      +   ' onchange="toggleItem('+idx+',this)"'
+      +   (_sel[idx]?' checked':'')+'></td>'
+      + (function(){
+          var pk = (it.nfd||it.nf).replace(/['"]/g,'');
+          var pn = getPrio(pk);
+          var pd = '<span class="prio-dot prio-'+pn+'" title="'+prioLabel(pn)+'"'
+                 +' onclick="cicloPrio(event,\''+pk+'\')"  ></span>';
+          return '<td><div class="nf-main" style="display:flex;align-items:center">'+pd+esc(it.nf)
+            +(it.alerta?' <span class="badge b-alert">Atrasado</span>':'')+'</div>'
+            +'<div class="nf-sub">'+esc(it.nfd)+'</div></td>';
+        })()
+      + '<td>'+esc(it.forn)+'</td>'
+      + '<td class="col-tipo" style="color:#6B7280;font-size:11px">'+esc(it.tipo)+'</td>'
+      + '<td class="col-desc" style="font-size:11px">'+esc(it.desc||'')+'</td>'
+      + '<td class="col-qtd mono" style="text-align:center">'+(it.qtd||'')+'</td>'
+      + '<td class="col-data" style="white-space:nowrap;font-size:11px">'+esc(it.data)+'</td>'
+      + '<td class="col-valor" style="text-align:right">'+vrStr+'</td>'
+      + '<td>'+badge+'</td>'
+      + '<td style="text-align:center">'+diasChip+'</td>'
+      + '<td class="col-frete" style="font-size:11px;color:#374151">'+freteStr+'</td>'
+      + '<td class="col-icons ico-cell" style="text-align:center">'+icons+'</td>'
+      + '</tr>';
+  }).join('');
+
+  renderPaginacao(totalPags, start);
+}
+
+function renderPaginacao(totalPags, start) {
+  var pag = document.getElementById('paginacao');
+  if (totalPags <= 1 && _filtrados.length <= _pageSize) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+
+  var end = Math.min(start + _pageSize, _filtrados.length);
+  var html = '<span class="pag-info">'+(start+1)+'–'+end+' de '+_filtrados.length+'</span>';
+  html += '<div class="pag-btns">';
+  html += '<button class="pag-btn" onclick="irPagina(1)" '+(_page===1?'disabled':'')+'>«</button>';
+  html += '<button class="pag-btn" onclick="irPagina('+(_page-1)+')" '+(_page===1?'disabled':'')+'>‹</button>';
+
+  var lo = Math.max(1, _page-2), hi = Math.min(totalPags, _page+2);
+  if (lo > 1) html += '<span class="pag-ellipsis">…</span>';
+  for (var p = lo; p <= hi; p++) {
+    html += '<button class="pag-btn'+(p===_page?' pag-cur':'')+'" onclick="irPagina('+p+')">'+p+'</button>';
+  }
+  if (hi < totalPags) html += '<span class="pag-ellipsis">…</span>';
+
+  html += '<button class="pag-btn" onclick="irPagina('+(_page+1)+')" '+(_page===totalPags?'disabled':'')+'>›</button>';
+  html += '<button class="pag-btn" onclick="irPagina('+totalPags+')" '+(_page===totalPags?'disabled':'')+'>»</button>';
+  html += '</div>';
+  html += '<select class="pag-size" onchange="mudarTamanho(this.value)">';
+  [25,50,100,200].forEach(function(s){
+    html += '<option value="'+s+'"'+(_pageSize===s?' selected':'')+'>'+s+' / pág.</option>';
+  });
+  html += '</select>';
+  pag.innerHTML = html;
+}
+
+function irPagina(n) {
+  var totalPags = Math.ceil(_filtrados.length / _pageSize);
+  _page = Math.max(1, Math.min(n, totalPags));
+  document.getElementById('chk-all').checked = false;
+  renderTabela();
+  document.querySelector('.table-wrap').scrollTop = 0;
+}
+
+function mudarTamanho(val) {
+  _pageSize = parseInt(val, 10);
+  _page = 1;
+  _sel = new Array(_filtrados.length).fill(false);
+  document.getElementById('chk-all').checked = false;
+  atualizarBulkBar();
+  renderTabela();
+}
+
+// ── Selection ──────────────────────────────────────────────
+function onRowClick(ev, idx) {
+  if (ev.target.tagName === 'INPUT') return;
+  abrirCtxMenu(ev, idx);
+}
+
+function toggleItem(idx, chk) {
+  _sel[idx] = chk ? chk.checked : !_sel[idx];
+  if (!chk) {
+    var row = document.getElementById('row-' + idx);
+    if (row) { var c = row.querySelector('input[type=checkbox]'); if (c) c.checked = _sel[idx]; }
+  }
+  atualizarBulkBar();
+}
+
+function setRowFocus(n) {
+  if (!_filtrados.length) return;
+  n = Math.max(0, Math.min(n, _filtrados.length - 1));
+  var targetPage = Math.floor(n / _pageSize) + 1;
+  _rowFocus = n;
+  if (targetPage !== _page) {
+    _page = targetPage;
+    renderTabela();
+  } else {
+    document.querySelectorAll('#tbody tr.row-focus').forEach(function(r){ r.classList.remove('row-focus'); });
+    var row = document.getElementById('row-' + n);
+    if (row) { row.classList.add('row-focus'); row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  }
+}
+
+function toggleTodos(state) {
+  _sel = _filtrados.map(function(){ return state; });
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c,i){
+    c.checked = !!_sel[i];
+  });
+  atualizarBulkBar();
+}
+
+function limparSelecao() {
+  _sel = new Array(_filtrados.length).fill(false);
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c){ c.checked = false; });
+  document.getElementById('chk-all').checked = false;
+  atualizarBulkBar();
+}
+
+function atualizarBulkBar() {
+  var cnt      = _sel.filter(Boolean).length;
+  var sels     = getItensSelecionados();
+  var nPend    = sels.filter(function(it){ return it.status==='Pendente'; }).length;
+  var nTr      = sels.filter(function(it){ return it.status==='Em Transferência'; }).length;
+  var nOutros  = cnt - nPend - nTr;
+  document.getElementById('bulk-bar').style.display = cnt > 0 ? 'flex' : 'none';
+  document.getElementById('bulk-cnt').textContent   = cnt + ' selecionada(s)';
+  var warn = document.getElementById('bulk-warn');
+  var msgs = [];
+  if (nTr > 0)    msgs.push(nTr + ' em transferência (bloqueada)');
+  if (nOutros > 0) msgs.push(nOutros + ' com outro status (ignorada)');
+  if (msgs.length) {
+    warn.textContent = '⚠️ ' + msgs.join(' · ');
+    warn.style.display = 'inline-block';
+  } else {
+    warn.style.display = 'none';
+  }
+  var filtSt = document.getElementById('f-status').value;
+  var showPdf = cnt > 0 && (filtSt === 'Devolvido' || filtSt === 'Venda');
+  document.getElementById('btn-exp-pdf').style.display = showPdf ? '' : 'none';
+}
+
+function getItensSelecionados() {
+  return _filtrados.filter(function(_,i){ return _sel[i]; });
+}
+
+function exportarPDFSelecionados() {
+  var sels = getItensSelecionados();
+  var nfs = [];
+  for (var i = 0; i < sels.length; i++) {
+    nfs.push(sels[i].nfd || sels[i].nf);
+  }
+  try { localStorage.setItem('cdv_pdf_prefill', nfs.join('\n')); } catch(_) {}
+  if (typeof cdvLoad === 'function') { cdvLoad('BaixaDevolucao'); return; }
+  google.script.run.abrirFormularioExportarPDF();
+}
+
+function baixaVendaSelecionados() {
+  var todos = getItensSelecionados();
+  if (!todos.length) { toast('⚠️ Nenhuma NF selecionada.', 'info'); return; }
+  var pendentes = todos.filter(function(it){ return it.status === 'Pendente'; });
+  if (!pendentes.length) { toast('⚠️ Nenhuma NF Pendente selecionada.', 'info'); return; }
+  var nfs = pendentes.map(function(it){ return it.nfd || it.nf; });
+  try { localStorage.setItem('cdv_venda_prefill', nfs.join('\n')); } catch(_) {}
+  if (typeof cdvLoad === 'function') { cdvLoad('BaixaVenda'); return; }
+  google.script.run.abrirFormularioVenda();
+}
+
+// ── Bulk actions ───────────────────────────────────────────
+function confirmarAcao(acao) {
+  var todos    = getItensSelecionados();
+  var pendentes = todos.filter(function(it){ return it.status === 'Pendente'; });
+  var ignorados = todos.filter(function(it){ return it.status !== 'Pendente'; });
+
+  if (!pendentes.length) {
+    toast('⚠️ Nenhum item Pendente selecionado. Ação cancelada.','info');
+    return;
+  }
+
+  _acaoPend  = acao;
+  _itensPend = pendentes;
+
+  var label    = acao === 'venda' ? 'Venda' : 'Devolvido';
+  var icon     = acao === 'venda' ? '🛒' : '✅';
+  var btn      = document.getElementById('conf-btn');
+  btn.textContent = icon + ' Confirmar ' + label;
+  btn.className   = 'btn-sm ' + (acao==='venda' ? 'btn-orange' : 'btn-succ');
+
+  document.getElementById('conf-titulo').textContent = icon + ' Confirmar: Baixa ' + label;
+  document.getElementById('conf-desc').textContent   =
+    'Serão marcadas como ' + label + ': ' + pendentes.length + ' NF(s).';
+
+  var listaHtml = pendentes.slice(0,30).map(function(it){
+    return '<div class="sim-item sim-ok"><b>NF '+esc(it.nf)+'</b> ('+esc(it.forn)+') — Pendente → '+label+'</div>';
+  }).join('');
+  if (pendentes.length > 30)
+    listaHtml += '<div style="padding:4px 6px;font-size:11px;color:#6B7280">… e mais '+(pendentes.length-30)+' NFs.</div>';
+
+  if (ignorados.length > 0) {
+    listaHtml += ignorados.slice(0,10).map(function(it){
+      return '<div class="sim-item sim-skip"><b>NF '+esc(it.nf)+'</b> — ignorada (status "'+esc(it.status)+'")</div>';
+    }).join('');
+    if (ignorados.length > 10)
+      listaHtml += '<div style="padding:4px 6px;font-size:11px;color:#6B7280">… e mais '+(ignorados.length-10)+' ignoradas.</div>';
+  }
+
+  document.getElementById('sim-lista').innerHTML = listaHtml;
+
+  var aviso = document.getElementById('conf-aviso');
+  if (pendentes.length > 10) {
+    aviso.style.display = 'block';
+    aviso.innerHTML = '⚠️ <strong>Atenção:</strong> Você está prestes a alterar '
+      + pendentes.length + ' NFs de uma vez. Confirme com cuidado.';
+  } else {
+    aviso.style.display = 'none';
+  }
+
+  document.getElementById('modal-confirm').style.display = 'flex';
+}
+
+function abrirEmailBulk() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  if (!_temModulo('email')) { toast('🔒 Seu cargo não tem o módulo E-mail.', 'info'); return; }
+  var todos = getItensSelecionados();
+  if (!todos.length) { toast('⚠️ Nenhuma NF selecionada.', 'info'); return; }
+
+  // Coletar NFDs e fornecedores
+  var nfds  = todos.map(function(it){ return it.nfd || it.nf; }).filter(Boolean);
+  var forns = {};
+  todos.forEach(function(it){ if (it.forn) forns[it.forn] = true; });
+  var fornLista = Object.keys(forns);
+
+  if (fornLista.length > 1) {
+    toast('⚠️ E-mail de devolução requer o mesmo fornecedor. Fornecedores distintos selecionados: ' + fornLista.join(', ') + '.', 'info');
+    return;
+  }
+
+  // Salvar NFDs no localStorage para o FormEmailDevolucao ler ao abrir
+  try { localStorage.setItem('cdv_email_nfds', nfds.join('\n')); } catch(_) {}
+
+  // Abrir o formulário de email — navegação SPA (Web App) ou dialog (Sheets)
+  if (typeof cdvLoad === 'function') { cdvLoad('Email'); return; }
+  google.script.run
+    .withFailureHandler(function(e){ toast('❌ Erro ao abrir e-mail: ' + e.message, 'err'); })
+    .abrirEmailDevolucao();
+}
+
+function executarAcao() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); fecharModal('modal-confirm'); return; }
+  if (!_itensPend.length) return;
+  var btn = document.getElementById('conf-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processando...';
+
+  var itensCopy = _itensPend.slice();
+  var acaoCopy  = _acaoPend;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      fecharModal('modal-confirm');
+      btn.disabled = false;
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          if (r.erros && r.erros.length) toast('⚠️ '+r.erros.join('; '), 'info');
+          if (acaoCopy !== 'frete') {
+            mostrarUndoBar(acaoCopy, itensCopy, r.ok);
+          } else {
+            toast(r.ok, 'ok');
+          }
+          limparSelecao();
+          carregar();
+        } else {
+          toast('❌ '+(r.erro||'Erro'), 'err');
+        }
+      } catch(e){ toast('❌ '+e.message, 'err'); }
+    })
+    .withFailureHandler(function(e){
+      fecharModal('modal-confirm');
+      btn.disabled = false;
+      toast('❌ '+e.message, 'err');
+    })
+    .executarAcaoEmLoteNotas({ acao: _acaoPend, itens: _itensPend.map(function(it){
+      return { aba:it.aba, linha:it.linha, nf:it.nf, nfd:it.nfd, forn:it.forn, data:it.data };
+    })});
+}
+
+// ── Undo bar ───────────────────────────────────────────────
+function mostrarUndoBar(acao, itens, msgOk) {
+  fecharUndoBar();
+  _ultimaAcao = { acao: acao, itens: itens.map(function(it){
+    return { aba:it.aba, linha:it.linha, nf:it.nf, nfd:it.nfd, forn:it.forn, data:it.data };
+  })};
+  document.getElementById('undo-msg').textContent = msgOk || (itens.length + ' NFs alteradas');
+  var bar = document.getElementById('undo-bar');
+  bar.style.display = 'flex';
+  var secs = 15;
+  document.getElementById('undo-countdown').textContent = '(' + secs + 's)';
+  _undoTimer = setInterval(function() {
+    secs--;
+    if (secs <= 0) { fecharUndoBar(); return; }
+    document.getElementById('undo-countdown').textContent = '(' + secs + 's)';
+  }, 1000);
+}
+
+function fecharUndoBar() {
+  clearInterval(_undoTimer);
+  _undoTimer = null;
+  _ultimaAcao = null;
+  document.getElementById('undo-bar').style.display = 'none';
+}
+
+function desfazerAcao() {
+  if (!_ultimaAcao) return;
+  var itensCopy = _ultimaAcao.itens;
+  fecharUndoBar();
+  toast('⏳ Revertendo...', 'info');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          toast(r.ok + (r.erros&&r.erros.length ? ' ⚠️ '+r.erros.join('; ') : ''), 'ok');
+          carregar();
+        } else {
+          toast('❌ '+(r.erro||'Erro ao desfazer'), 'err');
+        }
+      } catch(e){ toast('❌ '+e.message,'err'); }
+    })
+    .withFailureHandler(function(e){ toast('❌ '+e.message,'err'); })
+    .desfazerAcaoEmLoteNotas(itensCopy);
+}
+
+// ── Frete modal ────────────────────────────────────────────
+function abrirFreteModal() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  if (!_temModulo('frete')) { toast('🔒 Seu cargo não tem o módulo Frete.', 'info'); return; }
+  var todos = getItensSelecionados().filter(function(it){ return it.status==='Pendente'; });
+  if (!todos.length) { toast('⚠️ Selecione ao menos uma NF Pendente.','info'); return; }
+
+  // Agrupar por fornecedor
+  var fornMap = {};
+  todos.forEach(function(it){ fornMap[it.forn] = (fornMap[it.forn]||0)+1; });
+  var forns = Object.keys(fornMap);
+  var mesmoForn = forns.length === 1;
+
+  var descEl = document.getElementById('frete-desc');
+  descEl.textContent = 'Programar frete para ' + todos.length + ' NF(s) selecionada(s).';
+
+  var agrupEl = document.getElementById('frete-agrup-info');
+  if (mesmoForn) {
+    agrupEl.style.cssText = 'display:block;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:8px 10px;font-size:11px;color:#065F46;margin-bottom:10px';
+    agrupEl.innerHTML = '✅ <strong>Mesmo fornecedor</strong>: ' + esc(forns[0]) + ' — todas as '+ todos.length +' NFs serão agrupadas em <strong>1 programação</strong>.';
+  } else {
+    agrupEl.style.cssText = 'display:block;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:8px 10px;font-size:11px;color:#92400E;margin-bottom:10px';
+    agrupEl.innerHTML = '⚠️ <strong>Fornecedores diferentes</strong> ('+ forns.length +'): '
+      + forns.map(function(f){ return esc(f)+' ('+fornMap[f]+')'; }).join(', ')
+      + '. Cada um receberá programação com o mesmo pedido informado.';
+  }
+
+  document.querySelectorAll('input[name=fr-tipo]').forEach(function(r){ r.checked = false; });
+  document.querySelectorAll('.frete-radio').forEach(function(l){ l.classList.remove('sel'); });
+  document.getElementById('frcampo-valor').style.display = 'none';
+  document.getElementById('frcampo-data').style.display  = 'none';
+  document.getElementById('fr-valor').value  = '';
+  document.getElementById('fr-data').value   = '';
+  document.getElementById('fr-obs').value    = '';
+  document.getElementById('fr-pedido').value = '';
+  document.getElementById('fr-msg').style.display = 'none';
+  document.getElementById('modal-frete').style.display = 'flex';
+}
+
+function onFrTipoChange() {
+  var tipo = document.querySelector('input[name=fr-tipo]:checked');
+  document.querySelectorAll('.frete-radio').forEach(function(l){ l.classList.remove('sel'); });
+  if (!tipo) return;
+  document.querySelector('.frete-radio[data-tipo="'+tipo.value+'"]').classList.add('sel');
+  var precVal = (tipo.value === 'Valor + ICMS' || tipo.value === 'Valor');
+  document.getElementById('frcampo-valor').style.display = precVal ? 'block' : 'none';
+  document.getElementById('frcampo-data').style.display  = 'block';
+}
+
+function confirmarFrete() {
+  var tipoEl = document.querySelector('input[name=fr-tipo]:checked');
+  if (!tipoEl) { showMsg('fr-msg','Selecione o tipo de frete.','err'); return; }
+  var tipo    = tipoEl.value;
+  var valor   = document.getElementById('fr-valor').value.trim().replace(',','.');
+  var data    = document.getElementById('fr-data').value;
+  var obs     = document.getElementById('fr-obs').value.trim();
+  var pedido  = document.getElementById('fr-pedido').value.trim();
+  var precVal = (tipo==='Valor + ICMS' || tipo==='Valor');
+  if (!pedido) { showMsg('fr-msg','Informe o número do pedido.','err'); return; }
+  if (precVal && (!valor || isNaN(+valor) || +valor < 0)) {
+    showMsg('fr-msg','Informe um valor de frete válido.','err'); return;
+  }
+
+  var todos = getItensSelecionados().filter(function(it){ return it.status==='Pendente'; });
+  fecharModal('modal-frete');
+
+  // Agrupar por fornecedor para exibição
+  var fornMap = {};
+  todos.forEach(function(it){ (fornMap[it.forn] = fornMap[it.forn]||[]).push(it); });
+  var fornNomes = Object.keys(fornMap);
+  var mesmoForn = fornNomes.length === 1;
+
+  if (!mesmoForn) {
+    toast('⚠️ Selecione NFs de apenas um fornecedor para programar em lote.', 'warn');
+    return;
+  }
+
+  _acaoPend  = 'frete';
+  _itensPend = todos;
+  var btn = document.getElementById('conf-btn');
+  btn.textContent = '🚚 Confirmar Programação';
+  btn.className   = 'btn-sm btn-teal';
+  btn.onclick     = function(){ executarFreteAcao(tipo, valor, data, obs, pedido); };
+
+  document.getElementById('conf-titulo').textContent = '🚚 Confirmar: Programar Frete em Lote';
+  document.getElementById('conf-desc').textContent   =
+    'Pedido: '+pedido+' · '+tipo + (precVal ? ' · R$ '+valor : '') + (data ? ' · Agend.: '+data : '') + ' — '+todos.length+' NF(s)';
+
+  var listaHtml = '';
+  if (mesmoForn) {
+    listaHtml += '<div class="sim-item" style="background:#ECFDF5;color:#065F46;font-weight:600;font-size:11px">✅ 1 programação unificada — '+esc(fornNomes[0])+'</div>';
+    todos.slice(0,20).forEach(function(it){
+      listaHtml += '<div class="sim-item sim-ok" style="padding-left:16px"><b>NF '+esc(it.nf)+'</b> — NFD '+esc(it.nfd||'—')+'</div>';
+    });
+  } else {
+    fornNomes.forEach(function(forn){
+      listaHtml += '<div class="sim-item" style="background:#FEF3C7;color:#92400E;font-weight:600;font-size:11px">📦 '+esc(forn)+' ('+fornMap[forn].length+' NF(s))</div>';
+      fornMap[forn].slice(0,5).forEach(function(it){
+        listaHtml += '<div class="sim-item sim-ok" style="padding-left:16px"><b>NF '+esc(it.nf)+'</b></div>';
+      });
+      if (fornMap[forn].length > 5) listaHtml += '<div style="padding:2px 16px;font-size:10px;color:#6B7280">+mais '+(fornMap[forn].length-5)+'</div>';
+    });
+  }
+  if (todos.length > 20 && mesmoForn)
+    listaHtml += '<div style="padding:4px 6px;font-size:11px;color:#6B7280">… e mais '+(todos.length-20)+' NFs.</div>';
+  document.getElementById('sim-lista').innerHTML = listaHtml;
+  document.getElementById('conf-aviso').style.display = 'none';
+  document.getElementById('modal-confirm').style.display = 'flex';
+}
+
+function executarFreteAcao(tipo, valor, data, obs, pedido) {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); fecharModal('modal-confirm'); return; }
+  var btn = document.getElementById('conf-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processando...';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      fecharModal('modal-confirm');
+      btn.disabled = false;
+      btn.onclick = executarAcao;
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          toast(r.ok + (r.erros && r.erros.length ? '\n⚠️ '+r.erros.join('; ') : ''), 'ok');
+          limparSelecao();
+          carregar();
+        } else {
+          toast('❌ '+(r.erro||'Erro'), 'err');
+        }
+      } catch(e){ toast('❌ '+e.message, 'err'); }
+    })
+    .withFailureHandler(function(e){
+      fecharModal('modal-confirm');
+      btn.disabled = false;
+      btn.onclick = executarAcao;
+      toast('❌ '+e.message, 'err');
+    })
+    .executarAcaoEmLoteNotas({
+      acao: 'frete',
+      itens: _itensPend.map(function(it){
+        return { aba:it.aba, linha:it.linha, nf:it.nf, nfd:it.nfd, forn:it.forn, data:it.data };
+      }),
+      freteParams: { tipo:tipo, valor:valor, dataAgend:data, obs:obs, numeroPedido:pedido||'' }
+    });
+}
+
+// ── Detail modal ───────────────────────────────────────────
+function abrirDetalhe(idx) {
+  var it = _filtrados[idx];
+  if (!it) return;
+  _detItem = it;
+  _detIdx = idx;
+  var posEl = document.getElementById('det-pos');
+  if (posEl) posEl.textContent = (idx+1)+' / '+_filtrados.length;
+  var prev = document.getElementById('det-prev'), next = document.getElementById('det-next');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= _filtrados.length - 1;
+
+  document.getElementById('det-titulo').textContent = 'NF '+it.nf + (it.nfd?' / NFD '+it.nfd:'');
+  document.getElementById('d-nf').value    = it.nf   || '';
+  document.getElementById('d-nfd').value   = it.nfd  || '';
+  document.getElementById('d-forn').value  = it.forn || '';
+
+  var _dp = (it.data || '').split('/');
+  document.getElementById('d-data').value =
+    _dp.length === 3 ? _dp[2]+'-'+_dp[1]+'-'+_dp[0] : '';
+
+  document.getElementById('d-status').value = it.status || 'Pendente';
+  document.getElementById('d-dias').textContent = it.diasArm+'d armazenado'+(it.alerta?' ⚠️ +30 dias':'');
+
+  document.getElementById('d-tipo').value   = it.tipo   || '';
+  document.getElementById('d-motivo').value = it.motivo || '';
+  document.getElementById('d-desc').value   = it.desc   || '';
+  document.getElementById('d-qtd').value    = it.qtd    || '';
+  document.getElementById('d-vlunit').value = it.vlUnit || '';
+  document.getElementById('d-obs').value    = it.obs    || '';
+  document.getElementById('d-resp').value   = it.resp   || '';
+  document.getElementById('d-frete').textContent = it.freteTipo
+    ? it.freteTipo+(it.freteValor>0?' — R$ '+it.freteValor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'')
+    : 'Não programado';
+  document.getElementById('d-anexo').innerHTML = it.temAnexo
+    ? '📎 Sim' : '<span style="color:#9CA3AF">Sem anexo</span>';
+
+  document.getElementById('hist-tl').innerHTML = '<div class="vazio">Carregando...</div>';
+  document.getElementById('det-msg').style.display = 'none';
+  // Bloquear edição em NFs arquivadas (Devolvido/Venda)
+  var arquivado = (it.status === 'Devolvido' || it.status === 'Venda');
+  ['d-nf','d-nfd','d-forn','d-data','d-status','d-tipo','d-motivo','d-desc','d-qtd','d-vlunit','d-obs','d-resp'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.disabled = arquivado;
+  });
+  var btnSalvar = document.querySelector('#modal-detalhe .btn-teal');
+  if (btnSalvar) { btnSalvar.disabled = arquivado; btnSalvar.title = arquivado ? 'NF arquivada — edição bloqueada' : ''; }
+  if (arquivado) {
+    document.getElementById('det-msg').textContent = '🔒 NF arquivada (' + it.status + ') — edição bloqueada.';
+    document.getElementById('det-msg').className = 'msg-inline msg-warn';
+    document.getElementById('det-msg').style.display = 'block';
+  }
+  // Botão confirmar recebimento: só para status Devolvido
+  var btnFornReceb = document.getElementById('btn-forn-receb');
+  var msgFornReceb = document.getElementById('forn-receb-msg');
+  if (btnFornReceb) {
+    var jaConfirmado = (it.obs || '').indexOf('[Receb.Forn:') !== -1;
+    btnFornReceb.style.display = it.status === 'Devolvido' ? 'block' : 'none';
+    btnFornReceb.disabled = jaConfirmado;
+    btnFornReceb.textContent = jaConfirmado ? '✅ Recebimento já confirmado' : '🏭 Confirmar Recebimento pelo Fornecedor';
+    if (msgFornReceb) msgFornReceb.style.display = 'none';
+  }
+  document.getElementById('modal-detalhe').style.display = 'flex';
+  // volta pra 1ª aba (Histórico) a cada abertura
+  document.querySelectorAll('#modal-detalhe .det-tab').forEach(function(b,i){ b.classList.toggle('on', i===0); });
+  document.querySelectorAll('#modal-detalhe .det-pane').forEach(function(p){ p.classList.toggle('on', p.id==='dpane-hist'); });
+  carregarComentarios(it);
+  carregarRespostasForn(it);
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('hist-tl').textContent = r.erro; return; }
+        renderTimeline(r.emailsHist || [], r.logHist || []);
+        renderAnexoPreview(r.anexo || '');
+      } catch(e){}
+    })
+    .withFailureHandler(function(){})
+    .obterDetalhesNF(it.aba, it.linha);
+}
+
+/* dd/MM/yyyy HH:mm (formato fixo vindo de obterDetalhesNF) -> timestamp p/ ordenação. Retorna 0 se não bater o padrão. */
+function _parseDataHistBR(s) {
+  var m = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/.exec(s || '');
+  if (!m) return 0;
+  return new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5]).getTime();
+}
+
+function renderTimeline(emails, logs) {
+  var el = document.getElementById('hist-tl');
+  var itens = [];
+
+  (emails || []).forEach(function(e) {
+    itens.push({
+      ts: _parseDataHistBR(e.data),
+      cls: 'email',
+      q: '📧 E-mail enviado',
+      w: esc(e.data) + ' · Para: <b>' + esc(e.para) + '</b>' + (e.assunto ? ' · ' + esc(e.assunto) : '')
+    });
+  });
+
+  (logs || []).forEach(function(e) {
+    var mudanca = '';
+    if (e.anterior && e.novo && e.anterior !== e.novo) {
+      mudanca = ' · <span style="background:#FEE2E2;color:#991B1B;padding:1px 5px;border-radius:3px;font-family:var(--mono)">' + esc(e.anterior) + '</span>'
+        + ' <span style="color:#9CA3AF">→</span> '
+        + '<span style="background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:3px;font-family:var(--mono)">' + esc(e.novo) + '</span>'
+        + (e.coluna ? ' <span style="color:#9CA3AF;font-size:9px">(' + esc(e.coluna) + ')</span>' : '');
+    }
+    itens.push({
+      ts: _parseDataHistBR(e.data),
+      cls: 'log',
+      q: esc(e.acao || 'Alteração'),
+      w: esc(e.data) + (e.usuario ? ' · <b>' + esc(e.usuario) + '</b>' : '') + mudanca
+    });
+  });
+
+  if (!itens.length) {
+    el.innerHTML = '<div class="vazio">Sem histórico disponível.</div>';
+    return;
+  }
+
+  itens.sort(function(a, b) { return b.ts - a.ts; });
+
+  el.innerHTML = itens.map(function(it) {
+    return '<div class="it ' + it.cls + '"><div class="q">' + it.q + '</div><div class="w">' + it.w + '</div></div>';
+  }).join('');
+}
+
+// ── Comentários por NF ─────────────────────────────────────
+var _COMENT_PREFIX = 'cdv_coment_';
+var _comentKey = '';
+
+function _comentNFKey(it) {
+  return _COMENT_PREFIX + (it.nfd||it.nf).replace(/['"\/\s]/g,'_');
+}
+
+function carregarComentarios(it) {
+  _comentKey = _comentNFKey(it);
+  document.getElementById('det-comentario').value = '';
+  renderComentLista();
+}
+
+function salvarComentario() {
+  if (!_comentKey) return;
+  var txt = (document.getElementById('det-comentario').value || '').trim();
+  if (!txt) return;
+  try {
+    var lista = JSON.parse(localStorage.getItem(_comentKey) || '[]');
+    lista.push({ ts: Date.now(), txt: txt });
+    if (lista.length > 50) lista = lista.slice(-50);
+    localStorage.setItem(_comentKey, JSON.stringify(lista));
+    document.getElementById('det-comentario').value = '';
+    renderComentLista();
+  } catch(_){}
+}
+
+function renderComentLista() {
+  var el = document.getElementById('coment-lista');
+  if (!el || !_comentKey) return;
+  try {
+    var lista = JSON.parse(localStorage.getItem(_comentKey) || '[]');
+    if (!lista.length) { el.innerHTML = '<div style="color:#9CA3AF;font-size:10px">Sem comentários.</div>'; return; }
+    el.innerHTML = lista.slice().reverse().map(function(c) {
+      var d = new Date(c.ts);
+      var ds = d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return '<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:11px">'
+        +'<div style="color:#9CA3AF;font-size:10px">'+ds+'</div>'
+        +'<div>'+esc(c.txt)+'</div></div>';
+    }).join('');
+  } catch(_){}
+}
+
+function renderAnexoPreview(url) {
+  var el = document.getElementById('d-anexo');
+  if (!url) {
+    el.innerHTML = '<span style="color:#9CA3AF">Sem anexo</span>'
+      + '<label style="margin-left:8px;cursor:pointer;font-size:11px;color:var(--navy)">📎 Adicionar'
+      + '<input type="file" accept="image/*,application/pdf" style="display:none" onchange="adicionarAnexoExtra(this)"></label>';
+    return;
+  }
+  var urls = url.split('|').filter(Boolean);
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+  urls.forEach(function(u) {
+    var m = u.match(/[-\w]{25,}/);
+    var fileId = m ? m[0] : null;
+    var safe = u.replace(/"/g,'%22');
+    if (fileId) {
+      var thumb = 'https://drive.google.com/thumbnail?id='+fileId+'&sz=w80';
+      html += '<a href="'+safe+'" target="_blank" title="Abrir anexo">'
+        +'<img src="'+thumb+'" style="width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid #E5E7EB" onerror="this.style.display=\'none\'">'
+        +'</a>';
+    } else {
+      html += '<a href="'+safe+'" target="_blank" style="font-size:11px;color:var(--navy)">📎 Anexo</a>';
+    }
+  });
+  html += '<label style="cursor:pointer;font-size:18px;color:#D1D5DB;align-self:center" title="Adicionar anexo">'
+    +'+'
+    +'<input type="file" accept="image/*,application/pdf" style="display:none" onchange="adicionarAnexoExtra(this)">'
+    +'</label>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function adicionarAnexoExtra(input) {
+  if (!_detItem || !input.files.length) return;
+  var f = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    toast('📎 Enviando anexo...', 'info');
+    google.script.run.withSuccessHandler(function(r) {
+      try {
+        var p = JSON.parse(r);
+        if (p.url) {
+          var urlAtual = document.getElementById('d-anexo').querySelector('a') ? _detItem.anexo || '' : '';
+          var novaUrl  = urlAtual ? urlAtual + '|' + p.url : p.url;
+          google.script.run.withSuccessHandler(function() {
+            toast('✅ Anexo adicionado.', 'ok');
+            _detItem.anexo = novaUrl;
+            renderAnexoPreview(novaUrl);
+          }).salvarAnexoAdicionalNF({ aba: _detItem.aba, linha: _detItem.linha, urlAnexo: novaUrl });
+        }
+      } catch(_){}
+    }).uploadFotoAvaria({ aba: _detItem.aba||'', nf: _detItem.nf||'', nome: f.name, base64: base64, mimeType: f.type });
+  };
+  reader.readAsDataURL(f);
+}
+
+function navDetalhe(delta) {
+  var novo = _detIdx + delta;
+  if (novo < 0 || novo >= _filtrados.length) return;
+  abrirDetalhe(novo);
+}
+
+// ── Etiqueta de caixa ──────────────────────────────────────
+function _gerarHtmlEtiqueta(it) {
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w300';
+  var gerado  = new Date().toLocaleString('pt-BR');
+  var nfdRow  = it.nfd && it.nfd !== it.nf
+    ? '<tr><td style="color:#6B7280;font-size:8pt;padding:1mm 0;white-space:nowrap">NFD</td>'
+      +'<td style="font-family:monospace;font-size:10pt;font-weight:700;color:#1E3A5F">'+esc(it.nfd)+'</td></tr>'
+    : '';
+  return '<div style="width:92mm;height:92mm;box-sizing:border-box;border:2px solid #1E3A5F;border-radius:3mm;'
+    +'padding:4mm;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000;'
+    +'display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden">'
+
+    // Cabeçalho com logo
+    +'<div style="display:flex;align-items:center;gap:3mm;border-bottom:1.5px solid #1E3A5F;padding-bottom:2.5mm;margin-bottom:2.5mm">'
+    +'<img src="'+logoUrl+'" alt="Transben" style="height:10mm;object-fit:contain" onerror="this.style.display=\'none\'">'
+    +'<div style="flex:1">'
+    +'<div style="font-size:9.5pt;font-weight:700;color:#1E3A5F;letter-spacing:.5px;text-transform:uppercase">TRANSBEN</div>'
+    +'<div style="font-size:7pt;color:#6B7280;letter-spacing:.3px">CONTROLE DE DEVOLUÇÕES</div>'
+    +'</div>'
+    +'</div>'
+
+    // NF em destaque
+    +'<div style="background:#1E3A5F;color:#fff;border-radius:2mm;padding:2mm 3mm;margin-bottom:2.5mm;text-align:center">'
+    +'<div style="font-size:7.5pt;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:.5mm">Nota Fiscal</div>'
+    +'<div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:2px;line-height:1">'+esc(it.nf||'—')+'</div>'
+    +'</div>'
+
+    // Campos
+    +'<table style="width:100%;border-collapse:collapse;font-size:8.5pt;flex:1">'
+    +nfdRow
+    +'<tr><td style="color:#6B7280;padding:1mm 0;width:20mm;white-space:nowrap">Fornecedor</td>'
+    +'<td style="font-weight:700;font-size:9pt">'+esc(it.forn||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Tipo</td>'
+    +'<td style="font-weight:600">'+esc(it.tipo||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Motivo</td>'
+    +'<td>'+esc(it.motivo||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Qtd / Data</td>'
+    +'<td><b>'+esc(String(it.qtd||'—'))+'</b> cxs &nbsp;·&nbsp; '+esc(it.data||'—')+'</td></tr>'
+    +'<tr><td style="color:#6B7280;padding:1mm 0">Status</td>'
+    +'<td><b style="color:#1E3A5F">'+esc(it.status||'—')+'</b></td></tr>'
+    +'</table>'
+
+    // Rodapé
+    +'<div style="border-top:1px dashed #D1D5DB;padding-top:1.5mm;margin-top:auto;'
+    +'text-align:center;font-size:6.5pt;color:#9CA3AF">'
+    +'Gerado em '+gerado+'</div>'
+    +'</div>';
+}
+
+function abrirEtiqueta() {
+  if (!_detItem) return;
+  document.getElementById('etiqueta-preview').innerHTML = _gerarHtmlEtiqueta(_detItem);
+  document.getElementById('modal-etiqueta').style.display = 'flex';
+}
+
+function imprimirEtiqueta() {
+  var it  = _detItem;
+  if (!it) return;
+  // [Redesign] volumes: série "CX i/N" quando há mais de uma caixa
+  var qtdCx = parseInt(it.qtd, 10) || 1;
+  var vols = 1;
+  if (qtdCx > 1) {
+    var resp = prompt('Quantas etiquetas imprimir? (1 = etiqueta única; ' + qtdCx + ' = uma por caixa "CX i/' + qtdCx + '")', String(qtdCx));
+    if (resp === null) return;
+    vols = Math.max(1, Math.min(parseInt(resp, 10) || 1, 99));
+  }
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w300';
+  var gerado  = new Date().toLocaleString('pt-BR');
+  var corTipo = it.tipo === 'Avaria' ? '#B45309' : it.tipo === 'Rejeição' ? '#DC2626' : '#2563EB';
+  var dias = it.dias || it.diasArmazenado || '';
+  var nfdRow  = it.nfd && it.nfd !== it.nf
+    ? '<tr><td>NFD</td><td style="font-family:monospace;font-size:10pt;font-weight:700;color:#1E3A5F">'+esc(it.nfd)+'</td></tr>'
+    : '';
+
+  var etiquetas = '';
+  for (var v = 1; v <= vols; v++) {
+    etiquetas +=
+      '<div class="etq" style="border-color:'+corTipo+'">'
+      +'<div class="faixa" style="background:'+corTipo+'"></div>'
+      +'<div class="hdr">'
+      +'<img src="'+logoUrl+'" alt="Transben" onerror="this.style.display=\'none\'">'
+      +'<span class="tipo-big" style="background:'+corTipo+'">'+esc(it.tipo||'DEVOLUÇÃO')+'</span>'
+      +'</div>'
+      +'<div class="nf-box"><div class="nf-lbl">Nota Fiscal</div><div class="nf-val">'+esc(it.nf||'—')+'</div></div>'
+      +'<table>'
+      +nfdRow
+      +'<tr><td>Fornecedor</td><td style="font-size:9pt">'+esc(it.forn||'—')+'</td></tr>'
+      +'<tr><td>Motivo</td><td>'+esc(it.motivo||'—')+'</td></tr>'
+      +'<tr><td>Qtd · Entrada</td><td><b>'+esc(String(it.qtd||'—'))+'</b> cxs &nbsp;·&nbsp; '+esc(it.data||'—')+'</td></tr>'
+      +(dias ? '<tr><td>Em aberto</td><td style="font-weight:900;color:#1E3A5F">'+esc(String(dias))+' dias</td></tr>' : '')
+      +'</table>'
+      +(vols > 1 ? '<div class="vol">CX '+v+'/'+vols+'</div>' : '')
+      +'<div class="footer"><span>Transben · Controle de Devoluções</span><span>'+gerado+'</span></div>'
+      +'</div>';
+  }
+
+  var win = window.open('','_blank','width=430,height=520');
+  if (!win) return;
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiqueta '+esc(it.nf)+'</title>'
+    +'<style>'
+    +'@page{size:100mm 100mm;margin:0}'
+    +'*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'
+    +'body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#000}'
+    +'.etq{width:100mm;height:100mm;padding:4mm;border:2mm solid;display:flex;flex-direction:column;position:relative;overflow:hidden;page-break-after:always}'
+    +'.etq:last-child{page-break-after:auto}'
+    +'.faixa{position:absolute;top:0;left:0;right:0;height:2.2mm}'
+    +'.hdr{display:flex;align-items:center;justify-content:space-between;gap:3mm;border-bottom:1.5px solid #1E3A5F;padding:1.5mm 0 2.2mm;margin-bottom:2.5mm}'
+    +'.hdr img{height:9mm;object-fit:contain}'
+    +'.tipo-big{font-size:10pt;font-weight:900;letter-spacing:1px;text-transform:uppercase;padding:1mm 3mm;border-radius:1.5mm;color:#fff}'
+    +'.nf-box{background:#1E3A5F;color:#fff;border-radius:2mm;padding:2mm 3mm;margin-bottom:2.5mm;text-align:center}'
+    +'.nf-lbl{font-size:7.5pt;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-bottom:.5mm}'
+    +'.nf-val{font-family:monospace;font-size:22pt;font-weight:700;letter-spacing:2px;line-height:1}'
+    +'table{width:100%;border-collapse:collapse;font-size:8.5pt;flex:1}'
+    +'td{padding:1mm 0;vertical-align:top}'
+    +'td:first-child{color:#6B7280;width:24mm;white-space:nowrap;font-size:7pt;text-transform:uppercase;letter-spacing:.4px}'
+    +'td:last-child{font-weight:600}'
+    +'.vol{position:absolute;right:4mm;bottom:9mm;font-size:13pt;font-weight:900;border:.8mm solid #1E3A5F;border-radius:2mm;padding:.5mm 2.5mm;color:#1E3A5F;background:#fff}'
+    +'.footer{border-top:1px dashed #D1D5DB;padding-top:1.5mm;margin-top:auto;display:flex;justify-content:space-between;font-size:6.5pt;color:#9CA3AF}'
+    +'</style></head><body>'
+    +etiquetas
+    +'<script>window.onload=function(){window.print();window.close();}<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── QR Code por NF ─────────────────────────────────────────
+function abrirQRCode() {
+  if (!_detItem) return;
+  var it = _detItem;
+  var texto = 'NF:'+it.nf+(it.nfd?'/NFD:'+it.nfd:'')+' FORN:'+it.forn+' STATUS:'+it.status+' DATA:'+it.data;
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(texto);
+  var win = window.open('','_blank','width=340,height=380');
+  win.document.write('<!DOCTYPE html><html><head><title>QR Code NF '+it.nf+'</title></head><body style="text-align:center;padding:20px;font-family:sans-serif">'
+    +'<h3 style="margin-bottom:8px">NF '+it.nf+'</h3>'
+    +'<img src="'+qrUrl+'" alt="QR Code" style="border:1px solid #ddd;border-radius:6px">'
+    +'<p style="font-size:11px;color:#888;margin-top:8px">'+esc(it.forn)+'<br>'+esc(it.data||'')+'</p>'
+    +'<button onclick="window.print()" style="margin-top:8px;padding:6px 16px">🖨️ Imprimir</button>'
+    +'</body></html>');
+  win.document.close();
+}
+
+function fecharDetalhe() {
+  if (_detItem && _detItemModificado()) {
+    if (!confirm('Há alterações não salvas. Deseja sair sem salvar?')) return;
+  }
+  document.getElementById('modal-detalhe').style.display = 'none';
+  _detItem = null;
+  _detIdx = -1;
+}
+
+// abas da coluna direita do modal de detalhe (Histórico/Comentários/Fotos/Fornecedor)
+function detTab(btn, t) {
+  document.querySelectorAll('#modal-detalhe .det-tab').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  ['hist','coment','fotos','forn'].forEach(function(x){
+    var p = document.getElementById('dpane-'+x);
+    if (p) p.classList.toggle('on', x === t);
+  });
+}
+
+function _detItemModificado() {
+  if (!_detItem) return false;
+  try {
+    var campos = [
+      { id: 'd-forn',   orig: _detItem.forn   || '' },
+      { id: 'd-tipo',   orig: _detItem.tipo   || '' },
+      { id: 'd-motivo', orig: _detItem.motivo || '' },
+      { id: 'd-desc',   orig: _detItem.desc   || '' },
+      { id: 'd-obs',    orig: _detItem.obs    || '' },
+      { id: 'd-resp',   orig: _detItem.resp   || '' }
+    ];
+    return campos.some(function(c) {
+      var el = document.getElementById(c.id);
+      return el && el.value !== c.orig;
+    });
+  } catch(_) { return false; }
+}
+
+function salvarEdicao() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Edição bloqueada.', 'info'); return; }
+  if (!_detItem) return;
+  var _dtISO   = document.getElementById('d-data').value;
+  var _dtParts = _dtISO.split('-');
+  var campos = {
+    nf:     document.getElementById('d-nf').value.trim(),
+    nfd:    document.getElementById('d-nfd').value.trim(),
+    forn:   document.getElementById('d-forn').value.trim(),
+    data:   _dtParts.length === 3 ? _dtParts[2]+'/'+_dtParts[1]+'/'+_dtParts[0] : _dtISO,
+    status: document.getElementById('d-status').value,
+    tipo:   document.getElementById('d-tipo').value.trim(),
+    motivo: document.getElementById('d-motivo').value.trim(),
+    desc:   document.getElementById('d-desc').value.trim(),
+    qtd:    parseFloat(document.getElementById('d-qtd').value) || 0,
+    vlUnit: parseFloat(document.getElementById('d-vlunit').value) || 0,
+    obs:    document.getElementById('d-obs').value.trim(),
+    resp:   document.getElementById('d-resp').value.trim()
+  };
+  var btn = document.querySelector('#modal-detalhe .btn-teal');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando...';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      btn.disabled = false;
+      btn.textContent = '💾 Salvar Alterações';
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          showMsg('det-msg', r.ok, 'ok');
+          Object.assign(_detItem, campos);
+          carregar();
+        } else {
+          showMsg('det-msg', r.erro || 'Erro.', 'err');
+        }
+      } catch(e){ showMsg('det-msg', e.message, 'err'); }
+    })
+    .withFailureHandler(function(e){
+      btn.disabled = false;
+      btn.textContent = '💾 Salvar Alterações';
+      showMsg('det-msg', e.message, 'err');
+    })
+    .editarNF({ aba: _detItem.aba, linha: _detItem.linha, campos: campos });
+}
+
+// ── Visualizador PDF Inline ────────────────────────────────
+var _pdfInlineHtml = '';
+function abrirPdfInline(titulo, html) {
+  _pdfInlineHtml = html;
+  document.getElementById('modal-pdf-titulo').textContent = titulo;
+  document.getElementById('iframe-pdf-inline').srcdoc = html;
+  document.getElementById('modal-pdf-inline').style.display = 'flex';
+}
+function imprimirPdfInline() {
+  var iframe = document.getElementById('iframe-pdf-inline');
+  try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(_) {
+    var w = window.open('','_blank','width=960,height=720');
+    if (w) { w.document.write(_pdfInlineHtml); w.document.close(); setTimeout(function(){ w.print(); }, 500); }
+  }
+}
+
+// ── PDF Export ─────────────────────────────────────────────
+function exportarPDF() {
+  var itens = _sel.some(Boolean)
+    ? _filtrados.filter(function(_,i){ return _sel[i]; })
+    : _filtrados;
+  if (!itens.length) { toast('Nenhuma nota para exportar.','info'); return; }
+
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w200';
+  var now = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var fmt = function(v){ return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var bm  = {'Pendente':'#2563EB','Em Transferência':'#0891B2','Devolvido':'#059669','Venda':'#D97706'};
+  var totalVal = itens.reduce(function(s,it){ return s+(it.vlTot||0); }, 0);
+
+  var rows = itens.map(function(it) {
+    var cor = bm[it.status] || '#6B7280';
+    return '<tr>'
+      +'<td style="font-family:monospace;font-weight:600">'+(it.nfd||it.nf||'')+'</td>'
+      +'<td>'+esc(it.forn)+'</td>'
+      +'<td style="color:#374151">'+esc(it.tipo)+'</td>'
+      +'<td style="white-space:nowrap">'+esc(it.data)+'</td>'
+      +'<td style="text-align:right;font-family:monospace">'+fmt(it.vlTot)+'</td>'
+      +'<td><span style="display:inline-block;padding:2px 8px;border-radius:999px;'
+      +     'background:'+cor+'22;color:'+cor+';font-weight:700;font-size:10px">'+esc(it.status)+'</span></td>'
+      +'<td style="text-align:center">'+it.diasArm+'d</td>'
+      +'</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<title>Devoluções — Transben</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;padding:24px}'
+    +'.hdr{display:flex;align-items:center;gap:16px;border-bottom:3px solid #25419A;padding-bottom:12px;margin-bottom:18px}'
+    +'.hdr img{height:52px;object-fit:contain}'
+    +'.hdr-txt h1{font-size:15px;color:#25419A;margin-bottom:3px}'
+    +'.hdr-txt p{font-size:10px;color:#6B7280}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'th{background:#25419A;color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em}'
+    +'td{padding:6px 10px;border-bottom:1px solid #F3F4F6;vertical-align:middle}'
+    +'tr:nth-child(even) td{background:#F8FAFC}'
+    +'.total-row{text-align:right;font-weight:700;font-size:12px;padding:8px 10px;border-top:2px solid #E5E7EB}'
+    +'.footer{margin-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}'
+    +'@media print{body{padding:10px}}'
+    +'</style></head><body>'
+    +'<div class="hdr">'
+    +'<img src="'+logoUrl+'" onerror="this.style.display=\'none\'" alt="Transben">'
+    +'<div class="hdr-txt"><h1>Relatório de Devoluções</h1>'
+    +'<p>Gerado em '+now+' &nbsp;·&nbsp; '+itens.length+' nota(s)</p></div>'
+    +'</div>'
+    +'<table><thead><tr>'
+    +'<th>NF / NFD</th><th>Fornecedor</th><th>Tipo</th><th>Data Entrada</th>'
+    +'<th style="text-align:right">Valor Total</th><th>Status</th><th style="text-align:center">Dias</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td colspan="4"></td>'
+    +'<td class="total-row" colspan="3">Total: '+fmt(totalVal)+'</td></tr></tfoot>'
+    +'</table>'
+    +'<div class="footer"><span>Transben · Sistema de Controle de Devoluções</span>'
+    +'<span>'+itens.length+' nota(s) exportada(s)</span></div>'
+    +'</body></html>';
+
+  abrirPdfInline('📄 Relatório de Devoluções (' + itens.length + ' notas)', html);
+  toast('📄 Relatório aberto.','ok');
+}
+
+// ── Doc. Carga ─────────────────────────────────────────────
+function gerarDocCarga(itensForcados) {
+  var itens = itensForcados || (
+    _sel.some(Boolean)
+      ? _filtrados.filter(function(_,i){ return _sel[i]; })
+      : _filtrados
+  );
+  if (!itens.length) { toast('Selecione ao menos uma nota.','info'); return; }
+
+  // Validação: mesmo fornecedor
+  var forns = {};
+  itens.forEach(function(it){ if (it.forn) forns[it.forn] = true; });
+  if (Object.keys(forns).length > 1) {
+    toast('⚠️ Doc. Carga requer o mesmo fornecedor. Fornecedores distintos: ' + Object.keys(forns).join(', '), 'info');
+    return;
+  }
+
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w200';
+  var now = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var fmt = function(v){ return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var totalCxs = itens.reduce(function(s,it){ return s+(it.qtd||0); }, 0);
+  var totalVal = itens.reduce(function(s,it){ return s+(it.vlTot||0); }, 0);
+
+  var rows = itens.map(function(it,i) {
+    return '<tr>'
+      +'<td style="text-align:center;color:#6B7280">'+(i+1)+'</td>'
+      +'<td style="font-family:monospace;font-weight:700;font-size:13px">'+(it.nfd||it.nf||'')+'</td>'
+      +'<td style="font-family:monospace">'+(it.nfd&&it.nf&&it.nfd!==it.nf?it.nf:'—')+'</td>'
+      +'<td>'+esc(it.forn)+'</td>'
+      +'<td>'+esc(it.tipo||'—')+'</td>'
+      +'<td>'+esc(it.motivo||'—')+'</td>'
+      +'<td style="text-align:center;font-weight:700">'+(it.qtd||0)+'</td>'
+      +'<td style="text-align:right;font-family:monospace">'+fmt(it.vlTot)+'</td>'
+      +'<td style="white-space:nowrap">'+esc(it.data)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<title>Documentação de Carga — Transben</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;padding:20px}'
+    +'.hdr{display:flex;align-items:center;gap:16px;border-bottom:3px solid #25419A;padding-bottom:10px;margin-bottom:14px}'
+    +'.hdr img{height:48px;object-fit:contain}'
+    +'.hdr-txt h1{font-size:15px;color:#25419A;margin-bottom:2px;font-weight:700}'
+    +'.hdr-txt p{font-size:10px;color:#6B7280}'
+    +'.resumo{display:flex;gap:12px;margin-bottom:14px}'
+    +'.res-card{flex:1;border:1px solid #E5E7EB;border-radius:6px;padding:10px 14px;text-align:center}'
+    +'.res-card .lbl{font-size:9px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}'
+    +'.res-card .val{font-size:18px;font-weight:700;color:#25419A}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:12px}'
+    +'th{background:#25419A;color:#fff;padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em}'
+    +'td{padding:5px 8px;border-bottom:1px solid #F3F4F6;vertical-align:middle}'
+    +'tr:nth-child(even) td{background:#F8FAFC}'
+    +'.tot-row td{font-weight:700;border-top:2px solid #E5E7EB;background:#EEF2FF}'
+    +'.assinatura{display:flex;gap:40px;margin-top:28px;padding-top:16px;border-top:1px solid #E5E7EB}'
+    +'.ass-campo{flex:1;text-align:center}'
+    +'.ass-linha{border-top:1px solid #374151;margin-top:32px;padding-top:4px;font-size:10px;color:#6B7280}'
+    +'.footer{margin-top:10px;font-size:9px;color:#9CA3AF;text-align:right}'
+    +'@media print{body{padding:8px}}'
+    +'</style></head><body>'
+    +'<div class="hdr">'
+    +'<img src="'+logoUrl+'" onerror="this.style.display=\'none\'" alt="Transben">'
+    +'<div class="hdr-txt"><h1>📄 Documentação de Carga — Devolução</h1>'
+    +'<p>Gerado em '+now+' &nbsp;·&nbsp; '+itens.length+' NFD(s) listada(s)</p></div>'
+    +'</div>'
+    +'<div class="resumo">'
+    +'<div class="res-card"><div class="lbl">Total de NFDs</div><div class="val">'+itens.length+'</div></div>'
+    +'<div class="res-card"><div class="lbl">Total de Cxs</div><div class="val">'+totalCxs.toLocaleString('pt-BR')+'</div></div>'
+    +'<div class="res-card"><div class="lbl">Valor Total</div><div class="val" style="font-size:13px">'+fmt(totalVal)+'</div></div>'
+    +'</div>'
+    +'<table><thead><tr>'
+    +'<th style="width:32px">#</th><th>NFD</th><th>NF</th><th>Fornecedor</th>'
+    +'<th>Tipo</th><th>Motivo</th><th style="text-align:center">Cxs</th>'
+    +'<th style="text-align:right">Valor</th><th>Data Entrada</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr class="tot-row">'
+    +'<td colspan="6" style="text-align:right;font-size:11px">TOTAL</td>'
+    +'<td style="text-align:center">'+totalCxs.toLocaleString('pt-BR')+'</td>'
+    +'<td style="text-align:right">'+fmt(totalVal)+'</td>'
+    +'<td></td></tr></tfoot>'
+    +'</table>'
+    +'<div class="assinatura">'
+    +'<div class="ass-campo"><div class="ass-linha">Conferência / Responsável</div></div>'
+    +'<div class="ass-campo"><div class="ass-linha">Transportadora / Motorista</div></div>'
+    +'<div class="ass-campo"><div class="ass-linha">Data / Hora da Entrega</div></div>'
+    +'</div>'
+    +'<div class="footer">Transben · Sistema de Controle de Devoluções · '+now+'</div>'
+    +'</body></html>';
+
+  abrirPdfInline('📄 Doc. Carga — ' + Object.keys(forns)[0] + ' (' + itens.length + ' NFD(s))', html);
+  toast('📄 Documentação de carga gerada.','ok');
+}
+
+// ── CSV Export ─────────────────────────────────────────────
+function exportarCSV() {
+  var itens = _sel.some(Boolean)
+    ? _filtrados.filter(function(_,i){ return _sel[i]; })
+    : _filtrados;
+  if (!itens.length) { toast('Nenhuma nota para exportar.','info'); return; }
+  var cab = ['NFD','NF','Data','Fornecedor','Tipo','Motivo','Status',
+             'Valor Total','Dias Armazenado','Frete Tipo','Frete Valor','Aba'];
+  var linhas = [cab].concat(itens.map(function(it){
+    return [it.nfd,it.nf,it.data,it.forn,it.tipo,it.motivo,it.status,
+            (it.vlTot||0).toFixed(2).replace('.',','),it.diasArm,
+            it.freteTipo,(it.freteValor||0).toFixed(2).replace('.',','),it.aba];
+  }));
+  var csv = linhas.map(function(l){
+    return l.map(function(c){ return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'; }).join(';');
+  }).join('\r\n');
+  var blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = 'notas_'+_dataHoje()+'.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('📥 CSV exportado ('+itens.length+' notas).','ok');
+}
+
+// ── Utilities ──────────────────────────────────────────────
+function fecharModal(id) {
+  document.getElementById(id).style.display = 'none';
+  if (id === 'modal-confirm') {
+    document.getElementById('conf-btn').onclick = executarAcao;
+  }
+}
+
+function toast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.className = 'toast '+(tipo||'');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.display='none'; }, 4500);
+}
+
+function showMsg(id, txt, tipo) {
+  var el = document.getElementById(id);
+  el.className = 'msg-inline msg-'+(tipo==='ok'?'ok':'err');
+  el.textContent = (tipo==='err'?'❌ ':'')+txt;
+  el.style.display = 'block';
+}
+
+function parseDtBR(s) {
+  if (!s) return null;
+  var p = s.split('/');
+  if (p.length !== 3) return null;
+  return new Date(+p[2], +p[1]-1, +p[0]);
+}
+
+function parseDtISO(s) {
+  if (!s) return null;
+  var p = s.split('-');
+  if (p.length !== 3) return null;
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+
+function _dataHoje() {
+  var d = new Date();
+  return d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate());
+}
+
+function _pad(n){ return n<10?'0'+n:String(n); }
+
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Keyboard shortcuts ─────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  var inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  var modalOpen = document.getElementById('modal-detalhe').style.display !== 'none'
+               || document.getElementById('modal-confirm').style.display !== 'none'
+               || document.getElementById('modal-frete').style.display  !== 'none'
+               || document.getElementById('modal-atalhos').style.display !== 'none';
+
+  // ←/→: navegar entre NFs quando modal detalhe está aberto
+  if (document.getElementById('modal-detalhe').style.display !== 'none') {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); navDetalhe(-1); return; }
+    if (e.key === 'ArrowRight') { e.preventDefault(); navDetalhe(1);  return; }
+  }
+
+  // Esc: fechar modal ou limpar seleção
+  if (e.key === 'Escape') {
+    if (document.getElementById('modal-detalhe').style.display !== 'none') { fecharDetalhe(); return; }
+    if (document.getElementById('modal-confirm').style.display !== 'none') { fecharModal('modal-confirm'); return; }
+    if (document.getElementById('modal-frete').style.display  !== 'none') { fecharModal('modal-frete'); return; }
+    if (document.getElementById('modal-atalhos').style.display !== 'none') { fecharModal('modal-atalhos'); return; }
+    limparSelecao(); _rowFocus = -1; renderTabela(); return;
+  }
+
+  if (inInput || modalOpen) return;
+
+  // ↓↑: mover foco na tabela
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setRowFocus(_rowFocus < 0 ? 0 : _rowFocus + 1);
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setRowFocus(_rowFocus <= 0 ? 0 : _rowFocus - 1);
+    return;
+  }
+
+  // Enter: abrir detalhe da linha focada
+  if (e.key === 'Enter' && _rowFocus >= 0) {
+    e.preventDefault();
+    abrirDetalhe(_rowFocus);
+    return;
+  }
+
+  // Space: marcar/desmarcar linha focada
+  if (e.key === ' ' && _rowFocus >= 0) {
+    e.preventDefault();
+    toggleItem(_rowFocus, null);
+    return;
+  }
+
+  // PageDown / PageUp: trocar de página
+  if (e.key === 'PageDown') {
+    e.preventDefault();
+    irPagina(_page + 1);
+    return;
+  }
+  if (e.key === 'PageUp') {
+    e.preventDefault();
+    irPagina(_page - 1);
+    return;
+  }
+
+  // /: focar busca
+  if (e.key === '/') {
+    e.preventDefault();
+    document.getElementById('f-busca').focus();
+    document.getElementById('f-busca').select();
+    return;
+  }
+
+  // D: toggle dark mode
+  if (e.key === 'd' || e.key === 'D') { toggleDark(); return; }
+
+  // ?: painel de atalhos
+  if (e.key === '?' || e.key === '/\?') { abrirAjudaAtalhos(); return; }
+
+  // Ctrl+A: selecionar todos filtrados
+  if ((e.ctrlKey||e.metaKey) && e.key === 'a') {
+    e.preventDefault();
+    _sel = new Array(_filtrados.length).fill(true);
+    document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c){ c.checked = true; });
+    document.getElementById('chk-all').checked = true;
+    atualizarBulkBar();
+  }
+});
+
+// ── Fotos de avaria (item 47) ──────────────────────────────
+function previewAvariaFoto(input) {
+  var box = document.getElementById('avaria-thumbs');
+  box.innerHTML = '';
+  for (var i = 0; i < input.files.length; i++) {
+    var f = input.files[i];
+    var img = document.createElement('img');
+    img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border)';
+    var reader = new FileReader();
+    (function(imgEl){ reader.onload = function(e){ imgEl.src = e.target.result; }; })(img);
+    reader.readAsDataURL(f);
+    box.appendChild(img);
+  }
+}
+
+function enviarFotoAvaria() {
+  if (!_detItem) return;
+  var input = document.getElementById('avaria-file');
+  if (!input.files.length) { document.getElementById('avaria-msg').textContent = 'Selecione ao menos uma foto.'; return; }
+  document.getElementById('avaria-msg').textContent = '⏳ Enviando...';
+  var it = _detItem;
+  var nomeAba = it.aba || '';
+  var nf = it.nf || it.nfd || 'NF';
+  var pendentes = input.files.length;
+  var urls = [];
+  for (var i = 0; i < input.files.length; i++) {
+    (function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64 = e.target.result.split(',')[1];
+        google.script.run
+          .withSuccessHandler(function(r) {
+            try {
+              var p = JSON.parse(r);
+              if (p.url) urls.push(p.url);
+            } catch(_){}
+            pendentes--;
+            if (pendentes === 0) {
+              document.getElementById('avaria-msg').textContent = '✅ '+urls.length+' foto(s) enviada(s).';
+              _renderAvariaLinks(urls);
+              document.getElementById('avaria-file').value = '';
+              document.getElementById('avaria-thumbs').innerHTML = '';
+            }
+          })
+          .uploadFotoAvaria({ aba: nomeAba, nf: nf, nome: file.name, base64: base64, mimeType: file.type });
+      };
+      reader.readAsDataURL(file);
+    })(input.files[i]);
+  }
+}
+
+function _renderAvariaLinks(urls) {
+  var el = document.getElementById('avaria-lista');
+  if (!el) return;
+  el.innerHTML += urls.map(function(u) {
+    var id = (u.match(/[-\w]{25,}/) || [])[0];
+    var thumb = id ? 'https://drive.google.com/thumbnail?id='+id+'&sz=w80' : '';
+    return '<a href="'+u+'" target="_blank" style="display:inline-block;margin:3px 3px 0 0">'
+      +(thumb ? '<img src="'+thumb+'" style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--border)">' : '📎 Ver foto')
+      +'</a>';
+  }).join('');
+}
+
+// ── Respostas do fornecedor (items 45/46) ──────────────────
+var _RESP_FORN_PREFIX = 'cdv_respforn_';
+
+function carregarRespostasForn(it) {
+  var key = _RESP_FORN_PREFIX + (it.nfd||it.nf).replace(/['"\/\s]/g,'_');
+  var lista = [];
+  try { lista = JSON.parse(localStorage.getItem(key) || '[]'); } catch(_){}
+  _renderRespostasForn(lista);
+}
+
+function salvarRespostaForn() {
+  if (!_detItem) return;
+  var txt = document.getElementById('det-respforn').value.trim();
+  if (!txt) return;
+  var key = _RESP_FORN_PREFIX + (_detItem.nfd||_detItem.nf).replace(/['"\/\s]/g,'_');
+  var lista = [];
+  try { lista = JSON.parse(localStorage.getItem(key) || '[]'); } catch(_){}
+  lista.push({ data: new Date().toLocaleString('pt-BR'), texto: txt });
+  try { localStorage.setItem(key, JSON.stringify(lista)); } catch(_){}
+  document.getElementById('det-respforn').value = '';
+  _renderRespostasForn(lista);
+  toast('📩 Resposta registrada.', 'ok');
+}
+
+function _renderRespostasForn(lista) {
+  var el = document.getElementById('lista-respostas-forn');
+  if (!el) return;
+  if (!lista.length) { el.innerHTML = '<div style="color:#9CA3AF;font-size:10px;padding:4px 0">Nenhuma resposta registrada.</div>'; return; }
+  el.innerHTML = lista.slice().reverse().map(function(r) {
+    return '<div style="border-left:2px solid var(--c-teal);padding:4px 8px;margin-bottom:4px;background:rgba(20,184,166,.06);border-radius:0 4px 4px 0">'
+      +'<div style="font-size:9px;color:#9CA3AF">'+esc(r.data)+'</div>'
+      +'<div style="font-size:11px;color:var(--text-body);margin-top:2px">'+esc(r.texto)+'</div></div>';
+  }).join('');
+}
+
+// ── Tour guiado por módulo (item 74) ──────────────────────
+function iniciarTourNotas() {
+  var steps = [
+    { sel: '.kpi-strip',       txt: '📊 Os KPIs mostram o total de NFs por status. Clique num KPI para filtrar.' },
+    { sel: '.filter-bar',      txt: '🔍 Use os filtros para buscar por status, aba, data ou texto livre.' },
+    { sel: '#sel-filtros-salvos', txt: '⭐ Salve combinações de filtros frequentes com um nome personalizado.' },
+    { sel: '#tabela-notas',    txt: '📋 Clique numa linha para abrir o detalhe da NF. Use ↑↓ para navegar.' },
+    { sel: '.bulk-bar',        txt: '☑️ Selecione múltiplas NFs para ações em lote (alterar status, enviar email).' },
+    { sel: '#btn-dark',        txt: '🌙 Alterne entre modo claro e escuro. Use a tecla D.' }
+  ];
+  _executarTour(steps);
+}
+
+function _executarTour(steps) {
+  var overlay = document.createElement('div');
+  overlay.id = 'tour-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none';
+  document.body.appendChild(overlay);
+  var idx = 0;
+  function mostrar(n) {
+    overlay.innerHTML = '';
+    if (n >= steps.length) { fecharTour(); return; }
+    var s = steps[n];
+    var el = document.querySelector(s.sel);
+    var r = el ? el.getBoundingClientRect() : { top:100, left:100, width:200, height:40 };
+    var hl = document.createElement('div');
+    hl.style.cssText = 'position:fixed;border:2px solid #4F9CF9;border-radius:6px;pointer-events:none;'
+      +'box-shadow:0 0 0 4000px rgba(0,0,0,.35);';
+    hl.style.top    = (r.top - 3) + 'px';
+    hl.style.left   = (r.left - 3) + 'px';
+    hl.style.width  = (r.width + 6) + 'px';
+    hl.style.height = (r.height + 6) + 'px';
+    overlay.appendChild(hl);
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;background:#1E3A5F;color:#fff;padding:10px 14px;border-radius:8px;'
+      +'max-width:260px;font-size:12px;box-shadow:0 4px 24px rgba(0,0,0,.3);pointer-events:all;z-index:9999;';
+    var boxTop = r.bottom + 10;
+    if (boxTop + 100 > window.innerHeight) boxTop = r.top - 120;
+    box.style.top  = Math.max(8, boxTop) + 'px';
+    box.style.left = Math.min(r.left, window.innerWidth - 290) + 'px';
+    box.innerHTML  = '<div style="margin-bottom:8px">'+s.txt+'</div>'
+      +'<div style="display:flex;gap:6px;justify-content:flex-end">'
+      +'<button onclick="fecharTour()" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">✕ Sair</button>'
+      +(n>0?'<button onclick="_tourNav(-1)" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">←</button>':'')
+      +'<button onclick="_tourNav(1)" style="background:#4F9CF9;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">'+(n<steps.length-1?'→':'✓ Fim')+'</button>'
+      +'</div><div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:4px">'+(n+1)+'/'+steps.length+'</div>';
+    overlay.appendChild(box);
+  }
+  window._tourNav = function(d) { idx += d; mostrar(idx); };
+  mostrar(0);
+}
+
+function fecharTour() {
+  var ov = document.getElementById('tour-overlay');
+  if (ov) document.body.removeChild(ov);
+}
+
+// ── Dashboard customizável (item 61) ───────────────────────
+var _KPI_VIS_KEY = 'cdv_kpi_visibilidade';
+
+function toggleKpiConfig() {
+  var m = document.getElementById('kpi-config-menu');
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleKpiVis(id, visivel) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = visivel ? '' : 'none';
+  try {
+    var raw = JSON.parse(localStorage.getItem(_KPI_VIS_KEY) || '{}');
+    raw[id] = visivel;
+    localStorage.setItem(_KPI_VIS_KEY, JSON.stringify(raw));
+  } catch(_){}
+}
+
+function initKpiVis() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(_KPI_VIS_KEY) || '{}');
+    Object.keys(raw).forEach(function(id) {
+      toggleKpiVis(id, raw[id]);
+      var cb = document.getElementById('kpi-vis-'+id.replace('kpi-',''));
+      if (cb) cb.checked = raw[id];
+    });
+  } catch(_){}
+}
+
+document.addEventListener('click', function(e) {
+  var m = document.getElementById('kpi-config-menu');
+  if (m && m.style.display !== 'none' && !m.contains(e.target) && !e.target.closest('[onclick="toggleKpiConfig()"]')) {
+    m.style.display = 'none';
+  }
+});
+
+// ── Modo apresentação (item 72) ────────────────────────────
+var _modoApresentacao = false;
+function toggleApresentacao() {
+  _modoApresentacao = !_modoApresentacao;
+  document.body.classList.toggle('apresentacao', _modoApresentacao);
+  var btn = document.getElementById('btn-apresentacao');
+  if (btn) btn.textContent = _modoApresentacao ? '✕ Sair' : '🖥️';
+  if (_modoApresentacao && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(function(){});
+  } else if (!_modoApresentacao && document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen().catch(function(){});
+  }
+}
+
+// ── Redimensionar colunas por arrastar (item 56) ───────────
+function initResizableCols() {
+  var ths = document.querySelectorAll('#tabela-notas thead th');
+  ths.forEach(function(th) {
+    var handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    th.appendChild(handle);
+    var startX, startW;
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      startX = e.pageX;
+      startW = th.offsetWidth;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    function onMove(e) {
+      th.style.width = Math.max(40, startW + e.pageX - startX) + 'px';
+      th.style.minWidth = th.style.width;
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+  });
+}
+
+// ── Busca fonética ─────────────────────────────────────────
+function _normFonetico(s) {
+  return String(s||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[çÇ]/g,'c')
+    .replace(/[^a-z0-9 ]/g,'');
+}
+
+// ── Filtros salvos ─────────────────────────────────────────
+var _FILTROS_KEY = 'cdv_filtros_salvos';
+
+function initFiltrosSalvos() {
+  _renderFiltrosSalvosSel();
+}
+
+function _coletarEstadoFiltros() {
+  return {
+    status:   document.getElementById('f-status').value,
+    aba:      document.getElementById('f-aba').value,
+    de:       document.getElementById('f-de').value,
+    ate:      document.getElementById('f-ate').value,
+    semFrete: document.getElementById('f-sem-frete').checked,
+    busca:    document.getElementById('f-busca').value
+  };
+}
+
+function salvarFiltroAtual() {
+  var nome = prompt('Nome para este filtro:');
+  if (!nome || !nome.trim()) return;
+  nome = nome.trim();
+  try {
+    var lista = JSON.parse(localStorage.getItem(_FILTROS_KEY) || '[]');
+    lista = lista.filter(function(f){ return f.nome !== nome; });
+    lista.push({ nome: nome, filtros: _coletarEstadoFiltros() });
+    localStorage.setItem(_FILTROS_KEY, JSON.stringify(lista));
+    _renderFiltrosSalvosSel();
+    toast('⭐ Filtro "'+nome+'" salvo.', 'ok');
+  } catch(_){}
+}
+
+function restaurarFiltroSalvo(nome) {
+  if (!nome) return;
+  if (nome.indexOf('__del__') === 0) {
+    var nomeDel = nome.slice(7);
+    try {
+      var lista = JSON.parse(localStorage.getItem(_FILTROS_KEY) || '[]');
+      lista = lista.filter(function(f){ return f.nome !== nomeDel; });
+      localStorage.setItem(_FILTROS_KEY, JSON.stringify(lista));
+      _renderFiltrosSalvosSel();
+      toast('🗑️ Filtro "'+nomeDel+'" removido.', 'ok');
+    } catch(_){}
+    document.getElementById('sel-filtros-salvos').value = '';
+    return;
+  }
+  try {
+    var lista = JSON.parse(localStorage.getItem(_FILTROS_KEY) || '[]');
+    var item = lista.find ? lista.find(function(f){ return f.nome === nome; })
+      : (function(){ for(var i=0;i<lista.length;i++) if(lista[i].nome===nome) return lista[i]; }());
+    if (!item) return;
+    var f = item.filtros;
+    document.getElementById('f-status').value   = f.status   || '';
+    document.getElementById('f-aba').value       = f.aba      || '';
+    document.getElementById('f-de').value        = f.de       || '';
+    document.getElementById('f-ate').value       = f.ate      || '';
+    document.getElementById('f-sem-frete').checked = !!f.semFrete;
+    document.getElementById('f-busca').value     = f.busca    || '';
+    document.getElementById('sel-filtros-salvos').value = '';
+    aplicarFiltros();
+    toast('⭐ Filtro "'+nome+'" aplicado.', 'ok');
+  } catch(_){}
+}
+
+function _renderFiltrosSalvosSel() {
+  var sel = document.getElementById('sel-filtros-salvos');
+  if (!sel) return;
+  while (sel.options.length > 1) sel.remove(1);
+  try {
+    var lista = JSON.parse(localStorage.getItem(_FILTROS_KEY) || '[]');
+    lista.forEach(function(f) {
+      var opt = document.createElement('option'); opt.value = f.nome; opt.textContent = f.nome;
+      sel.appendChild(opt);
+    });
+    if (lista.length) {
+      var sep = document.createElement('option'); sep.disabled = true; sep.textContent = '── ';
+      sel.appendChild(sep);
+      lista.forEach(function(f) {
+        var opt = document.createElement('option'); opt.value = '__del__'+f.nome;
+        opt.textContent = '✕ Remover: '+f.nome; sel.appendChild(opt);
+      });
+    }
+  } catch(_){}
+}
+
+// ── Densidade da tabela ────────────────────────────────────
+var _DENSITY_KEY = 'cdv_density';
+function initDensity() {
+  var d = localStorage.getItem(_DENSITY_KEY) || '';
+  _applyDensity(d);
+}
+function setDensity(val) {
+  _applyDensity(val);
+  try { localStorage.setItem(_DENSITY_KEY, val); } catch(_){}
+}
+function _applyDensity(val) {
+  document.body.classList.remove('density-compact','density-comfortable');
+  if (val === 'compact')     document.body.classList.add('density-compact');
+  if (val === 'comfortable') document.body.classList.add('density-comfortable');
+  var sel = document.getElementById('sel-density');
+  if (sel) sel.value = val;
+}
+
+// ── Atalhos de teclado — painel de ajuda ──────────────────
+function abrirAjudaAtalhos() {
+  document.getElementById('modal-atalhos').style.display = 'flex';
+}
+
+// ── Galeria de fotos por NF ────────────────────────────────
+function abrirGaleria() {
+  if (!_detItem) return;
+  document.getElementById('gal-titulo').textContent = '🖼️ Galeria — NF ' + _detItem.nf + (_detItem.nfd ? ' / NFD ' + _detItem.nfd : '');
+  document.getElementById('gal-loading').style.display = 'block';
+  document.getElementById('gal-empty').style.display = 'none';
+  var grid = document.getElementById('gal-grid');
+  grid.style.display = 'none';
+  grid.innerHTML = '';
+  document.getElementById('modal-galeria').style.display = 'flex';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('gal-loading').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        var fotos = r.fotos || [];
+        if (!fotos.length) { document.getElementById('gal-empty').style.display = 'block'; return; }
+        grid.style.display = 'grid';
+        grid.innerHTML = fotos.map(function(f) {
+          var isImg = f.mime && f.mime.indexOf('image') !== -1;
+          var thumbUrl = f.id ? 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w300' : '';
+          var imgTag = (isImg || f.tipo === 'principal') && thumbUrl
+            ? '<img src="' + thumbUrl + '" style="width:100%;height:120px;object-fit:cover;border-radius:4px 4px 0 0;display:block" onerror="this.style.display=\'none\'">'
+            : '<div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:28px">📄</div>';
+          return '<a href="' + esc(f.url) + '" target="_blank" style="text-decoration:none">'
+            + '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface);cursor:pointer;transition:box-shadow .15s" '
+            +      'onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.15)\'" onmouseout="this.style.boxShadow=\'\'">'
+            + imgTag
+            + '<div style="padding:6px 8px">'
+            + '<div style="font-size:10px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(f.nome) + '">' + esc(f.nome) + '</div>'
+            + '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">' + (f.tipo === 'principal' ? '📌 Anexo NF' : '📷 Avaria') + '</div>'
+            + '</div></div></a>';
+        }).join('');
+      } catch(e) { document.getElementById('gal-empty').textContent = '❌ Erro: ' + e.message; document.getElementById('gal-empty').style.display = 'block'; }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('gal-loading').style.display = 'none';
+      document.getElementById('gal-empty').textContent = '❌ Erro: ' + e.message;
+      document.getElementById('gal-empty').style.display = 'block';
+    })
+    .obterGaleriaFotos({ aba: _detItem.aba, linha: _detItem.linha, nf: _detItem.nf });
+}
+
+// ── Confirmação de recebimento pelo fornecedor ─────────────
+function confirmarRecebFornecedor() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  if (!_detItem) return;
+  var btn = document.getElementById('btn-forn-receb');
+  var msg = document.getElementById('forn-receb-msg');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Confirmando...'; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          if (btn) { btn.textContent = '✅ Recebimento já confirmado'; }
+          if (msg) { msg.textContent = r.ok; msg.style.display = 'block'; msg.style.color = '#059669'; }
+          // Atualiza obs localmente
+          if (_detItem) {
+            var obsEl = document.getElementById('d-obs');
+            if (obsEl && obsEl.value.indexOf('[Receb.Forn:') === -1) {
+              obsEl.value = obsEl.value ? obsEl.value + ' | ' + r.ok.split('\n').pop() : r.ok.split('\n').pop();
+            }
+          }
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+          if (msg) { msg.textContent = '❌ ' + (r.erro || 'Erro.'); msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+        }
+      } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+        if (msg) { msg.textContent = '❌ ' + e.message; msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+      }
+    })
+    .withFailureHandler(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = '🏭 Confirmar Recebimento pelo Fornecedor'; }
+      if (msg) { msg.textContent = '❌ ' + e.message; msg.style.display = 'block'; msg.style.color = '#DC2626'; }
+    })
+    .confirmarRecebimentoFornecedor({ aba: _detItem.aba, linha: _detItem.linha, nf: _detItem.nf });
+}
+
+// ── Toggle filtros ─────────────────────────────────────────
+var _FILTRO_VIS_KEY = 'cdv_filtro_vis';
+var _filtrosVisiveis = true;
+
+function toggleFiltros() {
+  _filtrosVisiveis = !_filtrosVisiveis;
+  var bar = document.getElementById('filter-bar');
+  var btn = document.getElementById('btn-toggle-filtros');
+  var resumo = document.getElementById('filtro-resumo');
+  bar.classList.toggle('minimizado', !_filtrosVisiveis);
+  btn.textContent = _filtrosVisiveis ? '▲ Ocultar filtros' : '▼ Mostrar filtros';
+  try { localStorage.setItem(_FILTRO_VIS_KEY, _filtrosVisiveis ? '1' : '0'); } catch(_){}
+  _atualizarFiltroResumo();
+}
+
+function _atualizarFiltroResumo() {
+  var resumo = document.getElementById('filtro-resumo');
+  if (!resumo) return;
+  if (_filtrosVisiveis) { resumo.textContent = 'Filtros'; return; }
+  var partes = [];
+  var st = document.getElementById('f-status').value;
+  var ab = document.getElementById('f-aba').value;
+  var bk = (document.getElementById('f-busca').value||'').trim();
+  if (st) partes.push(st);
+  if (ab) partes.push(ab);
+  if (bk) partes.push('"'+bk+'"');
+  resumo.textContent = partes.length ? 'Filtros: '+partes.join(' · ') : 'Filtros (nenhum ativo)';
+}
+
+function initFiltroVis() {
+  _filtrosVisiveis = localStorage.getItem(_FILTRO_VIS_KEY) !== '0';
+  if (!_filtrosVisiveis) {
+    document.getElementById('filter-bar').classList.add('minimizado');
+    document.getElementById('btn-toggle-filtros').textContent = '▼ Mostrar filtros';
+  }
+}
+
+// ── Dark mode ──────────────────────────────────────────────
+var _DARK_KEY = 'cdv_dark_mode';
+function initDark() {
+  if (localStorage.getItem(_DARK_KEY) === '1') _applyDark(true);
+}
+function toggleDark() {
+  _applyDark(!document.body.classList.contains('dark'));
+}
+function _applyDark(on) {
+  document.body.classList.toggle('dark', on);
+  var btn = document.getElementById('btn-dark');
+  if (btn) btn.textContent = on ? '☀️' : '🌙';
+  try { localStorage.setItem(_DARK_KEY, on ? '1' : '0'); } catch(_) {}
+}
+
+// ── Priority marker ────────────────────────────────────────
+function initPrio() {
+  try { _prio = JSON.parse(localStorage.getItem('transben_prio') || '{}'); } catch(_){}
+}
+function getPrio(key) { return _prio[key] || 'none'; }
+function prioLabel(p) {
+  return p==='alta' ? '🔴 Alta' : p==='media' ? '🟡 Média' : p==='baixa' ? '🔵 Baixa' : 'Sem prioridade';
+}
+function cicloPrio(e, key) {
+  e.stopPropagation();
+  var niveis = ['none','alta','media','baixa'];
+  var proximo = niveis[(niveis.indexOf(getPrio(key)) + 1) % niveis.length];
+  if (proximo === 'none') delete _prio[key]; else _prio[key] = proximo;
+  try { localStorage.setItem('transben_prio', JSON.stringify(_prio)); } catch(_){}
+  e.target.className = 'prio-dot prio-' + proximo;
+  e.target.title     = prioLabel(proximo);
+}
+
+// ── Column visibility ──────────────────────────────────────
+var _COL_DEFS = [
+  { id:'tipo',   label:'Tipo'         },
+  { id:'data',   label:'Data Entrada' },
+  { id:'valor',  label:'Valor Total'  },
+  { id:'frete',  label:'Frete'        },
+  { id:'icons',  label:'Ícones (📎📧)' },
+];
+var _colsVis = null;
+
+function initCols() {
+  try { _colsVis = JSON.parse(localStorage.getItem('transben_cols') || 'null'); } catch(_){}
+  if (!_colsVis) { _colsVis = {}; _COL_DEFS.forEach(function(c){ _colsVis[c.id] = true; }); }
+  aplicarColsVis();
+  renderColDropdown();
+}
+
+function aplicarColsVis() {
+  var css = '';
+  _COL_DEFS.forEach(function(c){ if (!_colsVis[c.id]) css += '.col-'+c.id+'{display:none!important}'; });
+  document.getElementById('col-style').textContent = css;
+  try { localStorage.setItem('transben_cols', JSON.stringify(_colsVis)); } catch(_){}
+}
+
+function renderColDropdown() {
+  var html = _COL_DEFS.map(function(c){
+    return '<label class="col-item"><input type="checkbox"'
+      +(!!_colsVis[c.id]?' checked':'')
+      +' onchange="toggleCol(\''+c.id+'\',this.checked)">'+c.label+'</label>';
+  }).join('');
+  document.getElementById('col-dropdown').innerHTML = html;
+}
+
+function toggleCol(id, vis) {
+  _colsVis[id] = vis;
+  aplicarColsVis();
+}
+
+function toggleColDropdown(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('col-dropdown');
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(){ document.getElementById('col-dropdown').style.display='none'; });
+
+// ── Read-only mode ─────────────────────────────────────────
+var _modoRO = false;
+
+function aplicarModoRO(ativo) {
+  _modoRO = ativo;
+  if (!ativo) return;
+  var banner = document.createElement('div');
+  banner.id = 'ro-banner';
+  banner.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;'
+    +'padding:8px 14px;margin-bottom:8px;font-size:12px;color:#92400E;display:flex;'
+    +'align-items:center;gap:8px;flex-shrink:0';
+  banner.innerHTML = '<span>🔒</span><span><strong>Modo somente-leitura ativo.</strong> Todas as ações de escrita estão bloqueadas.</span>';
+  var barBulk = document.getElementById('bulk-bar');
+  if (barBulk) barBulk.parentNode.insertBefore(banner, barBulk);
+  document.querySelectorAll('#bulk-bar button:not([onclick="limparSelecao()"])').forEach(function(b){
+    b.disabled = true; b.title = 'Bloqueado: modo somente-leitura'; b.style.opacity = '.45';
+  });
+  var _ctxExcl = document.getElementById('ctx-excluir-btn');
+  if (_ctxExcl) { _ctxExcl.disabled = true; _ctxExcl.style.opacity = '.45'; }
+  document.querySelectorAll('[onclick="salvarEdicao()"], #btn-forn-receb').forEach(function(b){
+    b.disabled = true; b.title = 'Bloqueado: modo somente-leitura';
+  });
+}
+
+// ── Permissões por módulo: trava botões da multiseleção ────
+var _permModulos = null; // null = ainda não carregado; {admin, modulos:[]}
+
+function _temModulo(m) {
+  if (!_permModulos) return true; // antes de carregar não bloqueia (servidor valida de novo)
+  return _permModulos.admin || _permModulos.modulos.indexOf(m) !== -1;
+}
+
+function aplicarPermissoesModulos(p) {
+  _permModulos = p;
+  if (p.admin) return;
+  var lock = function(sel, motivo) {
+    document.querySelectorAll(sel).forEach(function(b) {
+      b.disabled = true; b.style.opacity = '.45'; b.style.cursor = 'not-allowed'; b.title = motivo;
+    });
+  };
+  if (p.modulos.indexOf('frete') === -1) {
+    lock('#bulk-bar button[onclick="abrirFreteModal()"], #ctx-menu button[onclick="ctxFrete()"]',
+      'Bloqueado: seu cargo não tem o módulo Frete');
+  }
+  if (p.modulos.indexOf('email') === -1) {
+    lock('#bulk-bar button[onclick="abrirEmailBulk()"], #ctx-menu button[onclick="ctxEmail()"]',
+      'Bloqueado: seu cargo não tem o módulo E-mail');
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────
+initDark();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+initDensity();
+initFiltrosSalvos();
+initFiltroVis();
+initPrio();
+initCols();
+initKpiVis();
+// Restaura filtro de aba se voltou de Transferências
+(function(){
+  try {
+    var abaRetorno = localStorage.getItem('cdv_retorno_aba');
+    if (abaRetorno) {
+      localStorage.removeItem('cdv_retorno_aba');
+      document.getElementById('f-aba').value = abaRetorno;
+    }
+  } catch(_){}
+})();
+carregar();
+setTimeout(initResizableCols, 1200);
+try { google.script.run.registrarAcesso('Notas'); } catch(_){}
+
+// ── Context menu (double-click na linha) ──────────────────────
+var _ctxIdx = null;
+var _exclItem = null;
+
+function abrirCtxMenu(ev, idx) {
+  _ctxIdx = idx;
+  var item = _filtrados[idx];
+  if (!item) return;
+  var menu = document.getElementById('ctx-menu');
+
+  // Header rico: NF + fornecedor/descrição + pill de status + valor
+  document.getElementById('ctx-nf-label').innerHTML =
+    '<div class="cnf">' + esc(item.nf || '—') + (item.nfd && item.nfd !== item.nf ? ' · ' + esc(item.nfd) : '') + '</div>' +
+    '<div class="cfo">' + esc(item.forn || item.aba || '') + (item.desc ? ' — ' + esc(String(item.desc).substring(0, 42)) : '') + '</div>' +
+    '<div class="clin"><span class="cst">' + esc(item.status || '—') + '</span>' +
+    '<span class="cvl">R$ ' + (parseFloat(item.vlTot || item.valor || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2}) + '</span></div>';
+
+  // Ações sensíveis ao status
+  var st = item.status || '';
+  var mostrar = function(id, sim) { var b = document.getElementById(id); if (b) b.style.display = sim ? 'flex' : 'none'; };
+  var pendente = (st === 'Pendente');
+  mostrar('ctx-email-btn',   pendente);
+  mostrar('ctx-frete-btn',   pendente);
+  mostrar('ctx-transf-btn',  st === 'Em Transferência');
+  mostrar('ctx-reabrir-btn', st === 'Devolvido' || st === 'Venda');
+  document.getElementById('ctx-perigo-wrap').style.display = pendente ? 'block' : 'none';
+  var exclBtn = document.getElementById('ctx-excluir-btn');
+  exclBtn.disabled = !pendente;
+
+  menu.style.display = 'block';
+  var x = ev.clientX + 4, y = ev.clientY + 4;
+  if (x + 260 > window.innerWidth)  x = window.innerWidth  - 265;
+  var mh = menu.offsetHeight || 240;
+  if (y + mh + 10 > window.innerHeight) y = window.innerHeight - mh - 12;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  setTimeout(function() {
+    document.addEventListener('click', fecharCtxMenu, { once: true });
+    document.addEventListener('keydown', function _esc(e){ if(e.key==='Escape'){ fecharCtxMenu(); document.removeEventListener('keydown',_esc); } });
+  }, 0);
+}
+
+// [Redesign] Ações novas do menu por status
+function ctxIrTransferencias() {
+  fecharCtxMenu();
+  google.script.run
+    .withFailureHandler(function(e){ toast('❌ ' + e.message, 'err'); })
+    .abrirFormTransferencias();
+}
+
+function ctxReabrir() {
+  var idx = _ctxIdx; fecharCtxMenu();
+  if (idx == null) return;
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  var item = _filtrados[idx];
+  try { localStorage.setItem('cdv_reabrir_prefill', item.nf || item.nfd || ''); } catch(_) {}
+  google.script.run
+    .withFailureHandler(function(e){ toast('❌ ' + e.message, 'err'); })
+    .desfazerConclusao();
+}
+
+function fecharCtxMenu() {
+  document.getElementById('ctx-menu').style.display = 'none';
+  _ctxIdx = null;
+}
+
+function ctxVerDetalhes() {
+  var idx = _ctxIdx; fecharCtxMenu();
+  if (idx != null) abrirDetalhe(idx);
+}
+
+function ctxAbrirExcluir() {
+  var idx = _ctxIdx; fecharCtxMenu();
+  if (idx == null) return;
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  var item = _filtrados[idx];
+  if (item.status !== 'Pendente') { toast('⚠️ Só é possível excluir NFs com status Pendente.', 'info'); return; }
+  _exclItem = item;
+  document.getElementById('excl-nf-info').innerHTML =
+    '<strong>NF:</strong> ' + esc(item.nf) + (item.nfd ? ' · <strong>NFD:</strong> ' + esc(item.nfd) : '') +
+    '<br><strong>Fornecedor:</strong> ' + esc(item.forn || '—') +
+    '<br><strong>Status:</strong> ' + esc(item.status) +
+    '<br><strong>Descrição:</strong> ' + esc(item.desc || '—');
+  document.getElementById('excl-motivo').value = '';
+  var msgEl = document.getElementById('excl-msg');
+  msgEl.style.display = 'none'; msgEl.textContent = '';
+  var btn = document.getElementById('excl-confirmar-btn');
+  btn.disabled = false; btn.textContent = '🗑️ Confirmar Exclusão';
+  document.getElementById('modal-excluir').style.display = 'flex';
+}
+
+function ctxEmail() {
+  var idx = _ctxIdx; fecharCtxMenu();
+  if (idx == null) return;
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  if (!_temModulo('email')) { toast('🔒 Seu cargo não tem o módulo E-mail.', 'info'); return; }
+  var item = _filtrados[idx];
+  try { localStorage.setItem('cdv_email_nfds', item.nfd || item.nf); } catch(_) {}
+  if (typeof cdvLoad === 'function') { cdvLoad('Email'); return; }
+  google.script.run
+    .withFailureHandler(function(e){ toast('❌ Erro ao abrir e-mail: ' + e.message, 'err'); })
+    .abrirEmailDevolucao();
+}
+
+function ctxFrete() {
+  var idx = _ctxIdx; fecharCtxMenu();
+  if (idx == null) return;
+  _sel = _filtrados.map(function(_,i){ return i === idx; });
+  atualizarBulkBar();
+  abrirFreteModal();
+}
+
+function executarExclusao() {
+  if (!_exclItem) return;
+  var motivo = document.getElementById('excl-motivo').value.trim();
+  var msgEl  = document.getElementById('excl-msg');
+  if (_modoRO) {
+    msgEl.textContent = '🔒 Modo somente-leitura ativo. Ação bloqueada.';
+    msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+    return;
+  }
+  if (!motivo) {
+    msgEl.textContent = '❌ Informe o motivo da exclusão.';
+    msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+    return;
+  }
+  var btn = document.getElementById('excl-confirmar-btn');
+  btn.disabled = true; btn.textContent = '⏳ Excluindo...';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      btn.disabled = false; btn.textContent = '🗑️ Confirmar Exclusão';
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) {
+          fecharModal('modal-excluir');
+          toast(r.ok, 'ok');
+          _exclItem = null;
+          carregar();
+        } else {
+          msgEl.textContent = '❌ ' + (r.erro || 'Erro ao excluir.');
+          msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+        }
+      } catch(e) {
+        msgEl.textContent = '❌ ' + e.message;
+        msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = '🗑️ Confirmar Exclusão';
+      msgEl.textContent = '❌ ' + e.message;
+      msgEl.style.cssText = 'display:block;color:var(--red);font-size:12px;margin-top:8px';
+    })
+    .excluirLancamento({ item: _exclItem, motivo: motivo });
+}
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('notas') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) aplicarModoRO(true);
+        aplicarPermissoesModulos(p);
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_){}
+</script>
+
+<!-- ═══════════ CONTEXT MENU ═══════════ -->
+<div id="ctx-menu">
+  <div id="ctx-nf-label"></div>
+  <div class="ctx-grp">Consultar</div>
+  <button class="ctx-item" onclick="ctxVerDetalhes()"><span>📋</span>Ver / editar detalhes</button>
+  <div class="ctx-grp" id="ctx-grp-operar">Operar</div>
+  <button class="ctx-item" id="ctx-email-btn" onclick="ctxEmail()"><span>📧</span>Enviar e-mail de devolução</button>
+  <button class="ctx-item" id="ctx-frete-btn" onclick="ctxFrete()"><span>🚚</span>Programar frete</button>
+  <button class="ctx-item" id="ctx-transf-btn" onclick="ctxIrTransferencias()"><span>⇄</span>Ir para Transferências</button>
+  <button class="ctx-item" id="ctx-reabrir-btn" onclick="ctxReabrir()"><span>🔓</span>Reabrir NF</button>
+  <div class="ctx-perigo" id="ctx-perigo-wrap">
+    <button class="ctx-item" id="ctx-excluir-btn" onclick="ctxAbrirExcluir()"><span>🗑️</span>Excluir NF</button>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL EXCLUIR NF ═══════════ -->
+<div class="overlay" id="modal-excluir" onclick="if(event.target===this)fecharModal('modal-excluir')" style="display:none">
+  <div class="modal-box" style="width:440px;max-width:96vw">
+    <div class="modal-hdr">
+      <h3>🗑️ Excluir NF</h3>
+      <button class="modal-close" onclick="fecharModal('modal-excluir')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#FEF2F2;border-left:4px solid #DC2626;padding:9px 12px;border-radius:0 5px 5px 0;font-size:12px;color:#374151;margin-bottom:12px;line-height:1.6">
+        ⚠️ <strong>Atenção:</strong> Só é possível excluir NFs com status <strong>Pendente</strong>. A ação é registrada no histórico.
+      </div>
+      <div id="excl-nf-info" style="background:var(--navy-50);padding:9px 12px;border-radius:var(--r-sm);font-size:12px;margin-bottom:12px;line-height:1.7"></div>
+      <label style="font-size:12px;font-weight:700;color:var(--text-body);display:block;margin-bottom:4px">Motivo da exclusão <span style="color:var(--red)">*</span></label>
+      <textarea id="excl-motivo" rows="3"
+        style="width:100%;padding:8px 10px;border:1.5px solid var(--border-def);border-radius:var(--r-sm);font-size:13px;font-family:var(--font);background:var(--input-bg);color:var(--text);resize:vertical"
+        placeholder="Ex: Lançamento duplicado, erro de digitação..."></textarea>
+      <div id="excl-msg" style="display:none;font-size:12px;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-gray" onclick="fecharModal('modal-excluir')">✖ Cancelar</button>
+      <button class="btn-sm btn-danger" id="excl-confirmar-btn" onclick="executarExclusao()">🗑️ Confirmar Exclusão</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

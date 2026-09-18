@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px}
+    .mono{font-family:var(--mono)}
+    /* busca dentro do hero */
+    .hero-busca{display:flex;gap:9px;margin-top:14px;position:relative;z-index:1}
+    .hero-busca .inp{position:relative;flex:1}
+    .hero-busca .inp .lupa{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#8FA6C8;font-size:14px;pointer-events:none}
+    .hero-busca input{
+      width:100%;padding:11px 14px 11px 36px;border-radius:11px;border:1.5px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.10);color:#fff;font-size:13.5px;font-family:var(--font);
+      transition:background .2s,border-color .2s
+    }
+    .hero-busca input::placeholder{color:#7E93B8}
+    .hero-busca input:focus{outline:none;background:rgba(255,255,255,.16);border-color:rgba(147,197,253,.55)}
+    .hero-busca button{
+      padding:11px 22px;border:none;border-radius:11px;font-family:var(--font);
+      font-size:13px;font-weight:800;cursor:pointer;background:var(--rd-grad-btn);color:#fff;
+      box-shadow:0 3px 12px rgba(37,99,235,.4);transition:transform .15s,box-shadow .18s
+    }
+    .hero-busca button:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.5)}
+    .hero-busca button:disabled{opacity:.5;cursor:not-allowed}
+    /* .sk vem de Styles.html (§6.12) */
+    /* tabela — §6.4 */
+    .twrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-1)}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-table)}
+    thead tr{background:var(--surface-2)}
+    thead th{color:var(--text-faint);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--accent-border)}
+    tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-body);vertical-align:middle}
+    tbody tr{transition:background .12s;animation:rowIn .25s var(--ease-entrance) both}
+    tbody tr:hover{background:var(--accent-bg)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.nav{cursor:pointer}
+    .origem-tag{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint)}
+    .val{text-align:right;font-family:var(--mono);font-weight:700}
+  </style>
+</head>
+<body data-area="analise">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO com busca -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-search"/></svg> Busca Global</h1>
+      <div class="rd-sub">Pesquisa em lançamentos ativos, transferências e histórico arquivado</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+  <div class="hero-busca">
+    <div class="inp">
+      <span class="lupa"><svg class="ic ic-sm"><use href="#i-search"/></svg></span>
+      <input type="text" id="termo" placeholder="Digite NF, fornecedor ou descrição…"
+             onkeydown="if(event.key==='Enter')buscar()">
+    </div>
+    <button id="btnBuscar" onclick="buscar()">Buscar</button>
+  </div>
+</div>
+
+<!-- skeleton -->
+<div id="skel" style="display:none">
+  <div class="sk" style="height:44px;margin-bottom:8px"></div>
+  <div class="sk" style="height:44px;margin-bottom:8px"></div>
+  <div class="sk" style="height:44px"></div>
+</div>
+
+<!-- vazio inicial -->
+<div class="rd-vazio" id="vazio">
+  <div class="ico"><svg class="ic" style="width:34px;height:34px"><use href="#i-search"/></svg></div>
+  <div class="t">Comece digitando um termo</div>
+  <div class="s">Busque por número de NF, nome do fornecedor ou descrição do produto.<br>Resultados ativos são clicáveis e navegam até a linha na planilha.</div>
+</div>
+
+<!-- resultados -->
+<div id="area" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px">
+    <span style="font-size:12px;font-weight:700;color:var(--text-muted)" id="contador"></span>
+    <span style="font-size:10.5px;color:var(--text-faint)">Clique em itens ativos para ir até a linha na planilha</span>
+  </div>
+  <div class="twrap">
+    <table id="tabela">
+      <thead><tr>
+        <th style="width:90px">Origem</th><th>NF</th><th>Fornecedor</th><th>Descrição</th>
+        <th>Status</th><th>Data</th><th style="text-align:right">Valor</th><th>Arquivado em</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var pills = {
+  'Pendente':          '<span class="rd-pill azul">Pendente</span>',
+  'Devolvido':         '<span class="rd-pill verde">Devolvido</span>',
+  'Venda':             '<span class="rd-pill ambar">Venda</span>',
+  'Em Transferência':  '<span class="rd-pill teal">Em Transferência</span>',
+  'Concluída':         '<span class="rd-pill verde">Concluída</span>',
+  'Cancelada':         '<span class="rd-pill cinza">Cancelada</span>'
+};
+
+function buscar() {
+  var termo = document.getElementById('termo').value.trim();
+  if (!termo) { showToast('Digite um termo para buscar.', 'err'); return; }
+
+  document.getElementById('vazio').style.display = 'none';
+  document.getElementById('area').style.display = 'none';
+  document.getElementById('skel').style.display = 'block';
+  document.getElementById('tbody').innerHTML = '';
+  document.getElementById('btnBuscar').disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('skel').style.display = 'none';
+      document.getElementById('btnBuscar').disabled = false;
+      var r = JSON.parse(resp);
+      if (r.erro) { showToast(r.erro, 'err'); document.getElementById('vazio').style.display = 'block'; return; }
+      render(r.resultados);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('skel').style.display = 'none';
+      document.getElementById('btnBuscar').disabled = false;
+      showToast(e.message, 'err');
+      document.getElementById('vazio').style.display = 'block';
+    })
+    .executarBusca(termo);
+}
+
+function render(lista) {
+  var tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  if (!lista || !lista.length) {
+    document.getElementById('area').style.display = 'none';
+    var v = document.getElementById('vazio');
+    v.style.display = 'block';
+    v.querySelector('.t').textContent = 'Nenhum resultado encontrado';
+    v.querySelector('.s').innerHTML = 'Tente outro termo — NF, fornecedor ou parte da descrição.';
+    return;
+  }
+
+  lista.forEach(function(it, idx) {
+    var tr = document.createElement('tr');
+    var isNav = it.origem === 'ativo' || it.origem === 'transferencia';
+    if (isNav) tr.className = 'nav';
+    if (idx < 14) tr.style.animationDelay = (idx * 24) + 'ms';
+
+    var origem = it.origem === 'ativo' ? 'Ativo'
+               : it.origem === 'transferencia' ? 'Transf.' : 'Histórico';
+
+    tr.innerHTML =
+      '<td><span class="origem-tag">' + origem + '</span></td>' +
+      '<td class="mono" style="font-weight:700;color:var(--text)">' + esc(it.nf || it.nfd) + '</td>' +
+      '<td>' + esc(it.forn) + '</td>' +
+      '<td>' + esc(it.desc) + '</td>' +
+      '<td>' + (pills[it.status] || '<span class="rd-pill cinza">' + esc(it.status) + '</span>') + '</td>' +
+      '<td class="mono" style="white-space:nowrap">' + esc(it.data) + '</td>' +
+      '<td class="val">' + fmtVal(it.valor) + '</td>' +
+      '<td class="mono" style="white-space:nowrap;color:var(--text-faint);font-size:10px">' + esc(it.dataArq) + '</td>';
+
+    if (isNav) {
+      (function(aba, linha) {
+        tr.onclick = function() { google.script.run.navegarParaLinha(aba, linha); };
+      })(it.aba, it.linha);
+    }
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('area').style.display = 'block';
+  document.getElementById('contador').textContent =
+    lista.length + ' resultado(s) — ativos e histórico';
+}
+
+function fmtVal(v) {
+  return v > 0 ? 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+}
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('termo').focus();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.cdvAutoSearch) return;
+  var inp = document.getElementById('termo');
+  if (!inp) return;
+  inp.value = String(e.data.cdvAutoSearch);
+  buscar();
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && (!p.modulos || p.modulos.length === 0)) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<meta charset="utf-8">
+<title>Conferência de Separação</title>
+<style>
+  /* Conferência — adota o design system (Styles.html injetado). Responsivo desktop + handheld. */
+  *{box-sizing:border-box}
+  body{margin:0;padding:16px;background:var(--bg);color:var(--text-body);font-family:var(--font);font-size:var(--fs-body)}
+  .cf-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow-1)}
+  .cf-header h1{margin:0 0 4px;font-size:var(--fs-h2);font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+  .cf-header .sub{font-size:var(--fs-helper);color:var(--text-muted);display:flex;gap:14px;flex-wrap:wrap}
+  .cf-scan{display:flex;gap:8px;margin-bottom:12px}
+  #scan-input{flex:1;font-size:16px;min-height:var(--control-h);padding:0 14px;border-radius:var(--r-sm);border:1.5px solid var(--border-strong);background:var(--surface-sunk);color:var(--text);transition:border-color var(--dur-2),box-shadow var(--dur-2)}
+  #scan-input:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus-ring);background:var(--surface)}
+  .btn-cam{display:inline-flex;align-items:center;justify-content:center;min-width:var(--control-h);min-height:var(--control-h);padding:0 12px;background:var(--surface);color:var(--text-body);border:1.5px solid var(--border-strong);border-radius:var(--r-sm);cursor:pointer;transition:background var(--dur-2),border-color var(--dur-2)}
+  .btn-cam:hover{background:var(--surface-2);border-color:var(--accent-border)}
+  .btn-cam.processando{background:var(--grad-accent);color:#fff;border-color:transparent}
+  #cam-reader{display:none}
+  .cf-lista{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);min-height:120px;margin-bottom:12px;box-shadow:var(--shadow-1);overflow:hidden}
+  .item-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--border);font-size:var(--fs-table)}
+  .item-row:first-child{border-top:none}
+  .item-nome{color:var(--text-body)}
+  .item-qtd{font-family:var(--mono);font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+  .cf-empty{padding:32px 20px;text-align:center;color:var(--text-muted);font-size:var(--fs-helper)}
+  .cf-rodape{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;box-shadow:var(--shadow-3)}
+  .cf-rodape .totais{font-size:var(--fs-table);color:var(--text-body)}
+  .cf-rodape .totais strong{font-family:var(--mono);color:var(--text)}
+  .cf-acoes{display:flex;gap:8px}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(10,16,26,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);align-items:center;justify-content:center;z-index:50}
+  .modal-box{background:var(--surface);border-radius:var(--r-lg);padding:20px;width:min(340px,92vw);box-shadow:var(--shadow-4)}
+  .modal-box h3{margin:0 0 10px;font-size:var(--fs-h3);font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px}
+  .modal-box .cod{font-family:var(--mono);font-size:var(--fs-helper);color:var(--text-muted);margin-bottom:10px}
+  #modal-cadastro input{width:100%;padding:11px 13px;border-radius:var(--r-sm);border:1.5px solid var(--border-strong);background:var(--surface-sunk);color:var(--text);font-size:var(--fs-body);margin-bottom:12px}
+  #modal-cadastro input:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus-ring)}
+  .modal-box .mb-acoes{display:flex;gap:8px;justify-content:flex-end}
+  @media(max-width:640px){
+    body{padding:10px}
+    #scan-input{min-height:var(--control-h-lg);font-size:17px}
+    .btn-cam{min-width:48px;min-height:48px}
+    .item-row{padding:14px 16px;font-size:15px}
+    .cf-acoes{flex-direction:column;width:100%}
+    .cf-acoes .btn{width:100%;min-height:44px}
+    .cf-rodape{flex-direction:column;align-items:stretch}
+  }
+</style>
+<script>try{document.body.dataset.area='movimento';}catch(_){}</script>
+
+<div class="cf-header">
+  <h1 tabindex="-1"><svg class="ic"><use href="#i-scan-line"/></svg> Conferência de Separação</h1>
+  <div class="sub">
+    <span id="lote-forn">—</span>
+    <span id="lote-transp">—</span>
+    <span id="lote-nfs">—</span>
+  </div>
+</div>
+
+<div class="cf-scan">
+  <input type="text" id="scan-input" placeholder="Bipe o código de barras/QR..." autocomplete="off" disabled>
+  <button class="btn-cam" id="btn-cam" onclick="document.getElementById('cam-file').click()" title="Fotografar código" aria-label="Fotografar código"><svg class="ic"><use href="#i-camera"/></svg></button>
+  <input type="file" id="cam-file" accept="image/*" capture="environment" style="display:none">
+</div>
+
+<div id="cam-reader"></div>
+
+<div class="cf-lista" id="lista">
+  <div class="cf-empty">Carregando lote…</div>
+</div>
+
+<div class="cf-rodape">
+  <div class="totais">
+    Bipado: <strong id="total-bipado">0</strong> / Esperado: <strong id="total-esperado">0</strong>
+    <span class="rd-pill cinza" id="total-dif" style="margin-left:10px">—</span>
+  </div>
+  <div class="cf-acoes">
+    <button class="btn btn-sec" onclick="desfazerUltima()"><svg class="ic ic-sm"><use href="#i-rotate-ccw"/></svg> Desfazer última</button>
+    <button class="btn btn-succ" id="btn-concluir" onclick="concluir()" disabled><svg class="ic ic-sm"><use href="#i-check"/></svg> Concluir Conferência</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-cadastro">
+  <div class="modal-box">
+    <h3><svg class="ic ic-sm"><use href="#i-plus-circle"/></svg> Produto não cadastrado</h3>
+    <div class="cod">Código: <span id="cad-codigo"></span></div>
+    <input type="text" id="cad-nome" placeholder="Nome do produto (ex: Fritadeira 11L 127V)">
+    <div class="mb-acoes">
+      <button class="btn btn-sec" onclick="fecharCadastro()">Cancelar</button>
+      <button class="btn btn-succ" onclick="confirmarCadastro()">Cadastrar e bipar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg, tipo) { showToast(msg, tipo || 'ok'); }
+
+var _loteId = null;
+var _totais = [];
+var _totalBipado = 0;
+var _totalEsperado = 0;
+var _codigoPendente = null;
+
+document.getElementById('cam-file').addEventListener('change', function() {
+  var file = this.files && this.files[0];
+  this.value = '';
+  if (!file) return;
+  if (typeof Html5Qrcode === 'undefined') { toast('Falha ao carregar biblioteca de câmera.', 'err'); return; }
+  var btn = document.getElementById('btn-cam');
+  btn.classList.add('processando');
+  var qr = new Html5Qrcode('cam-reader');
+  qr.scanFile(file, false).then(function(codigo) {
+    bipar(codigo);
+  }).catch(function() {
+    toast('Nenhum código encontrado na foto. Tente novamente.', 'warn');
+  }).finally(function() {
+    btn.classList.remove('processando');
+    qr.clear();
+  });
+});
+
+function renderLista() {
+  var el = document.getElementById('lista');
+  if (!_totais.length) { el.innerHTML = '<div class="cf-empty">Nenhum item bipado ainda.</div>'; return; }
+  var html = '';
+  for (var i = 0; i < _totais.length; i++) {
+    html += '<div class="item-row"><span class="item-nome">' + esc(_totais[i].produto) + '</span>'
+          + '<span class="item-qtd">' + _totais[i].qtd + '</span></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderRodape() {
+  document.getElementById('total-bipado').textContent = _totalBipado;
+  document.getElementById('total-esperado').textContent = _totalEsperado;
+  var dif = _totalBipado - _totalEsperado;
+  var difEl = document.getElementById('total-dif');
+  var btnConcluir = document.getElementById('btn-concluir');
+  if (dif === 0) {
+    difEl.textContent = 'Completo'; difEl.className = 'rd-pill verde'; btnConcluir.disabled = false;
+  } else if (dif > 0) {
+    difEl.textContent = 'Sobra: ' + dif; difEl.className = 'rd-pill verm'; btnConcluir.disabled = true;
+  } else {
+    difEl.textContent = 'Falta: ' + Math.abs(dif); difEl.className = 'rd-pill verm'; btnConcluir.disabled = true;
+  }
+}
+
+function carregarLote() {
+  if (!_loteId) return;
+  callServer('obterNFsDoLote', [{ loteId: _loteId }], function(resp) {
+    var d = JSON.parse(resp);
+    if (d.erro) { toast(d.erro, 'err'); return; }
+    _totalEsperado = d.totalEsperado;
+    document.getElementById('lote-forn').textContent = '🏭 ' + (d.forn || '—');
+    document.getElementById('lote-transp').textContent = '🚚 ' + (d.transportadora || '—');
+    document.getElementById('lote-nfs').textContent = '📄 ' + d.nfs.length + ' NF(s)';
+    carregarBipagens();
+  }, function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
+function carregarBipagens() {
+  callServer('obterBipagensDoLote', [{ loteId: _loteId }], function(resp) {
+    var d = JSON.parse(resp);
+    if (d.erro) { toast(d.erro, 'err'); return; }
+    _totais = d.totais;
+    _totalBipado = d.totalBipado;
+    renderLista();
+    renderRodape();
+    var inp = document.getElementById('scan-input');
+    inp.disabled = false;
+    inp.focus();
+  }, function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
+function bipar(codigo) {
+  callServer('bipar', [{ loteId: _loteId, codigo: codigo }], function(resp) {
+    var d = JSON.parse(resp);
+    var inp = document.getElementById('scan-input');
+    if (d.erro) { toast(d.erro, 'err'); inp.focus(); return; }
+    if (d.precisaCadastro) { abrirCadastro(d.codigo); return; }
+    _totais = d.totais.totais;
+    _totalBipado = d.totais.totalBipado;
+    var qtdAtual = 0;
+    for (var i = 0; i < _totais.length; i++) {
+      if (_totais[i].produto === d.produto) { qtdAtual = _totais[i].qtd; break; }
+    }
+    toast(d.produto + ' — ' + qtdAtual + ' bipado(s)', 'ok');
+    renderLista();
+    renderRodape();
+    inp.focus();
+  }, function(e) { toast('Erro: ' + e.message, 'err'); document.getElementById('scan-input').focus(); });
+}
+
+var _prevFocus = null;
+function abrirCadastro(codigo) {
+  _codigoPendente = codigo;
+  _prevFocus = document.activeElement;
+  document.getElementById('cad-codigo').textContent = codigo;
+  document.getElementById('cad-nome').value = '';
+  document.getElementById('modal-cadastro').style.display = 'flex';
+  setTimeout(function() { document.getElementById('cad-nome').focus(); }, 50);
+}
+/* focus trap do modal de cadastro */
+document.getElementById('modal-cadastro').addEventListener('keydown', function(e) {
+  if (e.key !== 'Tab') return;
+  var f = this.querySelectorAll('input, button');
+  if (!f.length) return;
+  var first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
+
+function fecharCadastro() {
+  document.getElementById('modal-cadastro').style.display = 'none';
+  _codigoPendente = null;
+  (_prevFocus && document.contains(_prevFocus) ? _prevFocus : document.getElementById('scan-input')).focus();
+  _prevFocus = null;
+}
+
+function confirmarCadastro() {
+  var nome = document.getElementById('cad-nome').value.trim();
+  if (!nome) { toast('Informe o nome do produto.', 'warn'); return; }
+  var codigo = _codigoPendente;
+  callServer('cadastrarProdutoEBipar', [{ loteId: _loteId, codigo: codigo, nome: nome }], function(resp) {
+    var d = JSON.parse(resp);
+    fecharCadastro();
+    if (d.erro) { toast(d.erro, 'err'); return; }
+    _totais = d.totais.totais;
+    _totalBipado = d.totais.totalBipado;
+    toast(d.produto + ' cadastrado e bipado', 'ok');
+    renderLista();
+    renderRodape();
+  }, function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
+function desfazerUltima() {
+  callServer('desfazerUltimaBipagem', [{ loteId: _loteId }], function(resp) {
+    var d = JSON.parse(resp);
+    if (d.erro) { toast(d.erro, 'err'); return; }
+    _totais = d.totais.totais;
+    _totalBipado = d.totais.totalBipado;
+    toast('Última bipagem desfeita', 'info');
+    renderLista();
+    renderRodape();
+    document.getElementById('scan-input').focus();
+  }, function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
+function concluir() {
+  callServer('concluirConferencia', [{ loteId: _loteId }], function(resp) {
+    var d = JSON.parse(resp);
+    if (d.erro) { toast(d.erro, 'err'); return; }
+    toast('Conferência concluída', 'ok');
+    document.getElementById('btn-concluir').disabled = true;
+  }, function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
+document.getElementById('scan-input').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  var codigo = this.value.trim();
+  this.value = '';
+  if (!codigo) return;
+  bipar(codigo);
+});
+
+document.getElementById('cad-nome').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); confirmarCadastro(); }
+  if (e.key === 'Escape') { e.preventDefault(); fecharCadastro(); }
+});
+
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.cdvAutoLote) return;
+  _loteId = String(e.data.cdvAutoLote);
+  carregarLote();
+});
+
+</script>

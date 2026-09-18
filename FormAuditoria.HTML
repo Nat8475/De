@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px;overflow-x:hidden}
+
+    /* Nav lateral (rd-shell/rd-nav/rd-nav-item) e cards numerados (rd-card/rd-card-head/
+       rd-num/rd-card-body) vêm do design system v12 (Styles.html, injetado pelo servidor). */
+
+    .screen{display:none}
+    .screen.ativo{display:block;animation:enterScreen .22s cubic-bezier(.4,0,.2,1) both}
+    .screen.saindo{display:block;animation:exitScreen .15s cubic-bezier(.4,0,.2,1) both}
+    @keyframes enterScreen{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes exitScreen{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-6px)}}
+
+    .barra{display:flex;gap:9px;margin-bottom:0;flex-wrap:wrap}
+    .campo{margin-bottom:0}
+    .campo label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    /* input/select/date (borda, foco, tamanho) vêm de Styles.html §6.2 */
+    input[type=text]{flex:1;width:100%}
+
+    .nf-header{background:var(--navy-50);border:1px solid #C7D2FE;border-radius:var(--r-sm);
+               padding:8px 12px;margin-bottom:8px;font-size:12px}
+    .nf-header strong{font-size:13px;color:var(--navy)}
+    body.dark .nf-header{border-color:#1E3A8A}
+
+    .scroll,.tabela-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);
+            border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-1)}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-eyebrow)}
+    /* header claro vem de Styles.html §6.4 (thead th); aqui só o sticky (dado o scroll interno) */
+    thead th{position:sticky;top:0;z-index:1}
+    tbody td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;
+             word-break:break-word;color:var(--text-body);font-size:var(--fs-eyebrow)}
+    tbody tr:hover td{background:var(--accent-bg)}
+    .acao-badge{display:inline-block;background:var(--navy-50);color:var(--navy);
+                border-radius:3px;padding:1px 5px;font-size:10px;font-weight:700}
+    .vazio{text-align:center;color:var(--text-muted);padding:20px;font-style:italic}
+
+    .contador{font-size:11px;color:var(--text-muted);margin-bottom:5px}
+    .val{text-align:right;font-family:var(--mono);white-space:nowrap}
+    .nfds{color:var(--text-muted);font-size:10px;max-width:160px;word-break:break-all}
+    .btn-ver{background:var(--navy-50);border:1px solid #BFDBFE;color:var(--navy);border-radius:4px;
+             padding:2px 7px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font)}
+    body.dark .btn-ver{border-color:#1E3A8A}
+
+    .filtros-log{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end}
+
+    .msg{margin-top:8px;padding:9px 12px;border-radius:var(--r-sm);font-size:12px;display:none;
+         line-height:1.55;border:1px solid}
+    .msg-ok  {background:var(--green-bg);color:#166534;border-color:#BBF7D0}
+    .msg-erro{background:var(--red-bg);color:var(--red);border-color:#FECACA}
+    body.dark .msg-ok{color:#4ADE80;border-color:#14532D}
+    body.dark .msg-erro{color:#FCA5A5;border-color:#7F1D1D}
+
+    .spinner{display:none;color:var(--text-muted);font-size:12px;margin-top:10px;padding:4px 0}
+    .spin-ring{display:inline-block;width:15px;height:15px;border-radius:50%;
+      border:2px solid var(--border-def);border-top-color:var(--navy);
+      animation:spinRing .7s linear infinite;vertical-align:middle;margin-right:7px}
+    @keyframes spinRing{to{transform:rotate(360deg)}}
+
+    .botoes-baixo{display:flex;gap:8px;margin-top:10px}
+
+    /* Modal corpo do e-mail (padrão redesign: overlay + modal-email) */
+    .ov{display:none;position:fixed;inset:0;background:rgba(11,21,38,.6);z-index:9992;
+        align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+    .modal-email{background:var(--surface);border-radius:16px;max-width:700px;width:100%;max-height:88vh;
+      display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(11,21,38,.4);
+      animation:popIn .3s var(--rd-spring) both}
+    .modal-email .mh{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      background:var(--grad-hero);color:#fff;padding:12px 16px;flex-shrink:0}
+    .modal-email .mh b{font-size:13px}
+    .modal-email .mh button{background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:7px;
+      padding:4px 12px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:var(--font)}
+    .modal-email .corpo{flex:1;overflow:auto;background:#F1F4F9;padding:14px}
+
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body data-area="sistema">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  // Só aparece quando aberto pelo link do Web App (doGet) — em diálogos do
+  // Sheets, google.script.url não funciona e a barra continua oculta, mantendo
+  // o diálogo idêntico ao original.
+  try {
+    google.script.run
+      .withSuccessHandler(function(_execUrl) {
+        if (!_execUrl) return;
+        var _nav = document.getElementById('cdv-nav-webapp');
+        if (_nav) { _nav.style.display = 'flex'; var _a = _nav.querySelector('a[href]'); if (_a) _a.href = _execUrl + '?page=Index'; }
+        // No modo Web App, Fechar/Cancelar volta ao menu em vez de fechar a janela
+        try { google.script.host.close = function(){ window.top.location.href = _execUrl + '?page=Index'; }; } catch(_c) {}
+      })
+      ._getWebAppExecUrl();
+  } catch (_e) {}
+</script>
+
+
+<!-- ════════ HERO + NAV LATERAL (redesign) ════════ -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-history"/></svg> Auditoria e Histórico</h1>
+      <div class="rd-sub">Todas as ferramentas num painel só — navegue pela lateral</div>
+    </div>
+    <button class="rd-ghost btn-cancel" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-shell aud-shell">
+  <div class="rd-nav" id="rd-nav-aud">
+    <div class="grp">Rastreamento</div>
+    <button class="rd-nav-item" data-tela="historico" onclick="irPara('historico', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-list"/></svg></span>Histórico de Alterações</button>
+    <button class="rd-nav-item" data-tela="emails" onclick="irPara('emails', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-mail"/></svg></span>E-mails Enviados</button>
+    <button class="rd-nav-item" data-tela="log" onclick="irPara('log', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-bar-chart-3"/></svg></span>Log do Sistema</button>
+    <button class="rd-nav-item" data-tela="acesso" onclick="irPara('acesso', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-home"/></svg></span>Log de Acesso</button>
+    <button class="rd-nav-item" data-tela="logexport" onclick="irPara('logexport', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-download"/></svg></span>Log de Exportações</button>
+    <div class="grp">Análise</div>
+    <button class="rd-nav-item" data-tela="scorecard" onclick="irPara('scorecard', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-trophy"/></svg></span>Scorecard Fornecedores</button>
+    <button class="rd-nav-item" data-tela="comparativo" onclick="irPara('comparativo', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-trending-up"/></svg></span>Comparativo Períodos</button>
+    <button class="rd-nav-item" data-tela="sla" onclick="irPara('sla', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-loader"/></svg></span>SLA por Fornecedor</button>
+    <div class="grp">Recuperação</div>
+    <button class="rd-nav-item" data-tela="lixeira" onclick="irPara('lixeira', this)"><span class="ic"><svg class="ic ic-sm"><use href="#i-trash-2"/></svg></span>Lixeira</button>
+    <div class="grp">Exportar</div>
+    <button class="rd-nav-item" onclick="exportarAuditoriaBackend()"><span class="ic"><svg class="ic ic-sm"><use href="#i-download"/></svg></span>Auditoria completa (CSV)</button>
+  </div>
+
+  <div><!-- conteúdo: telas originais, intactas -->
+
+<div id="screen-sel" class="screen ativo">
+  <div class="rd-vazio" style="padding:60px 20px">
+    <div class="ico"><svg class="ic" style="width:34px;height:34px"><use href="#i-search"/></svg></div>
+    <div class="t">Escolha uma ferramenta na lateral</div>
+    <div class="s">Histórico por NF, e-mails enviados, logs, ranking de fornecedores,<br>comparativo entre períodos, SLA e lixeira.</div>
+  </div>
+</div>
+
+<!-- ════════ TELA 1 — HISTÓRICO NF ════════ -->
+<div id="screen-historico" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-list"/></svg></span><h2>Histórico de Alterações</h2><span class="rd-tag">por NF</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div class="barra">
+        <input type="text" id="h-nf" placeholder="Digite o número da NF ou NFD..."
+               onkeydown="if(event.key==='Enter')buscarHistorico()">
+        <button class="rd-btn" style="flex:0 0 auto;padding:9px 18px" onclick="buscarHistorico()"><svg class="ic ic-sm"><use href="#i-search"/></svg> Buscar</button>
+      </div>
+    </div>
+  </div>
+  <div class="spinner" id="h-spin"><div class="spin-ring"></div>Consultando histórico...</div>
+  <div class="msg" id="h-msg"></div>
+  <div id="h-resultados" style="display:none">
+    <div class="nf-header" id="h-header"></div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px">Data / Hora</th>
+            <th style="width:130px">Usuário</th>
+            <th style="width:65px">Coluna</th>
+            <th>Valor Anterior</th>
+            <th>Novo Valor</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="h-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ TELA 2 — HISTÓRICO EMAILS ════════ -->
+<div id="screen-emails" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-mail"/></svg></span><h2>E-mails Enviados</h2><span class="rd-tag">histórico</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div class="barra">
+        <input type="text" id="em-filtro" placeholder="Filtrar por assunto, fornecedor ou NFD..."
+               oninput="filtrarEmails()">
+      </div>
+    </div>
+  </div>
+  <div class="contador" id="em-contador" style="display:none"></div>
+  <div class="spinner" id="em-spin"><div class="spin-ring"></div>Carregando histórico...</div>
+  <div class="msg" id="em-msg"></div>
+  <div class="tabela-wrap" id="em-scroll" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:110px">Data / Hora</th>
+          <th>Assunto</th>
+          <th style="width:100px">Fornecedor</th>
+          <th style="width:160px">NFDs / NFs</th>
+          <th style="width:130px">Destinatários</th>
+          <th style="width:45px;text-align:center">Itens</th>
+          <th style="width:90px;text-align:right">Valor Total</th>
+          <th style="width:40px;text-align:center">📎</th>
+          <th style="width:46px;text-align:center">Corpo</th>
+        </tr>
+      </thead>
+      <tbody id="em-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: visualizador de corpo de e-mail -->
+<div id="modal-corpo-email" class="ov">
+  <div class="modal-email">
+    <div class="mh">
+      <b>📧 Corpo do E-mail</b>
+      <button onclick="document.getElementById('modal-corpo-email').style.display='none'">✕ Fechar</button>
+    </div>
+    <div class="corpo">
+      <iframe id="iframe-corpo-email" style="width:100%;height:70vh;border:none;background:#fff;border-radius:10px"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ TELA 3 — LOG DO SISTEMA ════════ -->
+<div id="screen-log" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-bar-chart-3"/></svg></span><h2>Log do Sistema</h2><span class="rd-tag">auditoria</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div class="filtros-log">
+        <input type="text" id="lg-usuario" placeholder="Filtrar por usuário..." style="flex:1;min-width:140px">
+        <select id="lg-aba" style="flex:1;min-width:140px">
+          <option value="">Todas as abas</option>
+          <option value="Britania">Britania</option>
+          <option value="Unilever">Unilever</option>
+          <option value="Fornecedores Variados">Fornecedores Variados</option>
+          <option value="SISTEMA">Sistema</option>
+        </select>
+        <input type="date" id="lg-data-ini">
+        <input type="date" id="lg-data-fim">
+      </div>
+      <div class="rd-acoes" style="margin-top:9px;flex-wrap:wrap">
+        <button class="rd-btn" style="flex:1" onclick="filtrarLog()">🔍 Filtrar</button>
+        <button class="rd-sec btn-cancel" style="flex:0 0 auto" onclick="limparFiltrosLog()"><svg class="ic ic-sm"><use href="#i-refresh-cw"/></svg> Limpar</button>
+        <button class="rd-sec btn-cancel" style="flex:0 0 auto" onclick="exportarLogCSV()" title="Exportar para CSV">📥 CSV</button>
+      </div>
+    </div>
+  </div>
+  <div class="contador" id="lg-contador" style="display:none"></div>
+  <div class="spinner" id="lg-spin"><div class="spin-ring"></div>Carregando log...</div>
+  <div class="msg" id="lg-msg"></div>
+  <div class="tabela-wrap" id="lg-scroll" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:115px">Data / Hora</th>
+          <th style="width:120px">Usuário</th>
+          <th style="width:80px">Aba</th>
+          <th style="width:45px;text-align:center">Linha</th>
+          <th style="width:65px">Coluna</th>
+          <th>Valor Anterior</th>
+          <th>Novo Valor</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="lg-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ TELA 4 — LOG DE ACESSO ════════ -->
+<div id="screen-acesso" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-home"/></svg></span><h2>Log de Acesso</h2><span class="rd-tag">usuários</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div class="filtros-log">
+        <input type="text" id="ac-usuario" placeholder="Filtrar por e-mail...">
+        <input type="text" id="ac-pagina"  placeholder="Filtrar por página...">
+      </div>
+      <div class="rd-acoes" style="margin-top:9px">
+        <button class="rd-btn" style="flex:1" onclick="filtrarAcesso()">🔍 Filtrar</button>
+        <button class="rd-sec btn-cancel" style="flex:0 0 auto" onclick="limparFiltrosAcesso()"><svg class="ic ic-sm"><use href="#i-refresh-cw"/></svg> Limpar</button>
+      </div>
+    </div>
+  </div>
+  <div class="spinner" id="ac-spin"><div class="spin-ring"></div>Carregando acessos...</div>
+  <div class="msg" id="ac-msg"></div>
+  <div class="contador" id="ac-contador" style="display:none"></div>
+  <div class="tabela-wrap" id="ac-scroll" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px">Data / Hora</th>
+          <th>Usuário</th>
+          <th style="width:100px">Página</th>
+        </tr>
+      </thead>
+      <tbody id="ac-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ TELA 5 — SCORECARD ════════ -->
+<div id="screen-scorecard" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-trophy"/></svg></span><h2>Scorecard de Fornecedores</h2>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div class="rd-acoes">
+        <select id="sc-status" style="flex:1;min-width:120px">
+          <option value="">Todos os status</option>
+          <option value="Pendente">Pendente</option>
+          <option value="Devolvido">Devolvido</option>
+          <option value="Venda">Venda</option>
+          <option value="Em Transferência">Em Transferência</option>
+        </select>
+        <button class="rd-btn" style="flex:0 0 auto;padding:9px 18px" onclick="carregarScorecard()">🔄 Atualizar</button>
+      </div>
+    </div>
+  </div>
+  <div class="spinner" id="sc-spin"><div class="spin-ring"></div>Calculando...</div>
+  <div class="msg" id="sc-msg"></div>
+  <div id="sc-resultado"></div>
+</div>
+
+<!-- ════════ TELA SLA ════════ -->
+<div id="screen-sla" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-loader"/></svg></span><h2>SLA por Fornecedor</h2><span class="rd-tag">meta 15 dias</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">
+        Tempo médio (dias) entre o lançamento da NF e a resolução (Devolvido / Venda), calculado a partir do _Log.
+      </p>
+      <button class="rd-btn" onclick="carregarSLA()" style="width:100%">🔄 Calcular SLA</button>
+    </div>
+  </div>
+  <div class="spinner" id="sla-spin" style="display:none"><div class="spin-ring"></div>Calculando…</div>
+  <div class="msg" id="sla-msg"></div>
+  <div id="sla-resultado"></div>
+</div>
+
+<!-- ════════ TELA 6 — COMPARATIVO ════════ -->
+<div id="screen-comparativo" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-trending-up"/></svg></span><h2>Comparativo entre Períodos</h2>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="border:1.5px solid var(--border-def);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px">Período A</div>
+          <div style="display:flex;gap:6px;flex-direction:column">
+            <input type="date" id="cmp-a-de"  style="width:100%">
+            <input type="date" id="cmp-a-ate" style="width:100%">
+          </div>
+        </div>
+        <div style="border:1.5px solid var(--border-def);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#D97706;margin-bottom:6px">Período B</div>
+          <div style="display:flex;gap:6px;flex-direction:column">
+            <input type="date" id="cmp-b-de"  style="width:100%">
+            <input type="date" id="cmp-b-ate" style="width:100%">
+          </div>
+        </div>
+      </div>
+      <button class="rd-btn btn-save" onclick="executarComparativo()" style="width:100%">▶ Comparar períodos</button>
+    </div>
+  </div>
+  <div class="spinner" id="cmp-spin" style="display:none"><div class="spin-ring"></div>Analisando...</div>
+  <div id="cmp-resultado"></div>
+</div>
+
+<!-- ════════ TELA 7 — LIXEIRA ════════ -->
+<div id="screen-lixeira" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-trash-2"/></svg></span><h2>Lixeira</h2><span class="rd-tag">retenção</span>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body" style="padding:0">
+      <div class="spinner" id="lx-spin" style="margin:10px 14px"><div class="spin-ring"></div>Carregando...</div>
+      <div class="msg" id="lx-msg" style="margin:10px 14px"></div>
+      <div id="lx-lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ TELA 8 — LOG EXPORTAÇÕES ════════ -->
+<div id="screen-logexport" class="screen">
+  <div class="rd-card">
+    <div class="rd-card-head">
+      <span class="rd-num"><svg class="ic ic-sm"><use href="#i-download"/></svg></span><h2>Log de Exportações</h2>
+      <button class="rd-sec back" style="flex:0 0 auto;padding:4px 12px;font-size:11px" onclick="voltar()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+    </div>
+    <div class="rd-card-body" style="padding:0">
+      <div class="spinner" id="lexp-spin" style="margin:10px 14px"><div class="spin-ring"></div>Carregando...</div>
+      <div id="lexp-lista"></div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /conteúdo -->
+</div><!-- /rd-shell -->
+
+<script>
+var telaAtual = 'sel';
+var _emTodos = [];
+var _lgTodos = [];
+var _acTodos = [];
+var _acCarregado = false;
+
+// ── Navegação (redesign: nav lateral fixa; loaders inalterados) ──
+function _marcarNav(tela) {
+  document.querySelectorAll('#rd-nav-aud .rd-nav-item').forEach(function(b) {
+    b.classList.toggle('on', b.getAttribute('data-tela') === tela);
+  });
+}
+
+function irPara(tela, btn) {
+  if (tela === telaAtual) return;
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-' + tela);
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  _marcarNav(tela);
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = tela;
+    if (tela === 'emails')      carregarEmails();
+    if (tela === 'log')         carregarLog();
+    if (tela === 'acesso')      carregarAcesso();
+    if (tela === 'scorecard')   carregarScorecard();
+    if (tela === 'lixeira')     carregarLixeira();
+    if (tela === 'logexport')   carregarLogExportacoes();
+  }, 150);
+}
+
+function voltar() {
+  var curr = document.getElementById('screen-' + telaAtual);
+  var next = document.getElementById('screen-sel');
+  curr.classList.add('saindo');
+  curr.classList.remove('ativo');
+  _marcarNav('');
+  setTimeout(function() {
+    curr.classList.remove('saindo');
+    next.classList.add('ativo');
+    telaAtual = 'sel';
+  }, 150);
+}
+
+// ── Histórico NF ─────────────────────────────────────────────
+function buscarHistorico() {
+  var nf = document.getElementById('h-nf').value.trim();
+  if (!nf) { showMsg('h','erro','❌ Informe o número da NF.'); return; }
+  document.getElementById('h-resultados').style.display = 'none';
+  document.getElementById('h-msg').style.display = 'none';
+  document.getElementById('h-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('h-spin').style.display = 'none';
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('h','erro','❌ '+r.erro); return; }
+      renderHistorico(r);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('h-spin').style.display='none';
+      showMsg('h','erro','❌ '+e.message);
+    })
+    .buscarHistoricoNF(nf);
+}
+
+function renderHistorico(r) {
+  document.getElementById('h-header').innerHTML =
+    '<strong>NF ' + esc(r.nf) + '</strong> — ' + r.registros.length + ' registro(s) no histórico';
+  var tbody = document.getElementById('h-tbody');
+  tbody.innerHTML = '';
+  if (!r.registros.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="vazio">Nenhuma alteração registrada para esta NF.</td></tr>';
+  } else {
+    r.registros.slice().reverse().forEach(function(reg) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-size:10px;color:#555;white-space:nowrap">'+esc(fmtData(reg.data))+'</td>' +
+        '<td style="font-size:10px">'+esc(reg.usuario||'—')+'</td>' +
+        '<td>'+esc(reg.coluna)+'</td>' +
+        '<td>'+esc(reg.anterior)+'</td>' +
+        '<td>'+esc(reg.novo)+'</td>' +
+        '<td><span class="acao-badge">'+esc(reg.acao)+'</span></td>';
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('h-resultados').style.display = 'block';
+}
+
+// ── Emails ───────────────────────────────────────────────────
+var _emailsCarregados = false;
+
+function carregarEmails() {
+  if (_emailsCarregados) return;
+  document.getElementById('em-spin').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('em-spin').style.display = 'none';
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('em','erro','❌ '+r.erro); return; }
+      _emTodos = r.registros || [];
+      _emailsCarregados = true;
+      renderEmails(_emTodos);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('em-spin').style.display='none';
+      showMsg('em','erro','❌ '+e.message);
+    })
+    .buscarHistoricoEmails();
+}
+
+function filtrarEmails() {
+  var termo = document.getElementById('em-filtro').value.trim().toLowerCase();
+  var lista = !termo ? _emTodos : _emTodos.filter(function(r){
+    return (r.assunto+r.forn+r.nfds+r.destinos).toLowerCase().indexOf(termo) !== -1;
+  });
+  renderEmails(lista);
+}
+
+var _emailCorpos = [];
+
+function verCorpoEmail(idx) {
+  var corpo = _emailCorpos[idx] || '';
+  if (!corpo) { alert('Corpo do e-mail não disponível (registros anteriores à atualização).'); return; }
+  var iframe = document.getElementById('iframe-corpo-email');
+  iframe.srcdoc = corpo;
+  document.getElementById('modal-corpo-email').style.display = 'flex';
+}
+
+function renderEmails(lista) {
+  _emailCorpos = lista.map(function(r){ return r.corpo || ''; });
+  var tbody = document.getElementById('em-tbody');
+  tbody.innerHTML = '';
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="vazio">Nenhum e-mail encontrado.</td></tr>';
+  } else {
+    lista.forEach(function(r, idx) {
+      var val = r.totalValor > 0 ? 'R$ '+r.totalValor.toFixed(2).replace('.',',') : '—';
+      var anx = r.anexos > 0 ? '<span style="color:#059669;font-weight:bold">'+r.anexos+'</span>' : '<span style="color:#D1D5DB">—</span>';
+      var ver = r.corpo ? '<button class="btn-ver" onclick="verCorpoEmail('+idx+')">👁 Ver</button>' : '<span style="color:var(--text-faint);font-size:11px">—</span>';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-size:10px;color:#555;white-space:nowrap">'+esc(fmtData(r.data))+'</td>' +
+        '<td><b>'+esc(r.assunto)+'</b></td>' +
+        '<td>'+esc(r.forn)+'</td>' +
+        '<td class="nfds">'+esc(r.nfds)+'</td>' +
+        '<td class="nfds">'+esc(r.destinos)+'</td>' +
+        '<td style="text-align:center;font-weight:bold">'+(r.totalItens||0)+'</td>' +
+        '<td class="val">'+val+'</td>' +
+        '<td style="text-align:center">'+anx+'</td>' +
+        '<td style="text-align:center">'+ver+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('em-scroll').style.display = 'block';
+  var cnt = document.getElementById('em-contador');
+  cnt.textContent = lista.length + ' registro(s)' + (_emTodos.length !== lista.length ? ' (filtrado de '+_emTodos.length+')' : '');
+  cnt.style.display = 'block';
+}
+
+// ── Log ──────────────────────────────────────────────────────
+var _logCarregado = false;
+
+/**
+ * Normaliza qualquer formato de data para exibição dd/mm/aaaa HH:mm
+ * e para comparação retorna string compacta YYYYMMDD.
+ * O _Log grava "dd/MM/yyyy HH:mm:ss" via Utilities.formatDate,
+ * mas ao ser relido pelo GAS pode vir como objeto Date serializado
+ * (ex: "Tue Jun 16 2026 03:08:26 GMT-0300...").
+ */
+function fmtData(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim();
+
+  // Já está no formato correto: "dd/MM/yyyy HH:mm:ss"
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    // Retorna só dd/mm/aaaa HH:mm (sem segundos para economizar espaço)
+    return s.slice(0, 16);
+  }
+
+  // Vem como string de Date JavaScript (ex: "Tue Jun 16 2026 03:08:26 GMT-0300 ...")
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    var dd  = String(d.getDate()).padStart(2,'0');
+    var mm  = String(d.getMonth()+1).padStart(2,'0');
+    var aaaa = d.getFullYear();
+    var hh  = String(d.getHours()).padStart(2,'0');
+    var mi  = String(d.getMinutes()).padStart(2,'0');
+    return dd+'/'+mm+'/'+aaaa+' '+hh+':'+mi;
+  }
+
+  return s; // fallback
+}
+
+/**
+ * Extrai YYYYMMDD de uma string de data (qualquer formato) para comparação.
+ */
+function dataCompacta(raw) {
+  if (!raw) return '';
+  var s = String(raw).trim();
+
+  // "dd/MM/yyyy HH:mm:ss"
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) {
+    return s.slice(6,10) + s.slice(3,5) + s.slice(0,2);
+  }
+
+  // String de Date JS
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return String(d.getFullYear()) +
+           String(d.getMonth()+1).padStart(2,'0') +
+           String(d.getDate()).padStart(2,'0');
+  }
+
+  return '';
+}
+
+function _dataISOHoje() {
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function _dataISOmesAtras(meses) {
+  var d = new Date();
+  d.setMonth(d.getMonth() - meses);
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function carregarLog() {
+  if (_logCarregado) return;
+  // Define datas padrão antes de mostrar o spinner
+  document.getElementById('lg-data-ini').value = _dataISOmesAtras(1);
+  document.getElementById('lg-data-fim').value = _dataISOHoje();
+  document.getElementById('lg-spin').style.display = 'block';
+  buscarLog();
+}
+
+function filtrarLog() {
+  _logCarregado = false; // força recarregar do servidor com novo período
+  buscarLog();
+}
+
+function buscarLog() {
+  var usuario = document.getElementById('lg-usuario').value.trim().toLowerCase();
+  var aba     = document.getElementById('lg-aba').value;
+  var dataIni = document.getElementById('lg-data-ini').value;
+  var dataFim = document.getElementById('lg-data-fim').value;
+
+  document.getElementById('lg-spin').style.display = 'block';
+  document.getElementById('lg-scroll').style.display = 'none';
+  document.getElementById('lg-contador').style.display = 'none';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('lg-spin').style.display = 'none';
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('lg','erro','❌ '+r.erro); return; }
+      _lgTodos = r.registros || [];
+      _logCarregado = true;
+
+      // Filtra client-side por usuário e aba (período já filtrado no servidor)
+      var dIniC = dataIni.replace(/-/g,'');
+      var dFimC = dataFim.replace(/-/g,'');
+      var filtrados = _lgTodos.filter(function(reg) {
+        if (usuario && reg.usuario.toLowerCase().indexOf(usuario) === -1) return false;
+        if (aba && reg.aba !== aba) return false;
+        // Filtro de data redundante client-side como segurança
+        var dc = dataCompacta(reg.data);
+        if (dIniC && dc && dc < dIniC) return false;
+        if (dFimC && dc && dc > dFimC) return false;
+        return true;
+      });
+
+      renderLog(filtrados);
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('lg-spin').style.display = 'none';
+      showMsg('lg','erro','❌ '+e.message);
+    })
+    .buscarLogSistema({ dataIni: dataIni, dataFim: dataFim });
+}
+
+function limparFiltrosLog() {
+  document.getElementById('lg-usuario').value = '';
+  document.getElementById('lg-aba').value = '';
+  document.getElementById('lg-data-ini').value = _dataISOmesAtras(1);
+  document.getElementById('lg-data-fim').value = _dataISOHoje();
+  _logCarregado = false;
+  buscarLog();
+}
+
+function renderLog(lista) {
+  var tbody = document.getElementById('lg-tbody');
+  tbody.innerHTML = '';
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="vazio">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
+  } else {
+    // Exibe do mais recente para o mais antigo, máx. 500
+    lista.slice().reverse().slice(0, 500).forEach(function(reg) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="font-size:10px;color:#555;white-space:nowrap">' + esc(fmtData(reg.data)) + '</td>' +
+        '<td style="font-size:10px">'     + esc(reg.usuario) + '</td>' +
+        '<td>'                            + esc(reg.aba)     + '</td>' +
+        '<td style="text-align:center">'  + esc(reg.linha)   + '</td>' +
+        '<td>'                            + esc(reg.coluna)  + '</td>' +
+        '<td style="font-size:10px;color:#555">' + esc(reg.anterior) + '</td>' +
+        '<td style="font-size:10px">'     + esc(reg.novo)    + '</td>' +
+        '<td><span class="acao-badge">'   + esc(reg.acao)    + '</span></td>';
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('lg-scroll').style.display = 'block';
+  var cnt = document.getElementById('lg-contador');
+  cnt.textContent = lista.length + ' registro(s)' +
+    (lista.length > 500 ? ' (exibindo 500 mais recentes)' : '');
+  cnt.style.display = 'block';
+}
+
+// ── Log de Acesso ────────────────────────────────────────────
+function carregarAcesso() {
+  if (_acCarregado) { filtrarAcesso(); return; }
+  document.getElementById('ac-spin').style.display = 'block';
+  document.getElementById('ac-scroll').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('ac-spin').style.display = 'none';
+      var r = JSON.parse(resp);
+      if (r.erro) { showMsg('ac','erro','❌ '+r.erro); return; }
+      _acTodos = r.linhas || [];
+      _acCarregado = true;
+      filtrarAcesso();
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('ac-spin').style.display = 'none';
+      showMsg('ac','erro','❌ '+e.message);
+    })
+    .obterLogAcesso(300);
+}
+
+function filtrarAcesso() {
+  var usr = document.getElementById('ac-usuario').value.trim().toLowerCase();
+  var pag = document.getElementById('ac-pagina').value.trim().toLowerCase();
+  var lista = _acTodos.filter(function(r) {
+    return (!usr || r.user.toLowerCase().indexOf(usr) !== -1)
+        && (!pag || r.pagina.toLowerCase().indexOf(pag) !== -1);
+  });
+  renderAcesso(lista);
+}
+
+function limparFiltrosAcesso() {
+  document.getElementById('ac-usuario').value = '';
+  document.getElementById('ac-pagina').value  = '';
+  _acCarregado = false;
+  carregarAcesso();
+}
+
+function renderAcesso(lista) {
+  var tbody = document.getElementById('ac-tbody');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="vazio">Nenhum acesso encontrado.</td></tr>';
+  } else {
+    tbody.innerHTML = lista.map(function(r) {
+      return '<tr>'
+        + '<td style="font-size:10px;white-space:nowrap">' + esc(r.dt) + '</td>'
+        + '<td style="font-size:11px">' + esc(r.user) + '</td>'
+        + '<td style="font-size:11px">' + esc(r.pagina) + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+  document.getElementById('ac-scroll').style.display = 'block';
+  var cnt = document.getElementById('ac-contador');
+  cnt.textContent = lista.length + ' acesso(s)';
+  cnt.style.display = 'block';
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function showMsg(p, tipo, txt) {
+  var el = document.getElementById(p+'-msg');
+  el.className = 'msg msg-'+tipo; el.textContent = txt; el.style.display = 'block';
+}
+function exportarLogCSV() {
+  if (!_lgTodos.length) { alert('Carregue o log primeiro.'); return; }
+  var linhas = [['Data/Hora','Usuário','Aba','Linha','Coluna','Anterior','Novo','Ação']];
+  _lgTodos.forEach(function(r) {
+    linhas.push([r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[7]]);
+  });
+  var csv = linhas.map(function(row) {
+    return row.map(function(c){ return '"'+String(c||'').replace(/"/g,'""')+'"'; }).join(',');
+  }).join('\n');
+  var blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url; a.download = 'log_auditoria_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportarAuditoriaBackend() {
+  var btn = event.currentTarget;
+  var orig = btn ? btn.querySelector('strong') : null;
+  if (orig) orig.textContent = '⏳ Exportando…';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (orig) orig.textContent = 'Exportar Auditoria Completa (CSV)';
+      try {
+        var d = JSON.parse(resp);
+        if (d.erro) { alert('❌ ' + d.erro); return; }
+        var blob = new Blob([d.csv], { type: 'text/csv;charset=utf-8' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href   = url;
+        a.download = 'auditoria_completa_' + new Date().toISOString().slice(0,10) + '.csv';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      } catch(e) { alert('Erro ao processar CSV: ' + e.message); }
+    })
+    .withFailureHandler(function(e) {
+      if (orig) orig.textContent = 'Exportar Auditoria Completa (CSV)';
+      alert('❌ ' + e.message);
+    })
+    .exportarLogAuditoriaCSV(1000);
+}
+
+function carregarSLA() {
+  document.getElementById('sla-spin').style.display = 'block';
+  document.getElementById('sla-resultado').innerHTML = '';
+  document.getElementById('sla-msg').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('sla-spin').style.display = 'none';
+      try {
+        var d = JSON.parse(resp);
+        if (d.erro) { document.getElementById('sla-msg').textContent = '❌ ' + d.erro; document.getElementById('sla-msg').style.display = 'block'; return; }
+        renderSLA(d.sla || []);
+      } catch(e) { document.getElementById('sla-msg').textContent = '❌ Erro: ' + e.message; document.getElementById('sla-msg').style.display = 'block'; }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('sla-spin').style.display = 'none';
+      document.getElementById('sla-msg').textContent = '❌ ' + e.message;
+      document.getElementById('sla-msg').style.display = 'block';
+    })
+    .obterSLAFornecedores();
+}
+
+function renderSLA(lista) {
+  var el = document.getElementById('sla-resultado');
+  if (!lista.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:24px">Sem dados de resolução no log ainda.</p>';
+    return;
+  }
+  var maxDias = Math.max.apply(null, lista.map(function(s){ return s.mediaDias; })) || 1;
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr>'
+    + '<th style="text-align:left;padding:7px 10px;background:#F8FAFF;border-bottom:1px solid var(--border-def)">Fornecedor</th>'
+    + '<th style="text-align:center;padding:7px 10px;background:#F8FAFF;border-bottom:1px solid var(--border-def)">Resolvidos</th>'
+    + '<th style="text-align:left;padding:7px 10px;background:#F8FAFF;border-bottom:1px solid var(--border-def);min-width:120px">Média (dias)</th>'
+    + '</tr></thead><tbody>'
+    + lista.map(function(s) {
+        var pct = Math.round((s.mediaDias / maxDias) * 100);
+        var cor = s.mediaDias <= 7 ? '#059669' : s.mediaDias <= 30 ? '#D97706' : '#DC2626';
+        return '<tr>'
+          + '<td style="padding:7px 10px;border-bottom:1px solid #F0F4FA">' + esc(s.forn) + '</td>'
+          + '<td style="text-align:center;padding:7px 10px;border-bottom:1px solid #F0F4FA">' + s.totalResolvidos + '</td>'
+          + '<td style="padding:7px 10px;border-bottom:1px solid #F0F4FA">'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + '<div style="flex:1;background:#EEF2FF;border-radius:4px;height:8px">'
+          + '<div style="width:'+pct+'%;background:'+cor+';height:8px;border-radius:4px"></div></div>'
+          + '<span style="color:'+cor+';font-weight:700;min-width:32px">' + s.mediaDias + 'd</span>'
+          + '</div></td></tr>';
+      }).join('')
+    + '</tbody></table>';
+}
+
+function carregarScorecard() {
+  document.getElementById('sc-spin').style.display = 'block';
+  document.getElementById('sc-resultado').innerHTML = '';
+  document.getElementById('sc-msg').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('sc-spin').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { document.getElementById('sc-msg').textContent = '❌ ' + r.erro; document.getElementById('sc-msg').style.display = 'block'; return; }
+        renderScorecard(r.fornecedores || []);
+      } catch(e) { document.getElementById('sc-msg').textContent = '❌ Erro ao processar.'; document.getElementById('sc-msg').style.display = 'block'; }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('sc-spin').style.display = 'none';
+      document.getElementById('sc-msg').textContent = '❌ ' + e.message;
+      document.getElementById('sc-msg').style.display = 'block';
+    })
+    .obterScorecardFornecedores(document.getElementById('sc-status').value);
+}
+
+function renderScorecard(lista) {
+  var el = document.getElementById('sc-resultado');
+  if (!lista.length) { el.innerHTML = '<div style="color:#9CA3AF;font-size:12px;padding:16px 0">Sem dados.</div>'; return; }
+  var max = lista[0].qtd;
+  el.innerHTML = lista.map(function(f, i) {
+    var pct = max > 0 ? Math.round(f.qtd * 100 / max) : 0;
+    var badgeColor = i === 0 ? '#FBBF24' : i === 1 ? '#9CA3AF' : i === 2 ? '#D97706' : '#E5E7EB';
+    return '<div style="background:var(--surface);border:1px solid var(--border-def);border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<span style="background:'+badgeColor+';color:#111;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+(i+1)+'</span>'
+      + '<strong style="font-size:13px">'+esc(f.forn)+'</strong></div>'
+      + '<div style="font-size:11px;color:#6B7280">'+f.qtd+' NF(s) · R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</div>'
+      + '</div>'
+      + '<div style="background:#E5E7EB;border-radius:4px;height:6px;margin-bottom:6px">'
+      + '<div style="background:#2563EB;width:'+pct+'%;height:100%;border-radius:4px;transition:width .4s"></div>'
+      + '</div>'
+      + (f.motivos.length ? '<div style="font-size:10px;color:#6B7280">Top motivos: '+esc(f.motivos.slice(0,3).join(' · '))+'</div>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// ── Lixeira ────────────────────────────────────────────────
+function carregarLixeira() {
+  var spin = document.getElementById('lx-spin');
+  var lista = document.getElementById('lx-lista');
+  spin.style.display = 'block'; lista.innerHTML = '';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display = 'none';
+    try {
+      var p = JSON.parse(r);
+      if (p.erro) { lista.innerHTML = '<span style="color:red">'+p.erro+'</span>'; return; }
+      var itens = p.itens || [];
+      if (!itens.length) { lista.innerHTML = '<div style="font-size:12px;color:#9CA3AF;padding:10px">Lixeira vazia.</div>'; return; }
+      lista.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<thead><tr style="background:var(--c-hdr);color:#fff">'
+        +'<th style="padding:7px 10px;text-align:left">Data Exclusão</th>'
+        +'<th style="padding:7px 10px;text-align:left">NF</th>'
+        +'<th style="padding:7px 10px;text-align:left">Aba Origem</th>'
+        +'<th style="padding:7px 10px;text-align:left">Motivo</th>'
+        +'<th style="padding:7px 10px;text-align:center"></th></tr></thead><tbody>'
+        + itens.map(function(it, i) {
+          return '<tr style="'+(i%2===0?'background:#F9FAFB':'')+'"><td style="padding:6px 10px">'+esc(it.dataExclusao)+'</td>'
+            +'<td style="padding:6px 10px">'+esc(it.nf||it.nfd)+'</td>'
+            +'<td style="padding:6px 10px">'+esc(it.abaOrigem)+'</td>'
+            +'<td style="padding:6px 10px">'+esc(it.motivo)+'</td>'
+            +'<td style="padding:6px 10px;text-align:center">'
+            +'<button class="rd-btn btn-save" onclick="restaurarItem('+it.lixRow+')" style="flex:0 0 auto;padding:4px 12px;font-size:11px">♻️ Restaurar</button></td></tr>';
+        }).join('')+'</tbody></table>';
+    } catch(_){}
+  }).obterLixeira();
+}
+
+function restaurarItem(lixRow) {
+  if (!confirm('Restaurar este item para a planilha?')) return;
+  google.script.run.withSuccessHandler(function(r) {
+    try {
+      var p = JSON.parse(r);
+      document.getElementById('lx-msg').textContent = p.ok || p.erro || '';
+      document.getElementById('lx-msg').className = p.ok ? 'msg-ok' : 'msg-erro';
+      document.getElementById('lx-msg').style.display = 'block';
+      if (p.ok) carregarLixeira();
+    } catch(_){}
+  }).restaurarDaLixeira(lixRow);
+}
+
+// ── Comparativo entre períodos ─────────────────────────────
+function executarComparativo() {
+  var aD = document.getElementById('cmp-a-de').value;
+  var aA = document.getElementById('cmp-a-ate').value;
+  var bD = document.getElementById('cmp-b-de').value;
+  var bA = document.getElementById('cmp-b-ate').value;
+  if (!aD || !aA || !bD || !bA) { alert('Preencha todas as datas.'); return; }
+  var spin = document.getElementById('cmp-spin');
+  var res  = document.getElementById('cmp-resultado');
+  spin.style.display = 'block'; res.innerHTML = '';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display = 'none';
+    try { renderComparativo(JSON.parse(r)); } catch(e) { res.innerHTML = '<span style="color:red">'+e+'</span>'; }
+  }).obterComparativoPeriodos(aD, aA, bD, bA);
+}
+
+function renderComparativo(data) {
+  var el = document.getElementById('cmp-resultado');
+  if (!data || data.erro) { el.innerHTML = '<span style="color:red">'+(data&&data.erro||'Sem dados')+'</span>'; return; }
+  var a = data.a, b = data.b;
+  function delta(vA, vB) {
+    if (!vA) return vB > 0 ? '<span style="color:#DC2626">+∞%</span>' : '—';
+    var d = ((vB - vA) / vA * 100).toFixed(1);
+    var cor = d > 0 ? '#DC2626' : '#059669';
+    return '<span style="color:'+cor+'">'+(d > 0 ? '+' : '')+d+'%</span>';
+  }
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:var(--c-hdr);color:#fff">'
+    +'<th style="padding:7px 10px;text-align:left">Métrica</th>'
+    +'<th style="padding:7px 10px;text-align:right;color:#93C5FD">Período A</th>'
+    +'<th style="padding:7px 10px;text-align:right;color:#FCD34D">Período B</th>'
+    +'<th style="padding:7px 10px;text-align:right">Variação</th></tr></thead><tbody>'
+    + [
+      ['Qtd de devoluções', a.qtd, b.qtd],
+      ['Valor total (R$)', 'R$ '+Number(a.valor||0).toFixed(2).replace('.',','), 'R$ '+Number(b.valor||0).toFixed(2).replace('.',',')],
+      ['Pendentes', a.pendentes, b.pendentes],
+      ['Devolvidos', a.devolvidos, b.devolvidos],
+      ['Fornecedores únicos', a.fornecedores, b.fornecedores]
+    ].map(function(row, i) {
+      var bg = i%2===0?'background:#F9FAFB':'';
+      return '<tr style="'+bg+'"><td style="padding:6px 10px">'+row[0]+'</td>'
+        +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:#1D4ED8">'+row[1]+'</td>'
+        +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:#D97706">'+row[2]+'</td>'
+        +'<td style="padding:6px 10px;text-align:right">'+delta(isNaN(row[1])?0:Number(row[1]), isNaN(row[2])?0:Number(row[2]))+'</td></tr>';
+    }).join('')+'</tbody></table>'
+    + (data.topMotivos.length ? '<div style="margin-top:10px;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px">Top Motivos</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      + data.topMotivos.map(function(m) {
+          return '<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:4px;padding:3px 8px;font-size:11px">'
+            + esc(m.motivo)
+            + ' — A: <b>'+m.qtdA+'</b> | B: <b>'+m.qtdB+'</b></div>';
+        }).join('') + '</div>' : '');
+}
+
+function esc(s) {
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Log de Exportações ────────────────────────────────────
+function carregarLogExportacoes() {
+  var spin = document.getElementById('lexp-spin');
+  var lista = document.getElementById('lexp-lista');
+  spin.style.display = 'block'; lista.innerHTML = '';
+  google.script.run.withSuccessHandler(function(r) {
+    spin.style.display = 'none';
+    try {
+      var log = JSON.parse(r);
+      if (!log.length) { lista.innerHTML = '<div style="font-size:11px;color:#9CA3AF">Nenhuma exportação registrada.</div>'; return; }
+      lista.innerHTML = '<div class="scroll"><table><thead><tr>'
+        + '<th>Data</th><th>Usuário</th><th>Tipo</th><th style="text-align:right">Qtd</th>'
+        + '</tr></thead><tbody>'
+        + log.map(function(l, i) {
+            return '<tr><td>' + esc(new Date(l.ts).toLocaleString('pt-BR')) + '</td>'
+              + '<td>' + esc(l.usuario) + '</td><td>' + esc(l.tipo) + '</td>'
+              + '<td style="text-align:right">' + esc(String(l.qtd || '—')) + '</td></tr>';
+          }).join('')
+        + '</tbody></table></div>';
+    } catch(_) {}
+  }).withFailureHandler(function(e) {
+    spin.style.display = 'none';
+    lista.innerHTML = '<div style="color:red;font-size:11px">Erro: ' + esc(e.message) + '</div>';
+  }).obterLogExportacoes();
+}
+
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('auditoria') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) {
+          var banner = document.createElement('div');
+          banner.style.cssText = 'background:#FFF7E0;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:10px;display:flex;align-items:center;gap:8px';
+          banner.innerHTML = '🔒 <strong>Modo somente leitura</strong> — você não tem permissão para realizar alterações.';
+          document.body.insertBefore(banner, document.body.firstChild);
+          document.querySelectorAll('button:not(.btn-cancel):not(.back)').forEach(function(b){ b.disabled = true; });
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

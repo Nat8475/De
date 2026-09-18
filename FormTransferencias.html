@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px}
+    .mono{font-family:var(--mono)}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opc{font-weight:500;color:var(--text-muted)}
+    .obrig{color:var(--danger)}
+    /* input/select/textarea (borda, foco) vêm de Styles.html §6.2 */
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+    /* filtros */
+    .filtros{
+      display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:11px;
+      background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);
+      padding:10px 12px;box-shadow:var(--sh);animation:fadeUp .3s .05s var(--ease-out) both
+    }
+    .filtros select{width:auto;min-width:160px}
+    .filtros input[type=text]{flex:1;min-width:200px}
+    .filtros .att{margin-left:auto;font-size:10.5px;color:var(--text-faint)}
+    /* bulk */
+    .bulk{
+      display:none;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:11px;
+      background:var(--navy-50);border:1.5px solid rgba(37,99,235,.30);border-radius:var(--r);
+      padding:9px 13px;animation:fadeUp .25s var(--ease-out) both
+    }
+    .bulk .cnt{font-size:12px;font-weight:800;color:var(--navy)}
+    .bulk button{
+      border:none;border-radius:8px;padding:6px 13px;font-size:11.5px;font-weight:700;
+      cursor:pointer;font-family:var(--font);color:#fff;transition:opacity .15s,transform .12s
+    }
+    .bulk button:hover{opacity:.9;transform:translateY(-1px)}
+    .bulk button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    /* tabela */
+    .twrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-1)}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-table)}
+    /* header e tabela vêm de Styles.html §6.4 (thead th claro + .rt--dense) */
+    tbody td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-body);vertical-align:middle}
+    tbody tr{transition:background .12s;animation:rowIn .25s var(--ease-entrance) both}
+    tbody tr:hover{background:var(--accent-bg)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.trat td{background:rgba(220,38,38,.05)}
+    /* ações por linha */
+    .acao-mini{
+      border:1px solid var(--border-def);background:var(--surface);border-radius:7px;
+      padding:4px 9px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:var(--font);
+      color:var(--text-body);transition:border-color .15s,color .15s,transform .12s;white-space:nowrap
+    }
+    .acao-mini:hover{transform:translateY(-1px)}
+    .acao-mini.verde:hover{border-color:#86EFAC;color:var(--green)}
+    .acao-mini.verm:hover{border-color:#FCA5A5;color:var(--red)}
+    .acao-mini.azul:hover{border-color:#93C5FD;color:var(--navy)}
+    .dias-pill{font-family:var(--mono);font-weight:700;font-size:10.5px}
+    .lote-tag{background:#7C3AED;color:#fff;border-radius:4px;font-size:9px;padding:1px 5px;margin-right:4px;font-weight:800}
+    /* modais */
+    .ov{
+      display:none;position:fixed;inset:0;background:rgba(11,21,38,.55);z-index:9992;
+      align-items:center;justify-content:center;padding:20px;animation:fadeIn .22s both
+    }
+    .ov.on{display:flex}
+    .modal{
+      background:var(--surface);border-radius:16px;padding:0;max-width:440px;width:100%;
+      box-shadow:0 24px 60px rgba(11,21,38,.35);animation:popIn .3s var(--rd-spring) both;overflow:hidden
+    }
+    .modal .mh{background:var(--grad-hero);color:#fff;padding:12px 17px;font-size:13.5px;font-weight:800}
+    .modal .mh.verm{background:linear-gradient(135deg,#7F1D1D,#DC2626)}
+    .modal .mh .desc{font-size:10.5px;color:rgba(255,255,255,.65);font-weight:500;margin-top:3px}
+    .modal .mb2{padding:15px 17px}
+    .modal .mf{display:flex;gap:8px;justify-content:flex-end;padding:0 17px 15px}
+    .mmsg{font-size:11.5px;margin:8px 17px 0;display:none;padding:8px 11px;border-radius:8px}
+    .mmsg.err{display:block;background:var(--red-bg);color:#991B1B;border:1px solid #FECACA}
+    body.dark .mmsg.err{color:#FCA5A5;border-color:#7F1D1D}
+  </style>
+</head>
+<body data-area="movimento">
+
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-arrow-left-right"/></svg> Transferências</h1>
+      <div class="rd-sub">Devoluções programadas — baixa, reagendamento e cancelamento</div>
+    </div>
+    <div class="rd-hero-actions">
+      <span style="font-size:11px;color:#8FA6C8" id="bcnt">…</span>
+      <button class="rd-ghost" onclick="carregar()"><svg class="ic ic-sm"><use href="#i-refresh-cw"/></svg> Atualizar</button>
+      <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="rd-stats" id="stats" style="display:none">
+  <div class="box"><div class="v" id="s-transf">0</div><div class="l">Em transferência</div></div>
+  <div class="box"><div class="v verde" id="s-conc">0</div><div class="l">Concluídas</div></div>
+  <div class="box"><div class="v verm" id="s-canc">0</div><div class="l">Canceladas</div></div>
+  <div class="box"><div class="v ambar" id="s-atraso">0</div><div class="l">Vencidas</div></div>
+</div>
+
+<!-- FILTROS -->
+<div class="filtros">
+  <select id="fst" onchange="filtrar()">
+    <option value="Em Transferência" selected>Em Transferência</option>
+    <option value="">Todos</option>
+    <option value="Concluída">Concluída</option>
+    <option value="Cancelada">Cancelada</option>
+  </select>
+  <input type="text" id="fbusca" placeholder="Buscar NF, fornecedor, nº pedido…" oninput="filtrar()">
+  <button class="rd-sec" style="flex:0 0 auto;padding:8px 14px;font-size:11.5px" onclick="document.getElementById('fst').value='Em Transferência';document.getElementById('fbusca').value='';filtrar()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Limpar</button>
+  <span class="att" id="uatt"></span>
+</div>
+
+<!-- BULK -->
+<div class="bulk" id="blkbar">
+  <span class="cnt" id="blkcnt">0 selecionada(s)</span>
+  <button style="background:linear-gradient(135deg,#EF4444,#DC2626);display:inline-flex;align-items:center;gap:6px" onclick="abrirCancelarLote()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Cancelar em Lote</button>
+  <button style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);display:inline-flex;align-items:center;gap:6px" onclick="gerarDocCargaTransf()"><svg class="ic ic-sm"><use href="#i-file-check"/></svg> Doc. Carga</button>
+  <button style="background:var(--text-faint)" onclick="limparSel()">Limpar</button>
+</div>
+
+<div class="rd-vazio" id="spn"><div class="ico"><svg class="ic" style="width:34px;height:34px"><use href="#i-loader"/></svg></div><div class="t">Carregando…</div></div>
+
+<div class="twrap" id="twrap" style="display:none">
+  <table id="tbl" class="rt rt--dense">
+    <thead>
+      <tr>
+        <th style="width:34px"><input type="checkbox" id="chkAll" onchange="toggleTodos(this.checked)" style="width:auto"></th>
+        <th>NF / NFD</th>
+        <th>Fornecedor</th>
+        <th>Nº Pedido</th>
+        <th>Aba Origem</th>
+        <th>Frete</th>
+        <th>Agendamento</th>
+        <th style="text-align:center">Dias</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<div class="rd-vazio" id="empty" style="display:none">
+  <div class="ico"><svg class="ic" style="width:34px;height:34px"><use href="#i-arrow-left-right"/></svg></div>
+  <div class="t">Nenhuma transferência encontrada</div>
+  <div class="s">Ajuste os filtros ou programe uma devolução no módulo de Frete.</div>
+</div>
+
+<!-- Modal Baixa -->
+<div class="ov" id="mBaixa" onclick="if(event.target===this)fecharModais()">
+  <div class="modal">
+    <div class="mh"><span id="mBaixaTitulo">✅ Confirmar Baixa</span><div class="desc" id="mBaixaDesc"></div></div>
+    <div class="mb2">
+      <div style="margin-bottom:11px">
+        <label>Observação <span class="opc">(opcional)</span></label>
+        <textarea id="bObs" rows="2" placeholder="Ex: Transportadora retirou em…"></textarea>
+      </div>
+      <div>
+        <label>Comprovante (CTe / Protocolo) <span class="opc">(opcional)</span></label>
+        <input type="file" id="bArq" accept=".pdf,.jpg,.jpeg,.png,.xml" style="font-size:11.5px;padding:7px">
+      </div>
+    </div>
+    <div class="mmsg" id="mBaixaMsg"></div>
+    <div class="mf">
+      <button class="rd-sec" style="flex:0 0 auto;padding:9px 16px" onclick="fecharModais()">Cancelar</button>
+      <button class="rd-btn verde" style="flex:0 0 auto;padding:9px 16px" id="btnConfBaixa" onclick="confirmarBaixa()">✅ Confirmar Baixa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="ov" id="mCancel" onclick="if(event.target===this)fecharModais()">
+  <div class="modal">
+    <div class="mh verm"><span id="mCancelTitulo">❌ Cancelar Transferência</span><div class="desc" id="mCancelDesc"></div></div>
+    <div class="mb2">
+      <label>Motivo do cancelamento <span class="obrig">*</span></label>
+      <textarea id="cObs" rows="3" placeholder="Informe o motivo obrigatório do cancelamento…"></textarea>
+      <div class="helper">O item voltará para a aba de origem como <b>Pendente</b>. O registro aqui fica como Cancelada para auditoria.</div>
+    </div>
+    <div class="mmsg" id="mCancelMsg"></div>
+    <div class="mf">
+      <button class="rd-sec" style="flex:0 0 auto;padding:9px 16px" onclick="fecharModais()">Voltar</button>
+      <button class="rd-btn verm" style="flex:0 0 auto;padding:9px 16px" id="btnConfCancel" onclick="confirmarCancelar()">❌ Confirmar Cancelamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Reagendar -->
+<div class="ov" id="mReag" onclick="if(event.target===this)fecharModais()">
+  <div class="modal">
+    <div class="mh"><span>📅 Reagendar Transferência</span><div class="desc" id="mReagDesc"></div></div>
+    <div class="mb2">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px">
+          <label>Nova data de agendamento <span class="obrig">*</span></label>
+          <input type="date" id="rData">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label>Observação <span class="opc">(opcional)</span></label>
+          <input type="text" id="rObs" placeholder="Motivo do reagendamento">
+        </div>
+      </div>
+    </div>
+    <div class="mmsg" id="mReagMsg"></div>
+    <div class="mf">
+      <button class="rd-sec" style="flex:0 0 auto;padding:9px 16px" onclick="fecharModais()">Cancelar</button>
+      <button class="rd-btn" style="flex:0 0 auto;padding:9px 16px" id="btnConfReag" onclick="confirmarReagendar()">📅 Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _itens = [], _filt = [], _sel = [];
+var _idxAcao = -1, _linhaBaixa = 0, _linhaCancel = 0, _linhaReag = 0;
+
+function carregar() {
+  document.getElementById('spn').style.display = 'block';
+  document.getElementById('twrap').style.display = 'none';
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('stats').style.display = 'none';
+  _itens = []; _filt = []; _sel = [];
+  atualizarBulk();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('spn').style.display = 'none';
+      try {
+        var r = JSON.parse(resp);
+        if (r.erro) { toast(r.erro, 'err'); return; }
+        _itens = r.itens || [];
+        document.getElementById('uatt').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+        atualizarStats();
+        filtrar();
+      } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spn').style.display = 'none';
+      toast('Erro: ' + e.message, 'err');
+    })
+    .obterTransferencias({});
+}
+
+function atualizarStats() {
+  var t = 0, c = 0, x = 0, a = 0;
+  _itens.forEach(function(it) {
+    if (it.stTransf === 'Em Transferência') { t++; if (it.atrasado) a++; }
+    else if (it.stTransf === 'Concluída') c++;
+    else if (it.stTransf === 'Cancelada') x++;
+  });
+  document.getElementById('s-transf').textContent = t;
+  document.getElementById('s-conc').textContent = c;
+  document.getElementById('s-canc').textContent = x;
+  document.getElementById('s-atraso').textContent = a;
+  document.getElementById('stats').style.display = 'flex';
+}
+
+function filtrar() {
+  var fs = document.getElementById('fst').value;
+  var fb = (document.getElementById('fbusca').value || '').toLowerCase().trim();
+  _filt = _itens.filter(function(it) {
+    if (fs && it.stTransf !== fs) return false;
+    if (fb) {
+      var h = ((it.nf||'')+(it.nfd||'')+(it.forn||'')+(it.numeroPedido||'')+(it.abaOrigem||'')).toLowerCase();
+      if (h.indexOf(fb) === -1) return false;
+    }
+    return true;
+  });
+
+  // Agrupar itens do mesmo lote em um único item de exibição
+  var filtAgrup = [];
+  var loteMap   = {};
+  for (var gi = 0; gi < _filt.length; gi++) {
+    var gItem = _filt[gi];
+    if (!gItem.loteId) { filtAgrup.push(gItem); continue; }
+    if (loteMap[gItem.loteId]) {
+      var grp = loteMap[gItem.loteId];
+      grp.nfd   += ', ' + gItem.nfd;
+      grp.nf    += ', ' + gItem.nf;
+      grp.vlTot += gItem.vlTot;
+      grp.qtd   += gItem.qtd;
+      grp._loteLinhas.push(gItem.linha);
+    } else {
+      var novoGrp = {};
+      for (var gk in gItem) { if (Object.prototype.hasOwnProperty.call(gItem, gk)) novoGrp[gk] = gItem[gk]; }
+      novoGrp._loteLinhas = [gItem.linha];
+      novoGrp.isLote = true;
+      filtAgrup.push(novoGrp);
+      loteMap[gItem.loteId] = novoGrp;
+    }
+  }
+  _filt = filtAgrup;
+
+  _sel = new Array(_filt.length).fill(false);
+  renderTabela();
+  atualizarBulk();
+  var em = _itens.filter(function(it){ return it.stTransf === 'Em Transferência'; }).length;
+  var venc = _itens.filter(function(it){ return it.atrasado; }).length;
+  document.getElementById('bcnt').textContent =
+    em + ' em transf.' + (venc > 0 ? ' · ' + venc + ' vencida(s)' : '');
+}
+
+function renderTabela() {
+  var tb = document.getElementById('tbody');
+  if (!_filt.length) {
+    document.getElementById('twrap').style.display = 'none';
+    document.getElementById('empty').style.display = 'block';
+    return;
+  }
+  document.getElementById('twrap').style.display = 'block';
+  document.getElementById('empty').style.display = 'none';
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  tb.innerHTML = _filt.map(function(it, i) {
+    var ativo = it.stTransf === 'Em Transferência';
+    var agendDt = it.dataAgend ? parseDtBR(it.dataAgend) : null;
+    var diasTag = '';
+    if (ativo && agendDt) {
+      var diff = Math.ceil((agendDt - hoje) / 864e5);
+      if (diff < 0)        diasTag = '<span class="dias-pill" style="color:var(--red)">' + Math.abs(diff) + 'd atr.</span>';
+      else if (diff <= 7)  diasTag = '<span class="dias-pill" style="color:var(--green)">em ' + diff + 'd</span>';
+      else if (diff <= 15) diasTag = '<span class="dias-pill" style="color:var(--amber)">em ' + diff + 'd</span>';
+      else                 diasTag = '<span class="dias-pill" style="color:var(--red)">em ' + diff + 'd</span>';
+    }
+    var cls = it.atrasado ? 'trat' : '';
+    var badge = it.stTransf === 'Em Transferência'
+      ? '<span class="rd-pill teal">Em Transferência</span>'
+      : it.stTransf === 'Concluída'
+      ? '<span class="rd-pill verde">Concluída</span>'
+      : '<span class="rd-pill cinza">Cancelada</span>';
+    var fvStr = it.freteValor > 0 ? 'R$ ' + it.freteValor.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—';
+    var acoes = (ativo && !_modoRO)
+      ? '<div style="display:flex;gap:5px;flex-wrap:wrap">'
+        + (it.isLote ? '<button class="acao-mini azul" onclick="conferirLote(' + i + ')" title="Conferir Separação" aria-label="Conferir Separação"><svg class="ic ic-sm"><use href="#i-scan-line"/></svg></button>' : '')
+        + '<button class="acao-mini verde" onclick="abrirBaixa(' + i + ')" title="Baixa" aria-label="Baixa"><svg class="ic ic-sm"><use href="#i-check"/></svg> Baixa</button>'
+        + '<button class="acao-mini azul" onclick="abrirReagendar(' + i + ')" title="Reagendar" aria-label="Reagendar"><svg class="ic ic-sm"><use href="#i-calendar"/></svg></button>'
+        + '<button class="acao-mini verm" onclick="abrirCancelar(' + i + ')" title="Cancelar" aria-label="Cancelar"><svg class="ic ic-sm"><use href="#i-x"/></svg></button>'
+        + '</div>'
+      : '<span style="font-size:10px;color:var(--text-faint)">' + esc(it.dataBaixa||it.obsCancel||'') + '</span>';
+
+    return '<tr class="' + cls + '" style="animation-delay:' + Math.min(i*30, 300) + 'ms">'
+      + '<td><input type="checkbox" style="width:auto"' + (!ativo ? ' disabled' : '') + (ativo ? ' onchange="toggleItem(' + i + ',this)"' : '') + '></td>'
+      + '<td>'
+        + (it.isLote ? '<span class="lote-tag">LOTE</span>' : '')
+        + '<span class="mono" style="font-weight:700;color:var(--text)">' + esc(it.nf) + '</span>'
+        + '<div class="mono" style="font-size:10px;color:var(--text-faint)">' + esc(it.nfd) + '</div>'
+        + '</td>'
+      + '<td>' + esc(it.forn) + '</td>'
+      + '<td class="mono" style="font-weight:600">' + esc(it.numeroPedido || '—') + '</td>'
+      + '<td style="font-size:11px;color:var(--text-muted)">' + esc(it.abaOrigem) + '</td>'
+      + '<td style="font-size:11px">' + esc(it.freteTipo) + '<br><span class="mono" style="color:var(--text-faint)">' + fvStr + '</span></td>'
+      + '<td class="mono">' + esc(it.dataAgend||'—') + ' ' + diasTag + '</td>'
+      + '<td class="mono" style="text-align:center;color:var(--text-muted)">' + (it.diasEmTransf || 0) + 'd</td>'
+      + '<td>' + badge + '</td>'
+      + '<td>' + acoes + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function toggleItem(i, chk) { _sel[i] = chk.checked; atualizarBulk(); }
+function toggleTodos(s) {
+  _sel = _filt.map(function(it){ return s && it.stTransf === 'Em Transferência'; });
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c,i){ if (!c.disabled) c.checked = _sel[i]; });
+  atualizarBulk();
+}
+function limparSel() {
+  _sel = new Array(_filt.length).fill(false);
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(function(c){ c.checked = false; });
+  document.getElementById('chkAll').checked = false;
+  atualizarBulk();
+}
+function atualizarBulk() {
+  var cnt = _sel.filter(Boolean).length;
+  document.getElementById('blkbar').style.display = cnt > 0 ? 'flex' : 'none';
+  document.getElementById('blkcnt').textContent = cnt + ' selecionada(s)';
+}
+
+// ── Doc. Carga (transferências) — layout v12 aprovado ────────
+function gerarDocCargaTransf() {
+  var itens = _sel.some(Boolean)
+    ? _filt.filter(function(_,i){ return _sel[i]; })
+    : _filt;
+  if (!itens.length) { toast('Nenhuma transferência para gerar o documento.','warn'); return; }
+
+  var forns = {};
+  itens.forEach(function(it){ if (it.forn) forns[it.forn] = true; });
+  if (Object.keys(forns).length > 1) {
+    toast('⚠️ Doc. Carga requer o mesmo fornecedor. Distintos: ' + Object.keys(forns).join(', '), 'warn');
+    return;
+  }
+
+  var logoUrl = 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w200';
+  var agora = new Date();
+  var now = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var numDoc = 'DC-' + agora.getFullYear() + '-' + String(agora.getTime()).slice(-5);
+  var fmt = function(v){ return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var totalCxs = itens.reduce(function(s,it){ return s+(it.qtd||0); }, 0);
+  var totalVal = itens.reduce(function(s,it){ return s+(it.vlTot||0); }, 0);
+  var forn = itens[0].forn || '—';
+  var pedidos = {};
+  itens.forEach(function(it){ if (it.numeroPedido) pedidos[it.numeroPedido] = true; });
+  var pedStr = Object.keys(pedidos).join(' · ') || '—';
+  var corTipo = function(t){ return t==='Avaria' ? '#B45309' : t==='Rejeição' ? '#DC2626' : '#2563EB'; };
+
+  var rows = itens.map(function(it, i) {
+    return '<tr ' + (i%2 ? 'style="background:#F8FAFD"' : '') + '>'
+      +'<td style="padding-left:16px"><b style="font-family:monospace">'+esc(it.nfd||it.nf||'')+'</b>'
+      +(it.nfd&&it.nf&&it.nfd!==it.nf?'<br><span style="font-size:9px;color:#8A9BB0;font-family:monospace">NF '+esc(it.nf)+'</span>':'')+'</td>'
+      +'<td style="color:'+corTipo(it.tipo)+';font-weight:bold">● '+esc(it.tipo||'—')+'</td>'
+      +'<td>'+esc(it.desc||'—')+'</td>'
+      +'<td style="text-align:center;font-weight:bold">'+(it.qtd||0)+'</td>'
+      +'<td style="text-align:right;font-family:monospace;font-weight:bold">'+fmt(it.vlTot)+'</td>'
+      +'<td style="font-family:monospace;white-space:nowrap">'+esc(it.dataAgend||'—')+'</td>'
+      +'<td style="text-align:center;padding-right:16px"><span style="display:inline-block;width:14px;height:14px;border:2px solid #1E3A5F;border-radius:3px"></span></td>'
+      +'</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Doc. de Carga — Transferência — '+numDoc+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'th{background:#1E3A5F;color:#fff;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}'
+    +'td{padding:6px 8px;border-bottom:1px solid #E9EDF5;vertical-align:middle}'
+    +'@page{size:A4 landscape;margin:8mm}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0}}</style></head><body>'
+    +'<div style="background:#0B1526;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="display:flex;align-items:center;gap:12px">'
+    +'<div style="background:#fff;border-radius:6px;padding:4px 9px"><img src="'+logoUrl+'" style="height:22px;display:block" onerror="this.style.display=\'none\'" alt="Transben"></div>'
+    +'<div><div style="color:#fff;font-size:13px;font-weight:bold">Documentação de Carga — Transferência</div>'
+    +'<div style="color:#7E93B8;font-size:9px;margin-top:2px">Fornecedor <b style="color:#9CC1FF">'+esc(forn)+'</b> · '+now+' · '+itens.length+' NFD(s)</div></div></div>'
+    +'<div style="text-align:right"><div style="color:#7E93B8;font-size:8px;letter-spacing:1.5px">DOCUMENTO Nº</div>'
+    +'<div style="color:#fff;font-family:monospace;font-size:15px;font-weight:bold">'+numDoc+'</div></div></div>'
+    // bloco de transporte (linhas pra preencher à mão)
+    +'<div style="display:flex;border-bottom:1.5px solid #1E3A5F">'
+    +'<div style="flex:1.2;padding:8px 14px;border-right:1px solid #E3E8F2"><div style="font-size:7.5px;color:#8A9BB0;letter-spacing:1px">TRANSPORTADORA</div><div style="font-size:11px;font-weight:bold;padding-top:6px;border-bottom:1px dotted #C9D4E5">&nbsp;</div></div>'
+    +'<div style="flex:1;padding:8px 14px;border-right:1px solid #E3E8F2"><div style="font-size:7.5px;color:#8A9BB0;letter-spacing:1px">MOTORISTA</div><div style="font-size:11px;font-weight:bold;padding-top:6px;border-bottom:1px dotted #C9D4E5">&nbsp;</div></div>'
+    +'<div style="flex:.6;padding:8px 14px;border-right:1px solid #E3E8F2"><div style="font-size:7.5px;color:#8A9BB0;letter-spacing:1px">PLACA</div><div style="font-size:11px;font-weight:bold;padding-top:6px;border-bottom:1px dotted #C9D4E5">&nbsp;</div></div>'
+    +'<div style="flex:.8;padding:8px 14px"><div style="font-size:7.5px;color:#8A9BB0;letter-spacing:1px">Nº PEDIDO(S)</div><div style="font-size:14px;font-weight:800;font-family:monospace;padding-top:6px">'+esc(pedStr)+'</div></div></div>'
+    // resumo
+    +'<div style="display:flex;gap:10px;padding:10px 16px">'
+    +'<div style="flex:1;border:1px solid #E3E8F2;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#5B7186;letter-spacing:1px">NFDS</div><div style="font-size:16px;font-weight:bold;color:#0B1526">'+itens.length+'</div></div>'
+    +'<div style="flex:1;border:1px solid #E3E8F2;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#5B7186;letter-spacing:1px">CAIXAS</div><div style="font-size:16px;font-weight:bold;color:#0B1526">'+totalCxs.toLocaleString('pt-BR')+'</div></div>'
+    +'<div style="flex:1;border:1px solid #BFDBFE;background:#EFF4FF;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#1E3A5F;letter-spacing:1px">VALOR TOTAL</div><div style="font-size:14px;font-weight:bold;color:#2563EB">'+fmt(totalVal)+'</div></div></div>'
+    // tabela com coluna conferido
+    +'<table><thead><tr>'
+    +'<th style="padding-left:16px">NFD / NF</th><th>Tipo</th><th>Descrição</th>'
+    +'<th style="text-align:center">Cxs</th><th style="text-align:right">Valor</th><th>Agendamento</th>'
+    +'<th style="text-align:center;padding-right:16px">Conferido</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot><tr style="background:#EFF4FF;font-weight:bold;color:#1E3A5F">'
+    +'<td style="padding-left:16px" colspan="3">TOTAL</td>'
+    +'<td style="text-align:center">'+totalCxs.toLocaleString('pt-BR')+'</td>'
+    +'<td style="text-align:right;font-family:monospace">'+fmt(totalVal)+'</td><td colspan="2"></td></tr></tfoot></table>'
+    // assinaturas
+    +'<div style="display:flex;gap:30px;margin:26px 16px 0;padding-top:14px;border-top:1px solid #E3E8F2">'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Conferência / Responsável</div></div>'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Transportadora / Motorista</div></div>'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Data / Hora da Retirada</div></div></div>'
+    +'<div style="background:#F1F4F9;border-top:2px solid #1E3A5F;padding:7px 16px;display:flex;justify-content:space-between;font-size:7.5px;color:#8A9BB0;margin-top:12px">'
+    +'<span>Transben · Controle de Devoluções · '+numDoc+'</span><span>'+now+'</span></div>'
+    +'</body></html>';
+
+  var w = window.open('','_blank','width=1000,height=760');
+  if (!w) { toast('⚠️ Popup bloqueado. Permita popups para este site.','warn'); return; }
+  w.document.write(html);
+  w.document.close();
+  var _printed = false;
+  var _doPrint = function(){ if (_printed) return; _printed = true; w.focus(); w.print(); };
+  var _img = w.document.querySelector('img');
+  if (_img) {
+    if (_img.complete) { setTimeout(_doPrint, 150); }
+    else { _img.onload = function(){ setTimeout(_doPrint, 150); }; _img.onerror = function(){ setTimeout(_doPrint, 150); }; }
+  }
+  setTimeout(_doPrint, 1800);
+  toast('📄 Documentação de carga gerada ('+itens.length+' transferência(s)).','ok');
+}
+
+// ── Baixa ─────────────────────────────────────────────────────
+function conferirLote(i) {
+  var loteId = _filt[i].loteId;
+  if (!loteId) { toast('Lote sem identificador — não é possível conferir.', 'err'); return; }
+  if (typeof cdvLoad === 'function') { cdvLoad('Conferencia', { loteId: loteId }); return; }
+  toast('Navegação indisponível fora do menu principal.', 'err');
+}
+
+function abrirBaixa(i) {
+  _idxAcao = i;
+  _linhaBaixa = _filt[i].linha;
+  document.getElementById('mBaixaTitulo').textContent = _filt[i].isLote
+    ? '✅ Confirmar Baixa em Lote — ' + _filt[i].forn
+    : '✅ Confirmar Baixa — NF ' + _filt[i].nf;
+  document.getElementById('mBaixaDesc').textContent = _filt[i].isLote
+    ? 'Lote: ' + _filt[i].nfd + ' (' + _filt[i]._loteLinhas.length + ' NF(s))'
+    : 'Fornecedor: ' + _filt[i].forn + ((_filt[i].numeroPedido) ? ' · Pedido: ' + _filt[i].numeroPedido : '');
+  document.getElementById('bObs').value = '';
+  document.getElementById('bArq').value = '';
+  document.getElementById('mBaixaMsg').className = 'mmsg';
+  document.getElementById('mBaixa').classList.add('on');
+}
+
+function confirmarBaixa() {
+  var btn = document.getElementById('btnConfBaixa');
+  btn.disabled = true; btn.textContent = '⏳';
+  var obs   = document.getElementById('bObs').value.trim();
+  var arqEl = document.getElementById('bArq');
+  var arq   = arqEl.files && arqEl.files[0];
+  var params = { linha: _linhaBaixa, obs: obs };
+  var itemAtual = _filt[_idxAcao];
+
+  function enviar() {
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        btn.disabled = false; btn.textContent = '✅ Confirmar Baixa';
+        try {
+          var r = JSON.parse(resp);
+          if (r.ok) {
+            fecharModais();
+            toast(r.ok, 'ok');
+            _removerItemEVoltar(itemAtual, r.ok);
+          }
+          else { showMsg('mBaixaMsg', r.erro || 'Erro.', 'err'); }
+        } catch(e) { showMsg('mBaixaMsg', e.message, 'err'); }
+      })
+      .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '✅ Confirmar Baixa'; showMsg('mBaixaMsg', e.message, 'err'); })
+      .darBaixaTransferencia(params);
+  }
+
+  if (arq) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var b64 = ev.target.result.split(',')[1];
+      params.base64      = b64;
+      params.mimeType    = arq.type || 'application/octet-stream';
+      params.nomeArquivo = arq.name;
+      enviar();
+    };
+    reader.onerror = function(){ showMsg('mBaixaMsg', 'Erro ao ler arquivo.', 'err'); btn.disabled = false; btn.textContent = '✅ Confirmar Baixa'; };
+    reader.readAsDataURL(arq);
+  } else {
+    enviar();
+  }
+}
+
+// ── Cancelar ──────────────────────────────────────────────────
+function abrirCancelar(i) {
+  _idxAcao = i;
+  _linhaCancel = _filt[i].linha;
+  document.getElementById('mCancelTitulo').textContent = '❌ Cancelar — NF ' + _filt[i].nf;
+  document.getElementById('mCancelDesc').textContent = 'Fornecedor: ' + _filt[i].forn;
+  document.getElementById('cObs').value = '';
+  document.getElementById('mCancelMsg').className = 'mmsg';
+  document.getElementById('mCancel').classList.add('on');
+}
+
+function abrirCancelarLote() {
+  if (_modoRO) { toast('🔒 Modo somente-leitura ativo. Ação bloqueada.', 'info'); return; }
+  _linhaCancel = null; // sinaliza lote
+  var sel = _filt.filter(function(_,i){ return _sel[i]; });
+  document.getElementById('mCancelTitulo').textContent = '❌ Cancelar ' + sel.length + ' Transferência(s)';
+  document.getElementById('mCancelDesc').textContent = sel.map(function(it){ return 'NF ' + it.nf; }).join(', ');
+  document.getElementById('cObs').value = '';
+  document.getElementById('mCancelMsg').className = 'mmsg';
+  document.getElementById('mCancel').classList.add('on');
+}
+
+function confirmarCancelar() {
+  var obs = document.getElementById('cObs').value.trim();
+  if (!obs) { showMsg('mCancelMsg', 'O motivo do cancelamento é obrigatório.', 'err'); return; }
+  var btn = document.getElementById('btnConfCancel');
+  btn.disabled = true; btn.textContent = '⏳';
+
+  if (_linhaCancel) {
+    // Cancelamento único
+    var itemAtual = _filt[_idxAcao];
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento';
+        try {
+          var r = JSON.parse(resp);
+          if (r.ok) {
+            fecharModais();
+            toast(r.ok, 'ok');
+            _removerItemEVoltar(itemAtual, r.ok);
+          }
+          else { showMsg('mCancelMsg', r.erro || 'Erro.', 'err'); }
+        } catch(e) { showMsg('mCancelMsg', e.message, 'err'); }
+      })
+      .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento'; showMsg('mCancelMsg', e.message, 'err'); })
+      .cancelarTransferencia({ linha: _linhaCancel, obs: obs });
+  } else {
+    // Cancelamento em lote (chama uma a uma em sequência)
+    var itensSel = _filt.filter(function(_,i){ return _sel[i]; });
+    var linhas = itensSel.map(function(it){ return it.linha; });
+    var ok = 0, errs = [];
+    var idx = 0;
+    function next() {
+      if (idx >= linhas.length) {
+        btn.disabled = false; btn.textContent = '❌ Confirmar Cancelamento';
+        fecharModais(); limparSel();
+        var msg = '✅ ' + ok + ' cancelada(s)' + (errs.length ? ' · ' + errs.length + ' erro(s)' : '');
+        toast(msg, ok > 0 ? 'ok' : 'err');
+        _removerItensEVoltar(itensSel.slice(0, ok), msg);
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(resp) {
+          try { var r = JSON.parse(resp); if (r.ok) ok++; else errs.push(r.erro); } catch(e) { errs.push(e.message); }
+          idx++; next();
+        })
+        .withFailureHandler(function(e) { errs.push(e.message); idx++; next(); })
+        .cancelarTransferencia({ linha: linhas[idx], obs: obs });
+    }
+    next();
+  }
+}
+
+// ── Reagendar ─────────────────────────────────────────────────
+function abrirReagendar(i) {
+  _idxAcao = i;
+  _linhaReag = _filt[i].linha;
+  document.getElementById('mReagDesc').textContent = 'NF ' + _filt[i].nf + ' · ' + _filt[i].forn;
+  var dAtual = _filt[i].dataAgend ? parseDtBR(_filt[i].dataAgend) : null;
+  document.getElementById('rData').value = dAtual ? dAtual.toISOString().split('T')[0] : '';
+  document.getElementById('rObs').value = '';
+  document.getElementById('mReagMsg').className = 'mmsg';
+  document.getElementById('mReag').classList.add('on');
+}
+
+function confirmarReagendar() {
+  var nova = document.getElementById('rData').value;
+  if (!nova) { showMsg('mReagMsg', 'Selecione a nova data.', 'err'); return; }
+  var btn = document.getElementById('btnConfReag');
+  btn.disabled = true; btn.textContent = '⏳';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      btn.disabled = false; btn.textContent = '📅 Confirmar';
+      try {
+        var r = JSON.parse(resp);
+        if (r.ok) { fecharModais(); toast(r.ok, 'ok'); setTimeout(carregar, 800); }
+        else { showMsg('mReagMsg', r.erro || 'Erro.', 'err'); }
+      } catch(e) { showMsg('mReagMsg', e.message, 'err'); }
+    })
+    .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = '📅 Confirmar'; showMsg('mReagMsg', e.message, 'err'); })
+    .reagendarTransferencia({ linha: _linhaReag, dataAgendamento: nova, obs: document.getElementById('rObs').value.trim() });
+}
+
+// ── Remover item e navegar de volta ────────────────────────────
+function _removerItemEVoltar(item, msg) {
+  var linha = item ? item.linha : 0;
+  _itens = _itens.filter(function(it){ return it.linha !== linha; });
+  atualizarStats();
+  filtrar();
+  try { if (item && item.abaOrigem) localStorage.setItem('cdv_retorno_aba', item.abaOrigem); } catch(_){}
+  setTimeout(function() {
+    try { google.script.host.close(); } catch(_) {}
+    try {
+      google.script.run
+        .withSuccessHandler(function(url){ if (url) window.top.location.href = url + '?page=FormNotas'; })
+        ._getWebAppExecUrl();
+    } catch(_) {}
+  }, 1800);
+}
+
+function _removerItensEVoltar(itens, msg) {
+  var linhas = itens.map(function(it){ return it.linha; });
+  _itens = _itens.filter(function(it){ return linhas.indexOf(it.linha) === -1; });
+  atualizarStats();
+  filtrar();
+  var abaRef = itens.length ? itens[0].abaOrigem : '';
+  try { if (abaRef) localStorage.setItem('cdv_retorno_aba', abaRef); } catch(_){}
+  setTimeout(function() {
+    try { google.script.host.close(); } catch(_) {}
+    try {
+      google.script.run
+        .withSuccessHandler(function(url){ if (url) window.top.location.href = url + '?page=FormNotas'; })
+        ._getWebAppExecUrl();
+    } catch(_) {}
+  }, 1800);
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function fecharModais() {
+  ['mBaixa','mCancel','mReag'].forEach(function(id){ document.getElementById(id).classList.remove('on'); });
+  _linhaCancel = 0; _linhaBaixa = 0; _linhaReag = 0;
+}
+function showMsg(id, txt, tipo) {
+  var el = document.getElementById(id);
+  el.textContent = txt; el.className = 'mmsg ' + tipo;
+}
+function parseDtBR(s) {
+  if (!s) return null;
+  var p = s.split('/'); if (p.length !== 3) return null;
+  return new Date(+p[2], +p[1]-1, +p[0]);
+}
+function esc(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function toast(msg, tipo) { showToast(msg, tipo || 'ok'); }
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') fecharModais();
+});
+
+// ── Modo somente-leitura ──────────────────────────────────────
+var _modoRO = false;
+
+function aplicarModoROTransf(ativo) {
+  _modoRO = ativo;
+  if (!ativo) return;
+  var banner = document.createElement('div');
+  banner.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;'
+    +'padding:8px 14px;margin-bottom:8px;font-size:12px;color:#92400E;display:flex;'
+    +'align-items:center;gap:8px;flex-shrink:0';
+  banner.innerHTML = '<span>🔒</span><span><strong>Modo somente-leitura ativo.</strong> Apenas visualização e filtragem permitidas.</span>';
+  document.body.insertBefore(banner, document.body.firstElementChild);
+  var btnLote = document.querySelector('[onclick="abrirCancelarLote()"]');
+  if (btnLote) { btnLote.disabled = true; btnLote.title = 'Bloqueado: modo somente-leitura'; }
+}
+
+carregar();
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('notas') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+          return;
+        }
+        if (p.somenteLeitura) aplicarModoROTransf(true);
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_){}
+</script>
+</body>
+</html>

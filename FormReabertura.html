@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px;max-width:1280px;margin:0 auto}
+    .campo{margin-bottom:var(--gap-field)}
+    .campo:last-child{margin-bottom:0}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opc{font-weight:500;color:var(--text-muted)}
+    .obrig{color:var(--danger)}
+    /* input/select/textarea (borda, foco) vêm de Styles.html §6.2 */
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+    .mono{font-family:var(--mono)}
+    /* tabela da prévia */
+    .twrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-table)}
+    thead tr{background:var(--surface-2)}
+    thead th{color:var(--text-faint);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--accent-border)}
+    tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-body);vertical-align:middle}
+    tbody tr{transition:background .12s,opacity .2s;animation:rowIn .25s var(--ease-entrance) both}
+    tbody tr:hover{background:var(--accent-bg)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.off{opacity:.45}
+    .prev-warn{
+      display:none;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);
+      padding:9px 12px;font-size:11.5px;color:#92400E;margin-bottom:10px;line-height:1.55
+    }
+    body.dark .prev-warn{color:#FCD34D;border-color:#78350F}
+    /* resultado */
+    .res-lista{text-align:left;max-width:340px;margin:0 auto 16px}
+    .res-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);
+      border-radius:8px;margin-bottom:5px;font-size:11.5px;animation:fadeUp .25s var(--ease-out) both}
+  </style>
+</head>
+<body data-area="recuperacao">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-rotate-ccw"/></svg> Reabrir Devoluções em Lote</h1>
+      <div class="rd-sub">Retorne NFs concluídas (Devolvido / Venda) para o status Pendente</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-wz">
+  <!-- TRILHO -->
+  <div class="rd-rail">
+    <div class="rd-vsteps">
+      <div class="rd-vstep ativo" id="rd-vs1">
+        <span class="c">1</span>
+        <span class="tx"><span class="tt">Entrada</span><span class="ss">NFs e motivo</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs2">
+        <span class="c">2</span>
+        <span class="tx"><span class="tt">Prévia</span><span class="ss">Confira e desmarque o que não quiser</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs3">
+        <span class="c">3</span>
+        <span class="tx"><span class="tt">Resultado</span><span class="ss">Confirmação da reabertura</span></span>
+      </div>
+    </div>
+    <div class="rd-resumo">
+      <div class="rt">Resumo da operação</div>
+      <div class="ri"><span>NFs digitadas</span><b id="r-digitadas" class="pend">—</b></div>
+      <div class="ri"><span>Encontradas</span><b id="r-encontradas" class="pend">—</b></div>
+      <div class="ri"><span>Selecionadas</span><b id="r-selecionadas" class="pend">—</b></div>
+      <div class="ri"><span>Motivo</span><b id="r-motivo" class="pend">—</b></div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div>
+    <!-- PASSO 1 -->
+    <div class="rd-pane on" id="rd-p1">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num">1</span><h2>NFs para reabrir</h2></div>
+        <div class="rd-card-body">
+          <div class="campo">
+            <label>Números das NFs <span class="obrig">*</span></label>
+            <textarea id="nfs" rows="4" placeholder="123456&#10;789012&#10;ou: 123456, 789012" oninput="parseLive()"></textarea>
+            <div class="helper">Somente NFs com status <b>Devolvido</b> ou <b>Venda</b>. Clique no ✕ de um chip pra remover.</div>
+            <div class="rd-nfchips" id="chipZone"></div>
+          </div>
+          <div class="campo">
+            <label>Motivo da reabertura <span class="opc">(opcional)</span></label>
+            <textarea id="motivo" rows="2" placeholder="Ex: Cliente retornou mercadoria, erro de lançamento…" oninput="atualizarResumo()"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="btnBuscar" onclick="buscarPrevia()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-search"/></svg> Buscar Prévia
+        </button>
+        <button class="rd-sec" onclick="google.script.host.close()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="rd-pane" id="rd-p2">
+      <div class="prev-warn" id="prevWarn"></div>
+      <div class="rd-card">
+        <div class="rd-card-head">
+          <span class="rd-num">2</span><h2 id="prevHdr">Prévia — desmarque o que não quiser reabrir</h2>
+        </div>
+        <div class="twrap">
+          <table>
+            <thead><tr><th style="width:34px"></th><th>NF</th><th>Aba</th><th>Descrição</th><th>Status atual</th></tr></thead>
+            <tbody id="prevBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="btnConfirmar" onclick="confirmar()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-rotate-ccw"/></svg> Reabrir <span id="btn-n"></span> NF(s)
+        </button>
+        <button class="rd-sec" onclick="rdPasso(1)"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="rd-pane" id="rd-p3">
+      <div class="rd-card">
+        <div class="rd-card-body" style="text-align:center;padding:34px 20px" id="resBox">
+          <div id="res-ico-ok" style="width:62px;height:62px;border-radius:99px;margin:0 auto 15px;background:var(--green-bg);display:grid;place-items:center;font-size:28px;color:var(--green)">
+            <span style="animation:rdCheckPop .45s .15s var(--rd-spring) both;display:inline-block">✓</span>
+          </div>
+          <h3 style="font-size:15.5px;font-weight:800;margin-bottom:6px;color:var(--text)" id="res-titulo">Reabertura concluída!</h3>
+          <p style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:14px" id="resMsg"></p>
+          <div class="res-lista" id="res-lista"></div>
+          <div class="rd-acoes" id="resBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _ck = '';
+var itensEncontrados = [];   // itens retornados pela busca
+var _marcadas = [];          // índices selecionados na prévia
+
+/* ── Step 1: chips removíveis ── */
+function parseLive() {
+  var chips = document.getElementById('nfs').value.split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var seen = {}; chips = chips.filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; });
+  var k = chips.join('\x1f');
+  if (k === _ck) return;
+  _ck = k;
+  var z = document.getElementById('chipZone');
+  z.innerHTML = chips.map(function(nf, i) {
+    return '<span class="rd-nfchip">' + esc(nf) +
+      '<button class="x" onclick="removerChip(' + i + ')" title="Remover">✕</button></span>';
+  }).join('');
+  atualizarResumo();
+}
+
+function removerChip(i) {
+  var chips = document.getElementById('nfs').value.split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var seen = {}; chips = chips.filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; });
+  chips.splice(i, 1);
+  document.getElementById('nfs').value = chips.join('\n');
+  _ck = ''; // força re-render
+  parseLive();
+}
+
+function _contarChips() {
+  var seen = {};
+  return document.getElementById('nfs').value.split(/[\n,;]+/)
+    .map(function(s){ return s.trim(); }).filter(Boolean)
+    .filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; }).length;
+}
+
+function atualizarResumo() {
+  var set = function(id, v, cls) { var e = document.getElementById(id); e.textContent = v; e.className = cls || ''; };
+  var nDig = _contarChips();
+  set('r-digitadas', nDig || '—', nDig ? '' : 'pend');
+  set('r-encontradas', itensEncontrados.length || '—', itensEncontrados.length ? 'ok' : 'pend');
+  set('r-selecionadas', _marcadas.length || '—', _marcadas.length ? 'ok' : 'pend');
+  var m = document.getElementById('motivo').value.trim();
+  set('r-motivo', m ? 'preenchido' : '—', m ? 'ok' : 'pend');
+  var bn = document.getElementById('btn-n');
+  if (bn) bn.textContent = _marcadas.length;
+}
+
+/* ── Step 1 → 2 ── */
+function buscarPrevia() {
+  var nfs = document.getElementById('nfs').value.trim();
+  if (!nfs) { showToast('Informe ao menos uma NF.', 'err'); return; }
+  rdLoading('btnBuscar', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnBuscar', false);
+      var r = JSON.parse(resp);
+      if (r.erro) { showToast(r.erro, 'err'); return; }
+      itensEncontrados = r.itens || [];
+      _marcadas = itensEncontrados.map(function(_, i){ return i; });
+      renderPreview();
+      var w = document.getElementById('prevWarn');
+      if (r.naoLocalizadas && r.naoLocalizadas.length > 0) {
+        w.textContent = '⚠ Não localizadas (não encontradas ou já Pendente): ' + r.naoLocalizadas.join(', ');
+        w.style.display = 'block';
+      } else {
+        w.style.display = 'none';
+      }
+      rdPasso(2);
+      atualizarResumo();
+    })
+    .withFailureHandler(function(e) { rdLoading('btnBuscar', false); showToast('Erro: ' + e.message, 'err'); })
+    .buscarNFsConcluidas(nfs);
+}
+
+/* ── Step 2: prévia com seleção por linha ── */
+function renderPreview() {
+  var rows = itensEncontrados.map(function(it, i) {
+    var mk = _marcadas.indexOf(i) >= 0;
+    var pill = it.status === 'Devolvido'
+      ? '<span class="rd-pill verde">Devolvido</span>'
+      : it.status === 'Venda'
+        ? '<span class="rd-pill ambar">Venda</span>'
+        : '<span class="rd-pill cinza">' + esc(it.status) + '</span>';
+    return '<tr class="' + (mk ? '' : 'off') + '" style="animation-delay:' + Math.min(i*40, 400) + 'ms">'
+      + '<td><input type="checkbox" style="width:auto"' + (mk ? ' checked' : '') + ' onchange="marcar(' + i + ', this.checked)"></td>'
+      + '<td class="mono" style="font-weight:700;color:var(--text)">' + esc(it.nf) + '</td>'
+      + '<td>' + esc(it.aba) + '</td>'
+      + '<td>' + esc(it.desc) + '</td>'
+      + '<td>' + pill + '</td>'
+      + '</tr>';
+  }).join('');
+  document.getElementById('prevBody').innerHTML = rows;
+  document.getElementById('prevHdr').textContent =
+    'Prévia — ' + itensEncontrados.length + ' NF(s) encontrada(s), desmarque o que não quiser';
+}
+
+function marcar(i, ck) {
+  var p = _marcadas.indexOf(i);
+  if (ck && p < 0) _marcadas.push(i);
+  if (!ck && p >= 0) _marcadas.splice(p, 1);
+  renderPreview();
+  atualizarResumo();
+}
+
+/* ── Step 2 → 3 ── */
+function confirmar() {
+  if (!_marcadas.length) { showToast('Selecione ao menos uma NF.', 'err'); return; }
+  rdLoading('btnConfirmar', true);
+  var motivo = document.getElementById('motivo').value.trim();
+  var selecionados = _marcadas.map(function(i){ return itensEncontrados[i]; });
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnConfirmar', false);
+      var r = JSON.parse(resp);
+      if (r.sucesso) showOk(r.sucesso, selecionados);
+      else           showErr(r.erro);
+    })
+    .withFailureHandler(function(e) { rdLoading('btnConfirmar', false); showErr('Erro: ' + e.message); })
+    .executarReaberturaPorItens(selecionados, motivo);
+}
+
+/* ── Step 3: resultado ── */
+function _makeBtn(btns, principal, txt, fn, icone, flip) {
+  var b = document.createElement('button');
+  b.className = principal ? 'rd-btn' : 'rd-sec';
+  b.innerHTML = (icone ? '<svg class="ic ic-sm"' + (flip ? ' style="transform:scaleX(-1)"' : '') + '><use href="#i-' + icone + '"/></svg> ' : '') + esc(txt);
+  b.onclick = fn;
+  btns.appendChild(b);
+}
+
+function showOk(txt, selecionados) {
+  document.getElementById('res-ico-ok').style.display = 'grid';
+  document.getElementById('res-titulo').textContent = 'Reabertura concluída!';
+  document.getElementById('resMsg').innerHTML = String(txt || '').replace(/\n/g, '<br>');
+  document.getElementById('res-lista').innerHTML = (selecionados || []).map(function(it) {
+    return '<div class="res-item">'
+      + '<span style="color:var(--green);font-weight:800">✓</span>'
+      + '<span class="mono" style="font-weight:700">' + esc(it.nf) + '</span>'
+      + '<span style="color:var(--text-muted)">' + esc(it.aba) + '</span>'
+      + '<span class="rd-pill ambar" style="margin-left:auto">Pendente</span></div>';
+  }).join('');
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  _makeBtn(btns, true,  'Nova Reabertura', function() { limparStep1(); rdPasso(1); }, 'rotate-ccw');
+  _makeBtn(btns, false, 'Fechar',           function() { google.script.host.close(); }, 'x');
+  rdPasso(3);
+}
+
+function showErr(txt) {
+  document.getElementById('res-ico-ok').style.display = 'none';
+  document.getElementById('res-titulo').textContent = 'Não foi possível reabrir';
+  document.getElementById('resMsg').innerHTML = ('❌ ' + (txt || 'Erro desconhecido')).replace(/\n/g, '<br>');
+  document.getElementById('res-lista').innerHTML = '';
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  _makeBtn(btns, true,  'Tentar novamente', function() { rdPasso(1); }, 'chevron-right', true);
+  _makeBtn(btns, false, 'Fechar',           function() { google.script.host.close(); }, 'x');
+  rdPasso(3);
+}
+
+function limparStep1() {
+  document.getElementById('nfs').value = '';
+  document.getElementById('motivo').value = '';
+  document.getElementById('chipZone').innerHTML = '';
+  _ck = '';
+  itensEncontrados = [];
+  _marcadas = [];
+  atualizarResumo();
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+(function(){ try { if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// prefill via "Reabrir NF" do menu de contexto do FormNotas
+(function() {
+  try {
+    var p = localStorage.getItem('cdv_reabrir_prefill');
+    if (p) {
+      localStorage.removeItem('cdv_reabrir_prefill');
+      document.getElementById('nfs').value = p;
+      parseLive();
+    }
+  } catch(_) {}
+})();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('notas') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

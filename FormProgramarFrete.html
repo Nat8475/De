@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px;max-width:1280px;margin:0 auto}
+    .campo{margin-bottom:var(--gap-field)}
+    .campo:last-child{margin-bottom:0}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    label .opc{font-weight:500;color:var(--text-muted)}
+    .obrig{color:var(--danger)}
+    /* input/select/textarea (borda, foco) vêm de Styles.html §6.2 */
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+    .mono{font-family:var(--mono)}
+    .linha2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:480px){.linha2{grid-template-columns:1fr}}
+    .twrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-table)}
+    thead tr{background:var(--surface-2)}
+    thead th{color:var(--text-faint);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--accent-border)}
+    tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-body);vertical-align:middle}
+    tbody tr{transition:background .12s,opacity .2s;animation:rowIn .25s var(--ease-entrance) both}
+    tbody tr:hover{background:var(--accent-bg)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.off{opacity:.45}
+    .prev-warn{
+      display:none;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);
+      padding:9px 12px;font-size:11.5px;color:#92400E;margin-bottom:10px;line-height:1.55
+    }
+    body.dark .prev-warn{color:#FCD34D;border-color:#78350F}
+    /* radio-cards de frete */
+    .frete-ops{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+    .frete-op{
+      border:1.5px solid var(--border-def);border-radius:var(--r-sm);background:var(--input-bg);
+      padding:11px 13px;cursor:pointer;transition:border-color .18s,background .18s,transform .12s;
+      display:block;position:relative
+    }
+    .frete-op:hover{transform:translateY(-1px)}
+    .frete-op input{display:none}
+    .frete-op .tt{font-size:12.5px;font-weight:800;color:var(--text)}
+    .frete-op .ss{font-size:10.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
+    .frete-op.sel{border-color:var(--navy);background:var(--navy-50);box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+    .frete-op.sel .tt{color:var(--navy)}
+    .frete-op.sel::after{
+      content:'✓';position:absolute;top:8px;right:10px;width:17px;height:17px;border-radius:99px;
+      background:var(--navy);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;
+      animation:popIn .2s var(--rd-spring) both
+    }
+    @media(max-width:480px){.frete-ops{grid-template-columns:1fr}}
+    .res-lista{text-align:left;max-width:360px;margin:0 auto 16px}
+    .res-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);
+      border-radius:8px;margin-bottom:5px;font-size:11.5px;animation:fadeUp .25s var(--ease-out) both}
+  </style>
+</head>
+<body data-area="movimento">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-truck"/></svg> Programar Devolução</h1>
+      <div class="rd-sub">Individual ou em lote — define frete e agenda antes da baixa final</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-wz">
+  <!-- TRILHO -->
+  <div class="rd-rail">
+    <div class="rd-vsteps">
+      <div class="rd-vstep ativo" id="rd-vs1">
+        <span class="c">1</span>
+        <span class="tx"><span class="tt">Buscar</span><span class="ss">Uma NF ou várias (lote)</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs2">
+        <span class="c">2</span>
+        <span class="tx"><span class="tt">Configurar</span><span class="ss">Frete único aplicado ao lote</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs3">
+        <span class="c">3</span>
+        <span class="tx"><span class="tt">Resultado</span><span class="ss">Programação salva</span></span>
+      </div>
+    </div>
+    <div class="rd-resumo">
+      <div class="rt">Resumo da programação</div>
+      <div class="ri"><span>NFs digitadas</span><b id="r-dig" class="pend">—</b></div>
+      <div class="ri"><span>Selecionadas</span><b id="r-sel" class="pend">—</b></div>
+      <div class="ri"><span>Valor total</span><b id="r-val" class="pend">—</b></div>
+      <div class="ri"><span>Frete</span><b id="r-frete" class="pend">—</b></div>
+      <div class="ri"><span>Valor frete</span><b id="r-fval" class="pend">—</b></div>
+      <div class="ri"><span>Agendamento</span><b id="r-agend" class="pend">—</b></div>
+      <div class="ri"><span>Pedido</span><b id="r-ped" class="pend">—</b></div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div>
+    <!-- PASSO 1 -->
+    <div class="rd-pane on" id="rd-p1">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num">1</span><h2>Buscar NFs Pendentes</h2></div>
+        <div class="rd-card-body">
+          <div class="campo" style="margin-bottom:0">
+            <label>NF(s) ou NFD(s) <span class="obrig">*</span></label>
+            <textarea id="termos" rows="3" placeholder="123456&#10;789012&#10;ou: 123456, 789012 — uma só também vale" oninput="parseLive()"></textarea>
+            <div class="helper">Uma NF = programação individual. Várias = <b>lote com o mesmo frete/agendamento</b>. Frete tipo <b>Tabela</b> é calculado pelo TMS/CTe.</div>
+            <div class="rd-nfchips" id="chipZone"></div>
+          </div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="btnBuscar" onclick="buscar()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-search"/></svg> Buscar
+        </button>
+        <button class="rd-sec" onclick="google.script.host.close()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="rd-pane" id="rd-p2">
+      <div class="prev-warn" id="prevWarn"></div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num"><svg class="ic ic-sm"><use href="#i-truck"/></svg></span><h2 id="loteTitulo">NFs encontradas</h2><span class="rd-pill ambar">Pendentes</span></div>
+        <div class="twrap">
+          <table>
+            <thead><tr>
+              <th style="width:34px"></th><th>NF / NFD</th><th>Fornecedor</th><th>Descrição</th>
+              <th style="text-align:center">Cxs</th><th style="text-align:right">Valor</th><th>Entrada</th>
+            </tr></thead>
+            <tbody id="loteBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num">2</span><h2>Frete e agenda — aplicados a todas as selecionadas</h2></div>
+        <div class="rd-card-body">
+          <div class="frete-ops" id="freteOps">
+            <label class="frete-op" data-tipo="Tabela"><input type="radio" name="frete" value="Tabela" onchange="onFreteChange()">
+              <span class="tt">Tabela</span><div class="ss">Calculado pelo TMS/CTe — sem valor manual</div></label>
+            <label class="frete-op" data-tipo="Valor + ICMS"><input type="radio" name="frete" value="Valor + ICMS" onchange="onFreteChange()">
+              <span class="tt">Valor + ICMS</span><div class="ss">Valor já com ICMS incluso</div></label>
+            <label class="frete-op" data-tipo="Valor"><input type="radio" name="frete" value="Valor" onchange="onFreteChange()">
+              <span class="tt">Valor</span><div class="ss">Valor sem ICMS</div></label>
+            <label class="frete-op" data-tipo="Cortesia"><input type="radio" name="frete" value="Cortesia" onchange="onFreteChange()">
+              <span class="tt">Cortesia</span><div class="ss">Sem custo de frete (R$ 0,00)</div></label>
+          </div>
+          <div class="campo" id="campoValor" style="display:none">
+            <label>Valor do Frete (R$) <span class="obrig">*</span> <span class="opc" id="valorHint"></span></label>
+            <input type="text" class="mono" id="freteValor" placeholder="0,00" oninput="resumo()">
+          </div>
+          <div class="linha2">
+            <div class="campo">
+              <label><svg class="ic ic-sm"><use href="#i-calendar"/></svg> Data de Agendamento <span class="opc">(opcional)</span></label>
+              <input type="date" id="dataAgend" onchange="resumo()">
+              <div class="helper">Data prevista para a transportadora retirar</div>
+            </div>
+            <div class="campo">
+              <label>Nº do Pedido <span class="obrig">*</span></label>
+              <input type="text" class="mono" id="numPedido" placeholder="Pedido de transporte" oninput="resumo()">
+            </div>
+          </div>
+          <div class="campo">
+            <label>Observações <span class="opc">(opcional)</span></label>
+            <input type="text" id="obsField" placeholder="Instruções ou observações">
+          </div>
+        </div>
+      </div>
+
+      <div class="rd-acoes">
+        <button class="rd-btn" id="btnSalvar" onclick="salvar()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-check"/></svg> Programar <span id="btn-n"></span> NF(s)
+        </button>
+        <button class="rd-sec" onclick="voltarBusca()"><svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Voltar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="rd-pane" id="rd-p3">
+      <div class="rd-card">
+        <div class="rd-card-body" style="text-align:center;padding:34px 20px">
+          <div id="res-ico-ok" style="width:62px;height:62px;border-radius:99px;margin:0 auto 15px;background:var(--green-bg);display:grid;place-items:center;font-size:28px;color:var(--green)">
+            <span style="animation:rdCheckPop .45s .15s var(--rd-spring) both;display:inline-block">✓</span>
+          </div>
+          <h3 style="font-size:15.5px;font-weight:800;margin-bottom:6px;color:var(--text)" id="res-titulo">Programação salva!</h3>
+          <p style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:14px" id="resMsg"></p>
+          <div class="res-lista" id="res-lista"></div>
+          <div class="rd-acoes" id="resBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _ck = '', _lote = [], _marcadas = [];
+
+/* ── chips removíveis ── */
+function _lerChips() {
+  var seen = {};
+  return document.getElementById('termos').value.split(/[\n,;]+/)
+    .map(function(s){ return s.trim(); }).filter(Boolean)
+    .filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; });
+}
+function parseLive() {
+  var chips = _lerChips();
+  var k = chips.join('\x1f');
+  if (k === _ck) return;
+  _ck = k;
+  document.getElementById('chipZone').innerHTML = chips.map(function(nf, i) {
+    return '<span class="rd-nfchip">' + esc(nf) +
+      '<button class="x" onclick="removerChip(' + i + ')" title="Remover">✕</button></span>';
+  }).join('');
+  resumo();
+}
+function removerChip(i) {
+  var chips = _lerChips();
+  chips.splice(i, 1);
+  document.getElementById('termos').value = chips.join('\n');
+  _ck = '';
+  parseLive();
+}
+
+function resumo() {
+  var set = function(id, v, ok) { var e = document.getElementById(id); var vazio = (v === 0 || v === '' || v == null); e.textContent = vazio ? '—' : v; e.className = vazio ? 'pend' : (ok ? 'ok' : ''); };
+  set('r-dig', _lerChips().length);
+  set('r-sel', _marcadas.length, true);
+  var val = 0;
+  _marcadas.forEach(function(i){ val += parseFloat(_lote[i].vlTot)||0; });
+  set('r-val', _lote.length ? fmt(val) : '', true);
+  var tipoEl = document.querySelector('input[name=frete]:checked');
+  set('r-frete', tipoEl ? tipoEl.value : '', true);
+  var precisaValor = tipoEl && (tipoEl.value === 'Valor + ICMS' || tipoEl.value === 'Valor');
+  var fv = document.getElementById('freteValor').value.trim();
+  set('r-fval', tipoEl ? (tipoEl.value === 'Cortesia' ? 'R$ 0,00' : tipoEl.value === 'Tabela' ? 'via TMS/CTe' : (precisaValor && fv ? 'R$ ' + fv : '')) : '', true);
+  var ag = document.getElementById('dataAgend').value;
+  set('r-agend', ag ? ag.split('-').reverse().join('/') : '');
+  set('r-ped', document.getElementById('numPedido').value.trim(), true);
+  var bn = document.getElementById('btn-n');
+  if (bn) bn.textContent = _marcadas.length;
+  var vh = document.getElementById('valorHint');
+  if (vh) vh.textContent = _marcadas.length > 1 ? '(mesmo valor gravado em cada NF do lote)' : '';
+}
+
+/* ── Step 1 → 2 ── */
+function buscar() {
+  var termos = document.getElementById('termos').value.trim();
+  if (!termos) { showToast('Informe ao menos uma NF ou NFD.', 'err'); return; }
+  rdLoading('btnBuscar', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnBuscar', false);
+      var r = JSON.parse(resp);
+      if (r.erro) { showToast(r.erro, 'err'); return; }
+      _lote = r.itens || [];
+      _marcadas = _lote.map(function(_, i){ return i; });
+      var w = document.getElementById('prevWarn');
+      if (r.naoLocalizadas && r.naoLocalizadas.length > 0) {
+        w.textContent = '⚠ Não localizadas (não encontradas ou não Pendentes): ' + r.naoLocalizadas.join(', ');
+        w.style.display = 'block';
+      } else {
+        w.style.display = 'none';
+      }
+      var jaProg = _lote.filter(function(it){ return it.freteTipo; });
+      if (jaProg.length) {
+        showToast('⚠️ ' + jaProg.length + ' NF(s) já tinham frete programado — salvar irá substituir.', 'warn');
+      }
+      document.getElementById('loteTitulo').textContent =
+        _lote.length === 1 ? 'NF ' + (_lote[0].nfd || _lote[0].nf) + ' · ' + _lote[0].forn
+                           : _lote.length + ' NFs encontradas';
+      renderLote();
+      limparConfig();
+      rdPasso(2);
+      resumo();
+    })
+    .withFailureHandler(function(e) { rdLoading('btnBuscar', false); showToast('Erro: ' + e.message, 'err'); })
+    .buscarNFsParaProgramar(termos);
+}
+
+function renderLote() {
+  document.getElementById('loteBody').innerHTML = _lote.map(function(it, i) {
+    var mk = _marcadas.indexOf(i) >= 0;
+    return '<tr class="' + (mk ? '' : 'off') + '" style="animation-delay:' + Math.min(i*40, 400) + 'ms">'
+      + '<td><input type="checkbox" style="width:auto"' + (mk ? ' checked' : '') + ' onchange="marcar(' + i + ', this.checked)"></td>'
+      + '<td><span class="mono" style="font-weight:700;color:var(--text)">' + esc(it.nf) + '</span>'
+      + (it.nfd ? '<br><span class="mono" style="font-size:10.5px;color:var(--text-faint)">' + esc(it.nfd) + '</span>' : '') + '</td>'
+      + '<td>' + esc(it.forn) + '</td>'
+      + '<td>' + esc(it.desc) + (it.freteTipo ? ' <span class="rd-pill ambar" style="margin-left:4px">já programada</span>' : '') + '</td>'
+      + '<td class="mono" style="text-align:center">' + (parseFloat(it.qtd)||0) + '</td>'
+      + '<td class="mono" style="text-align:right;font-weight:700">' + fmt(it.vlTot) + '</td>'
+      + '<td class="mono">' + esc(it.data) + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function marcar(i, ck) {
+  var p = _marcadas.indexOf(i);
+  if (ck && p < 0) _marcadas.push(i);
+  if (!ck && p >= 0) _marcadas.splice(p, 1);
+  renderLote();
+  resumo();
+}
+
+function onFreteChange() {
+  var tipo = document.querySelector('input[name=frete]:checked');
+  document.querySelectorAll('.frete-op').forEach(function(l){ l.classList.remove('sel'); });
+  if (!tipo) return;
+  document.querySelector('.frete-op[data-tipo="' + tipo.value + '"]').classList.add('sel');
+  var precisaValor = tipo.value === 'Valor + ICMS' || tipo.value === 'Valor';
+  document.getElementById('campoValor').style.display = precisaValor ? 'block' : 'none';
+  resumo();
+}
+
+function limparConfig() {
+  document.querySelectorAll('input[name=frete]').forEach(function(r){ r.checked = false; });
+  document.querySelectorAll('.frete-op').forEach(function(l){ l.classList.remove('sel'); });
+  document.getElementById('campoValor').style.display = 'none';
+  document.getElementById('freteValor').value = '';
+  document.getElementById('numPedido').value = '';
+  document.getElementById('obsField').value = '';
+  document.getElementById('dataAgend').value = '';
+}
+
+function voltarBusca() {
+  rdPasso(1);
+  setTimeout(function(){ document.getElementById('termos').focus(); }, 100);
+}
+
+/* ── Step 2 → 3 ── */
+function salvar() {
+  if (!_marcadas.length) { showToast('Selecione ao menos uma NF.', 'err'); return; }
+  var tipoEl = document.querySelector('input[name=frete]:checked');
+  if (!tipoEl) { showToast('Selecione o tipo de frete.', 'err'); return; }
+  var tipo   = tipoEl.value;
+  var valor  = document.getElementById('freteValor').value.trim().replace(',', '.');
+  var pedido = document.getElementById('numPedido').value.trim();
+  if (!pedido) { showToast('Informe o número do pedido.', 'err'); return; }
+  if ((tipo === 'Valor + ICMS' || tipo === 'Valor') && (!valor || isNaN(+valor) || +valor < 0)) {
+    showToast('Informe um valor de frete válido.', 'err'); return;
+  }
+  rdLoading('btnSalvar', true);
+  var itensSel = _marcadas.map(function(i){ return _lote[i]; });
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnSalvar', false);
+      var r = JSON.parse(resp);
+      if (r.ok) showOk(r.ok, itensSel, r.erros || []);
+      else      showErr(r.erro || 'Erro ao salvar.');
+    })
+    .withFailureHandler(function(e){ rdLoading('btnSalvar', false); showErr('Erro: ' + e.message); })
+    .salvarProgramacaoDevolucaoLote(itensSel, {
+      freteTipo:       tipo,
+      freteValor:      valor,
+      numeroPedido:    pedido,
+      dataAgendamento: document.getElementById('dataAgend').value,
+      obs:             document.getElementById('obsField').value.trim()
+    });
+}
+
+/* ── Step 3 ── */
+function showOk(txt, itensSel, erros) {
+  document.getElementById('res-ico-ok').style.display = 'grid';
+  document.getElementById('res-titulo').textContent = 'Programação salva!';
+  document.getElementById('resMsg').innerHTML = String(txt || '').replace(/\n/g, '<br>');
+  var falhas = {};
+  (erros || []).forEach(function(e){ falhas[String(e).split(':')[0]] = true; });
+  document.getElementById('res-lista').innerHTML = (itensSel || []).map(function(it) {
+    var id = it.nfd || it.nf;
+    var ok = !falhas[id];
+    return '<div class="res-item">'
+      + '<span style="color:' + (ok ? 'var(--green)' : 'var(--red)') + ';font-weight:800">' + (ok ? '✓' : '✕') + '</span>'
+      + '<span class="mono" style="font-weight:700">' + esc(it.nf) + '</span>'
+      + '<span style="color:var(--text-muted)">' + esc(it.forn) + '</span>'
+      + (ok ? '<span class="rd-pill teal" style="margin-left:auto">Em Transferência</span>'
+            : '<span class="rd-pill verm" style="margin-left:auto">falhou</span>') + '</div>';
+  }).join('');
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  var b = document.createElement('button');
+  b.className = 'rd-btn';
+  b.innerHTML = '<svg class="ic ic-sm"><use href="#i-plus-circle"/></svg> Nova programação';
+  b.onclick = resetForm;
+  btns.appendChild(b);
+  var b2 = document.createElement('button');
+  b2.className = 'rd-sec';
+  b2.innerHTML = '<svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar';
+  b2.onclick = function(){ google.script.host.close(); };
+  btns.appendChild(b2);
+  rdPasso(3);
+}
+
+function showErr(txt) {
+  document.getElementById('res-ico-ok').style.display = 'none';
+  document.getElementById('res-titulo').textContent = 'Não foi possível programar';
+  document.getElementById('resMsg').innerHTML = ('✕ ' + (txt || 'Erro desconhecido')).replace(/\n/g, '<br>');
+  document.getElementById('res-lista').innerHTML = '';
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  var b = document.createElement('button');
+  b.className = 'rd-sec';
+  b.innerHTML = '<svg class="ic ic-sm" style="transform:scaleX(-1)"><use href="#i-chevron-right"/></svg> Tentar novamente';
+  b.onclick = function(){ rdPasso(2); };
+  btns.appendChild(b);
+  rdPasso(3);
+}
+
+function resetForm() {
+  document.getElementById('termos').value = '';
+  _ck = ''; _lote = []; _marcadas = [];
+  document.getElementById('chipZone').innerHTML = '';
+  document.getElementById('loteBody').innerHTML = '';
+  limparConfig();
+  resumo();
+  rdPasso(1);
+  setTimeout(function(){ document.getElementById('termos').focus(); }, 320);
+}
+
+function fmt(v){ return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('termos').focus();
+(function(){ try{ if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// prefill via seleção do FormNotas (frete em lote)
+(function() {
+  try {
+    var p = localStorage.getItem('cdv_frete_prefill');
+    if (p) {
+      localStorage.removeItem('cdv_frete_prefill');
+      document.getElementById('termos').value = p;
+      parseLive();
+    }
+  } catch(_) {}
+})();
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('frete') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>

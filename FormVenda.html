@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* inputs/label/tabela vêm de Styles.html (§6.2 / §6.4); aqui só o específico da Venda */
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);padding:14px;max-width:1280px;margin:0 auto}
+    .campo{margin-bottom:var(--gap-field)}
+    label{display:block;font-weight:600;color:var(--text);margin-bottom:6px;font-size:var(--fs-label)}
+    .obrig{color:var(--danger)}
+    .helper{font-size:var(--fs-helper);color:var(--text-muted);margin-top:5px;line-height:1.5}
+    .mono{font-family:var(--mono)}
+    .twrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:var(--fs-table)}
+    thead tr{background:var(--surface-2)}
+    thead th{color:var(--text-faint);font-weight:700;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--accent-border)}
+    tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-body);vertical-align:middle}
+    tbody tr{transition:background .12s,opacity .2s;animation:rowIn .25s var(--ease-entrance) both}
+    tbody tr:hover{background:var(--accent-bg)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.off{opacity:.45}
+    .prev-warn{
+      display:none;background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:var(--r-sm);
+      padding:10px 12px;font-size:var(--fs-helper);color:var(--warning-fg);margin-bottom:10px;line-height:1.55
+    }
+    /* identidade da venda: base azul (área registro) + detalhe âmbar */
+    .rd-resumo.venda{position:relative;overflow:hidden;background:var(--accent-bg);border-color:var(--accent-border)}
+    .rd-resumo.venda::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--warning)}
+    .rd-resumo.venda .rt{color:var(--accent-strong)}
+    body.dark .rd-resumo.venda .rt{color:var(--accent)}
+  </style>
+</head>
+<body data-area="registro">
+<div id="cdv-nav-webapp" style="display:none;background:#0E1B30;color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;margin-bottom:10px;align-items:center;justify-content:space-between;font-family:Arial,sans-serif"><a href="?page=Index" style="color:#9CC1FF;text-decoration:none;font-weight:bold">🏠 Menu Principal</a><span style="opacity:.6">📦 Devoluções · Transben</span></div>
+<script>
+  try{google.script.run.withSuccessHandler(function(_u){if(!_u)return;var n=document.getElementById('cdv-nav-webapp');if(n){n.style.display='flex';var a=n.querySelector('a[href]');if(a)a.href=_u+'?page=Index';}try{google.script.host.close=function(){window.top.location.href=_u+'?page=Index';};}catch(_c){}})._getWebAppExecUrl();}catch(_e){}
+</script>
+
+<!-- HERO -->
+<div class="rd-hero">
+  <div class="rd-hero-top">
+    <div>
+      <h1 tabindex="-1"><svg class="ic"><use href="#i-banknote"/></svg> Baixa para Venda</h1>
+      <div class="rd-sub">Muda o status para Venda · gera relatório e documento de carga</div>
+    </div>
+    <button class="rd-ghost" onclick="google.script.host.close()"><svg class="ic ic-sm"><use href="#i-x"/></svg> Fechar</button>
+  </div>
+</div>
+
+<div class="rd-wz">
+  <!-- TRILHO -->
+  <div class="rd-rail">
+    <div class="rd-vsteps">
+      <div class="rd-vstep ativo" id="rd-vs1">
+        <span class="c">1</span>
+        <span class="tx"><span class="tt">Entrada</span><span class="ss">NFs pendentes para venda</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs2">
+        <span class="c">2</span>
+        <span class="tx"><span class="tt">Prévia</span><span class="ss">Confira e desmarque itens</span></span>
+      </div>
+      <div class="rd-vstep" id="rd-vs3">
+        <span class="c">3</span>
+        <span class="tx"><span class="tt">Resultado</span><span class="ss">Relatório + doc. de carga</span></span>
+      </div>
+    </div>
+    <div class="rd-resumo venda">
+      <div class="rt">Resumo da venda</div>
+      <div class="ri"><span>NFs digitadas</span><b id="r-dig" class="pend">—</b></div>
+      <div class="ri"><span>Selecionadas</span><b id="r-sel" class="pend">—</b></div>
+      <div class="ri"><span>Caixas</span><b id="r-cxs" class="pend">—</b></div>
+      <div class="ri"><span>Valor total</span><b id="r-val" class="pend">—</b></div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div>
+    <!-- PASSO 1 -->
+    <div class="rd-pane on" id="rd-p1">
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num">1</span><h2>NFs para venda</h2></div>
+        <div class="rd-card-body">
+          <div class="campo" style="margin-bottom:0">
+            <label>Números das NFs <span class="obrig">*</span></label>
+            <textarea id="nfs" rows="4" placeholder="123456&#10;789012&#10;ou: 123456, 789012" oninput="parseLive()"></textarea>
+            <div class="helper">Somente NFs com status <b>Pendente</b>. Clique no ✕ de um chip pra remover.</div>
+            <div class="rd-nfchips" id="chipZone"></div>
+          </div>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn" id="btnBuscar" onclick="buscarPrevia()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-search"/></svg> Buscar Prévia
+        </button>
+        <button class="rd-sec" onclick="google.script.host.close()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="rd-pane" id="rd-p2">
+      <div class="prev-warn" id="prevWarn"></div>
+      <div class="rd-card">
+        <div class="rd-card-head"><span class="rd-num">2</span><h2 id="prevHdr">Prévia da venda</h2></div>
+        <div class="twrap">
+          <table>
+            <thead><tr>
+              <th style="width:34px"></th><th>NFD</th><th>NF orig.</th><th>Fornecedor</th>
+              <th>Tipo</th><th>Motivo</th>
+              <th style="text-align:center">Cxs</th>
+              <th style="text-align:right">Valor</th><th>Data</th>
+            </tr></thead>
+            <tbody id="prevBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="rd-acoes">
+        <button class="rd-btn ambar" id="btnConfirmar" onclick="confirmar()">
+          <span class="rd-spin"></span><svg class="ic ic-sm"><use href="#i-banknote"/></svg> Vender <span id="btn-n"></span> NF(s)
+        </button>
+        <button class="rd-sec" onclick="rdPasso(1)">← Voltar</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="rd-pane" id="rd-p3">
+      <div class="rd-card">
+        <div class="rd-card-body" style="text-align:center;padding:34px 20px">
+          <div id="res-ico-ok" style="width:62px;height:62px;border-radius:99px;margin:0 auto 15px;background:var(--green-bg);display:grid;place-items:center;font-size:28px;color:var(--green)">
+            <span style="animation:rdCheckPop .45s .15s var(--rd-spring) both;display:inline-block">✓</span>
+          </div>
+          <h3 style="font-size:15.5px;font-weight:800;margin-bottom:6px;color:var(--text)" id="res-titulo">Venda processada!</h3>
+          <p style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:17px" id="resMsg"></p>
+          <div class="rd-acoes" id="resBtns" style="flex-direction:column"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// cache da logo (base64, Script Properties) — evita URL direta do Drive
+// que só carrega pro dono do arquivo; '' até a resposta chegar/existir
+var _logoB64 = '';
+try {
+  google.script.run
+    .withSuccessHandler(function(b64) { if (b64) _logoB64 = b64; })
+    .withFailureHandler(function() {})
+    .obterLogoBase64();
+} catch(_) {}
+
+var _ck = '', _preview = [], _marcadas = [], _itensVenda = [];
+
+/* ── chips removíveis ── */
+function _lerChips() {
+  var seen = {};
+  return document.getElementById('nfs').value.split(/[\n,;]+/)
+    .map(function(s){ return s.trim(); }).filter(Boolean)
+    .filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; });
+}
+function parseLive() {
+  var chips = _lerChips();
+  var k = chips.join('\x1f');
+  if (k === _ck) return;
+  _ck = k;
+  document.getElementById('chipZone').innerHTML = chips.map(function(nf, i) {
+    return '<span class="rd-nfchip">' + esc(nf) +
+      '<button class="x" onclick="removerChip(' + i + ')" title="Remover">✕</button></span>';
+  }).join('');
+  resumo();
+}
+function removerChip(i) {
+  var chips = _lerChips();
+  chips.splice(i, 1);
+  document.getElementById('nfs').value = chips.join('\n');
+  _ck = '';
+  parseLive();
+}
+
+function resumo() {
+  var set = function(id, v, ok) { var e = document.getElementById(id); var vazio = (v === 0 || v === '' || v == null); e.textContent = vazio ? '—' : v; e.className = vazio ? 'pend' : (ok ? 'ok' : ''); };
+  set('r-dig', _lerChips().length);
+  set('r-sel', _marcadas.length, true);
+  var cxs = 0, val = 0;
+  _marcadas.forEach(function(i){ cxs += parseFloat(_preview[i].qtd)||0; val += parseFloat(_preview[i].vlTot)||0; });
+  set('r-cxs', _preview.length ? cxs.toLocaleString('pt-BR') : '');
+  set('r-val', _preview.length ? fmt(val) : '', true);
+  var bn = document.getElementById('btn-n');
+  if (bn) bn.textContent = _marcadas.length;
+}
+
+/* ── Step 1 → 2 ── */
+function buscarPrevia() {
+  var nfs = document.getElementById('nfs').value.trim();
+  if (!nfs) { showToast('Informe ao menos uma NF.', 'err'); return; }
+  rdLoading('btnBuscar', true);
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnBuscar', false);
+      var r = JSON.parse(resp);
+      if (r.erro) { showToast(r.erro, 'err'); return; }
+      _preview = r.itens || [];
+      _marcadas = _preview.map(function(_, i){ return i; });
+      renderPreview();
+      var w = document.getElementById('prevWarn');
+      if (r.naoLocalizadas && r.naoLocalizadas.length > 0) {
+        w.textContent = '⚠ Não localizadas (status diferente de Pendente ou não encontradas): ' + r.naoLocalizadas.join(', ');
+        w.style.display = 'block';
+      } else {
+        w.style.display = 'none';
+      }
+      rdPasso(2);
+      resumo();
+    })
+    .withFailureHandler(function(e) { rdLoading('btnBuscar', false); showToast('Erro: ' + e.message, 'err'); })
+    .buscarPreviewNFs(nfs);
+}
+
+/* ── Step 2: prévia com seleção ── */
+function renderPreview() {
+  var rows = _preview.map(function(it, i) {
+    var mk = _marcadas.indexOf(i) >= 0;
+    return '<tr class="' + (mk ? '' : 'off') + '" style="animation-delay:' + Math.min(i*40, 400) + 'ms">'
+      + '<td><input type="checkbox" style="width:auto"' + (mk ? ' checked' : '') + ' onchange="marcar(' + i + ', this.checked)"></td>'
+      + '<td class="mono" style="font-weight:700;color:var(--text)">' + esc(it.nfd || it.nf) + '</td>'
+      + '<td class="mono">' + (it.nfd && it.nf && it.nfd !== it.nf ? esc(it.nf) : '—') + '</td>'
+      + '<td>' + esc(it.forn) + '</td>'
+      + '<td>' + esc(it.tipo || '—') + '</td>'
+      + '<td>' + esc(it.motivo || '—') + '</td>'
+      + '<td class="mono" style="text-align:center;font-weight:700">' + (parseFloat(it.qtd)||0) + '</td>'
+      + '<td class="mono" style="text-align:right;font-weight:700">' + fmt(it.vlTot) + '</td>'
+      + '<td class="mono" style="white-space:nowrap">' + esc(it.data) + '</td>'
+      + '</tr>';
+  }).join('');
+  document.getElementById('prevBody').innerHTML = rows;
+  document.getElementById('prevHdr').textContent =
+    'Prévia — ' + _preview.length + ' NF(s) Pendente(s), desmarque o que não entra na venda';
+}
+
+function marcar(i, ck) {
+  var p = _marcadas.indexOf(i);
+  if (ck && p < 0) _marcadas.push(i);
+  if (!ck && p >= 0) _marcadas.splice(p, 1);
+  renderPreview();
+  resumo();
+}
+
+/* ── Step 2 → 3 ── */
+function confirmar() {
+  if (!_marcadas.length) { showToast('Selecione ao menos uma NF.', 'err'); return; }
+  rdLoading('btnConfirmar', true);
+  // servidor re-busca por termos: envia só os identificadores selecionados
+  var termos = _marcadas.map(function(i){ var it = _preview[i]; return it.nfd || it.nf; }).join(', ');
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      rdLoading('btnConfirmar', false);
+      var r = JSON.parse(resp);
+      if (r.sucesso) showOk(r.sucesso, r.urlPdf, r.itens || []);
+      else           showErr(r.erro);
+    })
+    .withFailureHandler(function(e) { rdLoading('btnConfirmar', false); showErr('Erro: ' + e.message); })
+    .executarBaixaVenda(termos);
+}
+
+/* ── Step 3 ── */
+function showOk(txt, urlPdf, itens) {
+  _itensVenda = itens || [];
+  document.getElementById('res-ico-ok').style.display = 'grid';
+  document.getElementById('res-titulo').textContent = 'Venda processada!';
+  document.getElementById('resMsg').innerHTML = String(txt || '').replace(/\n/g, '<br>');
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  if (urlPdf) {
+    var a = document.createElement('a');
+    a.className = 'rd-btn ambar';
+    a.style.textDecoration = 'none';
+    a.href = urlPdf; a.target = '_blank';
+    a.textContent = '📥 Abrir Relatório no Drive';
+    btns.appendChild(a);
+  }
+  if (_itensVenda.length) {
+    var b2 = document.createElement('button');
+    b2.className = 'rd-sec';
+    b2.textContent = '🖨️ Reimprimir Doc. de Carga';
+    b2.onclick = function(){ gerarDocVenda(_itensVenda); };
+    btns.appendChild(b2);
+    gerarDocVenda(_itensVenda);
+  }
+  var btnNova = document.createElement('button');
+  btnNova.className = 'rd-sec';
+  btnNova.textContent = '+ Nova operação';
+  btnNova.onclick = resetForm;
+  btns.appendChild(btnNova);
+  rdPasso(3);
+}
+
+function showErr(txt) {
+  document.getElementById('res-ico-ok').style.display = 'none';
+  document.getElementById('res-titulo').textContent = 'Não foi possível processar';
+  document.getElementById('resMsg').innerHTML = '✕ ' + esc(txt || 'Erro desconhecido');
+  var btns = document.getElementById('resBtns');
+  btns.innerHTML = '';
+  var btn = document.createElement('button');
+  btn.className = 'rd-sec';
+  btn.textContent = '← Tentar novamente';
+  btn.onclick = function(){ rdPasso(2); };
+  btns.appendChild(btn);
+  rdPasso(3);
+}
+
+function resetForm() {
+  document.getElementById('nfs').value = '';
+  _ck = ''; _preview = []; _marcadas = []; _itensVenda = [];
+  document.getElementById('chipZone').innerHTML = '';
+  document.getElementById('prevBody').innerHTML = '';
+  resumo();
+  rdPasso(1);
+  setTimeout(function(){ document.getElementById('nfs').focus(); }, 320);
+}
+
+/* ── Doc. de Carga (venda) — layout v12 aprovado ── */
+function gerarDocVenda(itens) {
+  if (!itens || !itens.length) return;
+  var logoUrl = _logoB64 || 'https://drive.google.com/thumbnail?id=1xzzAzf7cej96m5rxR2Y9vVL1ou4y-hap&sz=w200';
+  var agora = new Date();
+  var now = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var numDoc = 'VD-' + agora.getFullYear() + '-' + String(agora.getTime()).slice(-5);
+  var totalCxs = itens.reduce(function(s,it){ return s+(parseFloat(it.qtd)||0); }, 0);
+  var totalVal = itens.reduce(function(s,it){ return s+(parseFloat(it.vlTot)||0); }, 0);
+  var corTipo = function(t){ return t==='Avaria' ? '#B45309' : t==='Rejeição' ? '#DC2626' : '#2563EB'; };
+  var rows = itens.map(function(it,i) {
+    return '<tr ' + (i%2 ? 'style="background:#F8FAFD"' : '') + '>'
+      +'<td style="padding-left:16px"><b style="font-family:monospace">'+esc(it.nfd||it.nf||'')+'</b>'
+      +(it.nfd&&it.nf&&it.nfd!==it.nf?'<br><span style="font-size:9px;color:#8A9BB0;font-family:monospace">NF '+esc(it.nf)+'</span>':'')+'</td>'
+      +'<td>'+esc(it.forn)+'</td>'
+      +'<td style="color:'+corTipo(it.tipo)+';font-weight:bold">● '+esc(it.tipo||'—')+'</td>'
+      +'<td>'+esc(it.motivo||'—')+'</td>'
+      +'<td style="text-align:center;font-weight:bold">'+(parseFloat(it.qtd)||0)+'</td>'
+      +'<td style="text-align:right;font-family:monospace;font-weight:bold">'+fmt(it.vlTot)+'</td>'
+      +'<td style="font-family:monospace;white-space:nowrap">'+esc(it.data)+'</td>'
+      +'<td style="text-align:center;padding-right:16px"><span style="display:inline-block;width:14px;height:14px;border:2px solid #1E3A5F;border-radius:3px"></span></td>'
+      +'</tr>';
+  }).join('');
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Doc. de Carga — Venda — '+numDoc+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'th{background:#1E3A5F;color:#fff;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}'
+    +'td{padding:6px 8px;border-bottom:1px solid #E9EDF5;vertical-align:middle}'
+    +'@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0}}</style></head><body>'
+    // header v12 + nº documento
+    +'<div style="background:#0B1526;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="display:flex;align-items:center;gap:12px">'
+    +'<div style="background:#fff;border-radius:6px;padding:4px 9px"><img src="'+logoUrl+'" style="height:22px;display:block" onerror="this.style.display=\'none\'" alt="Transben"></div>'
+    +'<div><div style="color:#fff;font-size:13px;font-weight:bold">Documentação de Carga — Venda</div>'
+    +'<div style="color:#7E93B8;font-size:9px;margin-top:2px">Gerado em '+now+' · '+itens.length+' NFD(s)</div></div></div>'
+    +'<div style="text-align:right"><div style="color:#7E93B8;font-size:8px;letter-spacing:1.5px">DOCUMENTO Nº</div>'
+    +'<div style="color:#fff;font-family:monospace;font-size:15px;font-weight:bold">'+numDoc+'</div></div></div>'
+    +'<div style="background:#B45309;color:#fff;font-size:9px;font-weight:bold;letter-spacing:1px;text-align:center;padding:4px">MERCADORIA DESTINADA À VENDA — CONFERIR NO RECEBIMENTO</div>'
+    // resumo
+    +'<div style="display:flex;gap:10px;padding:10px 16px">'
+    +'<div style="flex:1;border:1px solid #E3E8F2;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#5B7186;letter-spacing:1px">NFDS</div><div style="font-size:16px;font-weight:bold;color:#0B1526">'+itens.length+'</div></div>'
+    +'<div style="flex:1;border:1px solid #E3E8F2;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#5B7186;letter-spacing:1px">CAIXAS</div><div style="font-size:16px;font-weight:bold;color:#0B1526">'+totalCxs.toLocaleString('pt-BR')+'</div></div>'
+    +'<div style="flex:1;border:1px solid #FDE68A;background:#FFFBEB;border-radius:8px;padding:8px;text-align:center"><div style="font-size:7.5px;color:#92400E;letter-spacing:1px">VALOR TOTAL</div><div style="font-size:14px;font-weight:bold;color:#B45309">'+fmt(totalVal)+'</div></div></div>'
+    // tabela com coluna conferido
+    +'<table><thead><tr>'
+    +'<th style="padding-left:16px">NFD / NF</th><th>Fornecedor</th><th>Tipo</th><th>Motivo</th>'
+    +'<th style="text-align:center">Cxs</th><th style="text-align:right">Valor</th><th>Entrada</th>'
+    +'<th style="text-align:center;padding-right:16px">Conferido</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot><tr style="background:#FFFBEB;font-weight:bold;color:#92400E">'
+    +'<td style="padding-left:16px" colspan="4">TOTAL</td>'
+    +'<td style="text-align:center">'+totalCxs.toLocaleString('pt-BR')+'</td>'
+    +'<td style="text-align:right;font-family:monospace">'+fmt(totalVal)+'</td><td colspan="2"></td></tr></tfoot></table>'
+    // assinaturas
+    +'<div style="display:flex;gap:30px;margin:26px 16px 0;padding-top:14px;border-top:1px solid #E3E8F2">'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Expedição / Responsável</div></div>'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Recebedor (Venda)</div></div>'
+    +'<div style="flex:1;text-align:center"><div style="border-top:1.5px solid #1E3A5F;margin-top:30px;padding-top:4px;font-size:9px;color:#5B7186">Data / Hora da Entrega</div></div></div>'
+    +'<div style="background:#F1F4F9;border-top:2px solid #1E3A5F;padding:7px 16px;display:flex;justify-content:space-between;font-size:7.5px;color:#8A9BB0;margin-top:12px">'
+    +'<span>Transben · Controle de Devoluções · '+numDoc+'</span><span>'+now+'</span></div>'
+    +'</body></html>';
+  var w = window.open('','_blank','width=1000,height=760');
+  if (!w) { showToast('⚠️ Popup bloqueado. Permita popups para este site.', 'warn'); return; }
+  w.document.write(html);
+  w.document.close();
+  var _printed = false;
+  var _doPrint = function(){ if (_printed) return; _printed = true; w.focus(); w.print(); };
+  var _img = w.document.querySelector('img');
+  if (_img) {
+    if (_img.complete) { setTimeout(_doPrint, 150); }
+    else { _img.onload = function(){ setTimeout(_doPrint, 150); }; _img.onerror = function(){ setTimeout(_doPrint, 150); }; }
+  }
+  setTimeout(_doPrint, 1800);
+}
+
+function fmt(v){ return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('nfs').focus();
+(function(){ try{ if(localStorage.getItem('cdv_dark_mode')==='1') document.body.classList.add('dark'); }catch(_){} })();
+// relay hotkeys → Index.html
+document.addEventListener('keydown', function(e) {
+  var ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === 'k') { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:e.ctrlKey,metaKey:e.metaKey,altKey:false,key:'k'}}, '*'); } catch(_) {} return; }
+  if (e.altKey && !ctrl && '123456'.indexOf(e.key) >= 0) { e.preventDefault(); try { window.parent.postMessage({cdvKey:{ctrlKey:false,metaKey:false,altKey:true,key:e.key}}, '*'); } catch(_) {} }
+});
+// prefill via seleção do FormNotas
+(function() {
+  try {
+    var p = localStorage.getItem('cdv_venda_prefill');
+    if (p) {
+      localStorage.removeItem('cdv_venda_prefill');
+      document.getElementById('nfs').value = p;
+      parseLive();
+    }
+  } catch(_) {}
+})();
+// ── Enforcement de permissões ───────────────────────────────
+try {
+  google.script.run
+    .withSuccessHandler(function(r){
+      try {
+        var p = JSON.parse(r);
+        if (!p.admin && p.modulos.indexOf('lancamento') === -1) {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:12px;font-family:inherit">'
+            + '<div style="font-size:36px">🔒</div>'
+            + '<div style="font-size:16px;font-weight:700;color:var(--text)">Acesso Negado</div>'
+            + '<div style="font-size:13px;color:var(--text-muted);text-align:center;max-width:300px">Você não tem permissão para acessar este módulo. Contate o administrador.</div>'
+            + '</div>';
+        }
+      } catch(_){}
+    })
+    .obterPermissoesUsuario('');
+} catch(_) {}
+</script>
+</body>
+</html>
